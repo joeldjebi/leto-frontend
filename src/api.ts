@@ -1,12 +1,13 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
-export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'ADMIN';
+export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'SUPER_ADMIN';
 export type Status = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
 
 export interface Company { id: string; name: string; phone: string; active: boolean; createdAt: string }
 export interface User {
   id: string; name: string; phone: string; role: Role; active: boolean;
   companyId: string | null; company?: Company | null; createdAt: string;
+  lastLat?: number | null; lastLng?: number | null; lastLocationAt?: string | null;
 }
 export interface Delivery {
   id: string; status: Status; price: number;
@@ -24,14 +25,22 @@ export const STATUS_LABEL: Record<Status, string> = {
   CANCELLED: 'Annulée',
 };
 
+export const ROLE_LABEL: Record<Role, string> = {
+  CLIENT: 'Client',
+  DRIVER: 'Livreur',
+  COMPANY: 'Gérant entreprise',
+  SUPER_ADMIN: 'Super Admin',
+};
+
 export const fcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
 
-let token = localStorage.getItem('leta_token');
+let token = localStorage.getItem('leto_token');
+export const getToken = () => token;
 
 export function setToken(t: string | null) {
   token = t;
-  if (t) localStorage.setItem('leta_token', t);
-  else localStorage.removeItem('leta_token');
+  if (t) localStorage.setItem('leto_token', t);
+  else localStorage.removeItem('leto_token');
 }
 
 export async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { api, setToken, User } from './api';
-import AdminDashboard from './pages/AdminDashboard';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import CompanyDashboard from './pages/CompanyDashboard';
 import Login from './pages/Login';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(!!localStorage.getItem('leta_token'));
+  const [loading, setLoading] = useState(!!localStorage.getItem('leto_token'));
 
   useEffect(() => {
     if (!loading) return;
@@ -27,17 +27,17 @@ export default function App() {
   return (
     <div>
       <header className="topbar">
-        <strong>LETA</strong>
+        <strong>LETO</strong>
         <span>
-          {user.company?.name ?? 'Administration'} · {user.name}
+          {user.company?.name ?? 'Super Admin'} · {user.name}
           <button className="link" onClick={logout}>Déconnexion</button>
         </span>
       </header>
       <main className="container">
-        {user.role === 'ADMIN' && <AdminDashboard />}
+        {user.role === 'SUPER_ADMIN' && <SuperAdminDashboard />}
         {user.role === 'COMPANY' && <CompanyDashboard />}
         {(user.role === 'CLIENT' || user.role === 'DRIVER') && (
-          <p>Ce tableau de bord est réservé aux entreprises. Utilisez l'application mobile LETA.</p>
+          <p>Ce tableau de bord est réservé aux entreprises. Utilisez l'application mobile LETO.</p>
         )}
       </main>
     </div>

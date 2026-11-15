@@ -14,7 +14,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
         method: 'POST',
         body: { phone, password },
       });
-      if (res.user.role !== 'COMPANY' && res.user.role !== 'ADMIN') {
+      if (res.user.role !== 'COMPANY' && res.user.role !== 'SUPER_ADMIN') {
         throw new Error("Réservé aux entreprises de livraison. Utilisez l'application mobile.");
       }
       setToken(res.token);
@@ -26,7 +26,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
 
   return (
     <form className="card login" onSubmit={submit}>
-      <h1>LETA</h1>
+      <h1>LETO</h1>
       <p className="muted">Espace entreprises de livraison</p>
       <input placeholder="Téléphone (ex : 0701020304)" value={phone} onChange={(e) => setPhone(e.target.value)} />
       <input type="password" placeholder="Mot de passe" value={password} onChange={(e) => setPassword(e.target.value)} />

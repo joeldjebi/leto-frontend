@@ -1,9 +1,10 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api, Delivery, fcfa, User } from '../api';
 import DeliveriesTable from '../components/DeliveriesTable';
+import LiveMap from '../components/LiveMap';
 
 export default function CompanyDashboard() {
-  const [tab, setTab] = useState<'courses' | 'livreurs'>('courses');
+  const [tab, setTab] = useState<'courses' | 'carte' | 'livreurs'>('courses');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [drivers, setDrivers] = useState<User[]>([]);
 
@@ -27,11 +28,13 @@ export default function CompanyDashboard() {
 
       <nav className="tabs">
         <button className={tab === 'courses' ? 'active' : ''} onClick={() => setTab('courses')}>Courses</button>
+        <button className={tab === 'carte' ? 'active' : ''} onClick={() => setTab('carte')}>Carte en direct</button>
         <button className={tab === 'livreurs' ? 'active' : ''} onClick={() => setTab('livreurs')}>Livreurs</button>
         <button className="link" onClick={load}>↻ Actualiser</button>
       </nav>
 
       {tab === 'courses' && <DeliveriesTable deliveries={deliveries} />}
+      {tab === 'carte' && <LiveMap drivers={drivers} />}
       {tab === 'livreurs' && <Drivers drivers={drivers} reload={load} />}
     </>
   );
