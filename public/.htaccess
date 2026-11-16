@@ -2,6 +2,14 @@
 Options -Indexes
 DirectoryIndex index.html
 
+# Toujours en HTTPS (l'API n'accepte que https://leto.performx.online)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTPS} off
+  RewriteCond %{REQUEST_URI} !^/\.well-known/
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
 <IfModule mod_headers.c>
   # Fichiers versionnés par Vite : cache long
   <FilesMatch "\.(js|css|woff2?|svg|png)$">
