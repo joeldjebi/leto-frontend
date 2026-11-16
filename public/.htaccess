@@ -1,0 +1,14 @@
+# Back-office LETO (Apache / cPanel)
+Options -Indexes
+DirectoryIndex index.html
+
+<IfModule mod_headers.c>
+  # Fichiers versionnés par Vite : cache long
+  <FilesMatch "\.(js|css|woff2?|svg|png)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Page d'entrée : toujours la dernière version
+  <Files "index.html">
+    Header set Cache-Control "no-cache"
+  </Files>
+</IfModule>
