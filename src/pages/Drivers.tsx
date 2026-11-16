@@ -1,12 +1,20 @@
 import { useMemo, useState } from 'react';
+import { goTo, useHashParam } from '../App';
 import { api, fcfa, isOnline, phoneError, time, User } from '../api';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
+import DriverDetail from './DriverDetail';
 
 type Filter = 'all' | 'online' | 'blocked';
 
-/** Livreurs : tous (SA) ou ceux de l'entreprise (gérant, qui peut en ajouter) */
+/** Livreurs : liste, ou fiche détaillée (#/livreurs/<id>) */
 export default function Drivers() {
+  const detailId = useHashParam('drivers');
+  return detailId ? <DriverDetail id={detailId} /> : <DriverList />;
+}
+
+/** Livreurs : tous (SA) ou ceux de l'entreprise (gérant, qui peut en ajouter) */
+function DriverList() {
   const { drivers, deliveries, companies, isSA, reload } = useData();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -65,7 +73,7 @@ export default function Drivers() {
                 {rows.map((u) => {
                   const a = activity.get(u.id);
                   return (
-                    <tr key={u.id}>
+                    <tr key={u.id} className="clickable" onClick={() => goTo('drivers', u.id)}>
                       <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{u.phone}</span></div></div></td>
                       {isSA && <td>{u.company?.name ?? '—'}</td>}
                       <td>
@@ -75,7 +83,7 @@ export default function Drivers() {
                       <td className="num">{a?.delivered ?? 0}</td>
                       <td className="num">{fcfa(a?.volume ?? 0)}</td>
                       <td className="num">{a?.failed ?? 0}</td>
-                      <td><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
+                      <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                     </tr>
                   );
                 })}

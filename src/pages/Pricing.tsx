@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, dateTime, fcfa, PricingGrid, Speed, Vehicle } from '../api';
+import BillingSettings from '../components/BillingSettings';
 import { Card, Modal, PageHeader, Switch, useToast } from '../ui';
 
 const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
@@ -162,6 +163,8 @@ export default function Pricing() {
             </tbody>
           </table>
         </Card>
+
+        <BillingSettings />
       </div>
 
       {confirmReset && (

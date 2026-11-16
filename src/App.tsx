@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, ROLE_LABEL, setToken, User } from './api';
+import { api, BillingOverview, ROLE_LABEL, setToken, User } from './api';
 import { DataProvider, useData } from './data';
 import Clients from './pages/Clients';
 import Collections from './pages/Collections';
@@ -9,17 +9,20 @@ import Disputes from './pages/Disputes';
 import Drivers from './pages/Drivers';
 import LiveMapPage from './pages/LiveMapPage';
 import Login from './pages/Login';
+import Billing from './pages/Billing';
+import Payments from './pages/Payments';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
+  billing: 'credit', payments: 'paiements',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -77,6 +80,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     return () => window.removeEventListener('hashchange', on);
   }, []);
 
+  const billingAlert = useBillingBadge(isSA);
   const active = deliveries.filter((d) => d.status === 'PENDING' || d.status === 'ACCEPTED' || d.status === 'PICKED_UP').length;
   const nav = useMemo(() => {
     const items: { section: string; links: { r: Route; icon: string; label: string; count?: number; alert?: boolean }[] }[] = [
@@ -100,10 +104,13 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             ]
           : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }],
       },
+      isSA
+        ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
+        : { section: 'Compte', links: [{ r: 'billing', icon: 'card', label: 'Crédit et abonnement', count: billingAlert || undefined, alert: true }] },
     ];
     if (isSA) items.push({ section: 'Réglages', links: [{ r: 'pricing', icon: 'tag', label: 'Tarifs et règles' }] });
     return items;
-  }, [isSA, active, stats]);
+  }, [isSA, active, stats, billingAlert]);
 
   const allowed = nav.flatMap((s) => s.links.map((l) => l.r));
   const current = allowed.includes(route) ? route : 'overview';
@@ -162,8 +169,26 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'drivers' && <Drivers />}
           {current === 'clients' && <Clients />}
           {current === 'pricing' && <Pricing />}
+          {current === 'billing' && <Billing />}
+          {current === 'payments' && <Payments />}
         </div>
       </main>
     </div>
   );
+}
+
+/** Pastille du menu : SA = paiements à vérifier ; gérant = 1 si l'entreprise ne peut pas travailler */
+function useBillingBadge(isSA: boolean) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const load = () =>
+      (isSA
+        ? api<{ pending: number }>('/billing/summary').then((s) => s.pending)
+        : api<BillingOverview>('/billing/me').then((b) => (!b.subscribed || b.available <= 0 ? 1 : 0))
+      ).then(setN).catch(() => {});
+    load();
+    const t = window.setInterval(load, 30_000);
+    return () => window.clearInterval(t);
+  }, [isSA]);
+  return n;
 }

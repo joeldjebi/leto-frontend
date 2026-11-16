@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { go } from '../App';
+import { go, goTo } from '../App';
 import { phoneError, api, codTotal, Company, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
+import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling } from '../components/Billing';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Field, Icon, Modal, PhoneInput, Search, Segmented, Stat, StatusBadge, Switch, useToast } from '../ui';
 
-type Tab = 'deliveries' | 'drivers' | 'collections' | 'disputes';
+type Tab = 'deliveries' | 'drivers' | 'billing' | 'collections' | 'disputes';
 type Metric = 'created' | 'volume';
 type StatusFilter = 'all' | 'active' | 'done' | 'cancelled';
 const DAY = 86_400_000;
@@ -111,6 +112,8 @@ export default function CompanyDetail({ id }: { id: string }) {
         </div>
       </header>
 
+      <CompanyBillingAlert companyId={company.id} onOpen={() => setTab('billing')} />
+
       {/* ----- Chiffres clés ----- */}
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses" value={k.total} foot={`${k.delivered} terminée(s) · ${k.cancelled} annulée(s) · ${k.stops} colis`} />
@@ -154,6 +157,7 @@ export default function CompanyDetail({ id }: { id: string }) {
             options={[
               ['deliveries', `Courses (${k.total})`],
               ['drivers', `Livreurs (${drivers.length})`],
+              ['billing', 'Crédit et abonnement'],
               ['collections', `Encaissements (${k.cod.length})`],
               ['disputes', `Litiges (${k.failed.length})`],
             ]}
@@ -164,6 +168,7 @@ export default function CompanyDetail({ id }: { id: string }) {
           <DeliveriesTab deliveries={mine} q={q} setQ={setQ} status={status} setStatus={setStatus} onOpen={setOpen} />
         )}
         {tab === 'drivers' && <DriversTab drivers={drivers} deliveries={mine} />}
+        {tab === 'billing' && <BillingTab companyId={company.id} />}
         {tab === 'collections' && <CollectionsTab cod={k.cod} />}
         {tab === 'disputes' && (
           k.failed.length === 0 ? <Card><Empty icon="shield">Aucun échec de livraison</Empty></Card> : (
@@ -194,7 +199,7 @@ export default function CompanyDetail({ id }: { id: string }) {
   );
 }
 
-function DeliveriesTab({ deliveries, q, setQ, status, setStatus, onOpen }: {
+export function DeliveriesTab({ deliveries, q, setQ, status, setStatus, onOpen }: {
   deliveries: Delivery[]; q: string; setQ: (v: string) => void; status: StatusFilter; setStatus: (v: StatusFilter) => void; onOpen: (d: Delivery) => void;
 }) {
   const needle = q.trim().toLowerCase();
@@ -268,7 +273,7 @@ function DriversTab({ drivers, deliveries }: { drivers: User[]; deliveries: Deli
               {drivers.map((u) => {
                 const s = stats(u);
                 return (
-                  <tr key={u.id}>
+                  <tr key={u.id} className="clickable" onClick={() => goTo('drivers', u.id)}>
                     <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{u.phone}</span></div></div></td>
                     <td>
                       {!u.active ? <Badge color="red">Bloqué</Badge> : isOnline(u) ? <Badge color={s.busy ? 'purple' : 'green'}>{s.busy ? 'En course' : 'En ligne'}</Badge> : <Badge>Hors ligne</Badge>}
@@ -278,7 +283,7 @@ function DriversTab({ drivers, deliveries }: { drivers: User[]; deliveries: Deli
                     <td className="num">{fcfa(s.volume)}</td>
                     <td className="num">{s.failed}</td>
                     <td>{s.last ? dateTime(s.last) : <span className="muted">—</span>}</td>
-                    <td><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
+                    <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                   </tr>
                 );
               })}
@@ -290,7 +295,35 @@ function DriversTab({ drivers, deliveries }: { drivers: User[]; deliveries: Deli
   );
 }
 
-function CollectionsTab({ cod }: { cod: { d: Delivery; s: Stop }[] }) {
+/** Bandeau sur la fiche si l'entreprise ne peut pas travailler */
+function CompanyBillingAlert({ companyId, onOpen }: { companyId: string; onOpen: () => void }) {
+  const { data } = useBilling(companyId);
+  return data ? <div onClick={onOpen} style={{ cursor: 'pointer' }}><BillingAlert b={data} /></div> : null;
+}
+
+/** SA : crédit, abonnement, commission, paiements et journal de l'entreprise */
+function BillingTab({ companyId }: { companyId: string }) {
+  const { data: b, setData, error } = useBilling(companyId);
+  const [dialog, setDialog] = useState<'adjust' | 'subscription' | 'commission' | null>(null);
+  if (!b) return error ? <div className="alert error">{error}</div> : <Card><Empty icon="wallet">Chargement…</Empty></Card>;
+  return (
+    <div className="stack">
+      <div className="toolbar">
+        <button className="btn secondary" onClick={() => setDialog('adjust')}><Icon name="wallet" size={15} />Ajuster le crédit</button>
+        <button className="btn secondary" onClick={() => setDialog('subscription')}><Icon name="calendar" size={15} />Abonnement</button>
+        <button className="btn secondary" onClick={() => setDialog('commission')}><Icon name="tag" size={15} />Commission</button>
+      </div>
+      <BillingStats b={b} />
+      <Card title="Paiements envoyés"><PaymentsTable payments={b.payments} /></Card>
+      <TransactionsCard b={b} />
+      {dialog === 'adjust' && <AdjustDialog companyId={companyId} onClose={() => setDialog(null)} onDone={setData} />}
+      {dialog === 'subscription' && <SubscriptionDialog companyId={companyId} current={b.subscriptionEndsAt} onClose={() => setDialog(null)} onDone={setData} />}
+      {dialog === 'commission' && <CommissionDialog companyId={companyId} b={b} onClose={() => setDialog(null)} onDone={setData} />}
+    </div>
+  );
+}
+
+export function CollectionsTab({ cod }: { cod: { d: Delivery; s: Stop }[] }) {
   const pending = cod.filter((x) => !x.s.codRemittedAt);
   const byClient = Object.values(
     pending.reduce<Record<string, { name: string; phone: string; total: number; count: number }>>((acc, { d, s }) => {

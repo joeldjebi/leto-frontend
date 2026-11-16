@@ -31,6 +31,10 @@ const PATHS: Record<string, string> = {
   moon: 'M20 14.5A8.5 8.5 0 019.5 4 8.5 8.5 0 1020 14.5z',
   auto: 'M12 21a9 9 0 100-18 9 9 0 000 18z M12 3v18 M12 7.5h4 M12 12h5 M12 16.5h4',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z M8.5 12l2.5 2.5 4.5-5',
+  receipt: 'M6 3h12v18l-3-2-3 2-3-2-3 2V3z M9 8h6 M9 12h6 M9 16h3',
+  upload: 'M12 16V5 M7.5 9.5L12 5l4.5 4.5 M5 19h14',
+  card: 'M3 6h18v12H3z M3 10h18 M7 15h3',
+  calendar: 'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4',
 };
 
 export function Icon({ name, size = 18, className }: { name: string; size?: number; className?: string }) {

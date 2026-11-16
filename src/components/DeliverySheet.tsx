@@ -63,6 +63,13 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
         <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{fcfa(d.price)}</span>
         <span className="muted">Espèces · {VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
       </div>
+      {d.commissionAmount != null && (
+        <div className="muted" style={{ marginTop: -8 }}>
+          Commission LETO {d.commissionRule} : {fcfa(d.commissionAmount)}
+          {d.commissionChargedAt ? ' · prélevée' : d.status === 'CANCELLED' ? ' · non prélevée (annulée)' : ' · réservée, prélevée à la fin'}
+          {d.commissionRefunded > 0 && ` · ${fcfa(d.commissionRefunded)} remboursé(s) (litige)`}
+        </div>
+      )}
 
       <div>
         <div className="section-title">Intervenants</div>

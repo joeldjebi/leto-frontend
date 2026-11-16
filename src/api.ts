@@ -6,7 +6,11 @@ export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
 export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
 export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED';
 
-export interface Company { id: string; name: string; phone: string; active: boolean; createdAt: string }
+export interface Company {
+  id: string; name: string; phone: string; active: boolean; createdAt: string;
+  credit: number; subscriptionEndsAt: string | null;
+  commissionType: CommissionType | null; commissionValue: number | null;
+}
 export interface User {
   id: string; name: string; phone: string; role: Role; active: boolean;
   companyId: string | null; company?: Company | null; createdAt: string;
@@ -37,7 +41,47 @@ export interface Delivery {
   client: User; driver: User | null; company: Company | null;
   createdAt: string; acceptedAt: string | null; pickedUpAt: string | null; deliveredAt: string | null;
   cancelledAt: string | null; cancelReason: string | null; cancelledBy: string | null;
+  commissionAmount: number | null; commissionRule: string | null; commissionChargedAt: string | null; commissionRefunded: number;
 }
+
+// ---------- Facturation ----------
+export type CommissionType = 'PERCENT' | 'FIXED';
+export type PaymentKind = 'SUBSCRIPTION' | 'TOPUP';
+export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type CreditType = 'TOPUP' | 'COMMISSION' | 'REFUND' | 'ADJUSTMENT';
+export interface MobileMoneyAccount { operator: string; number: string; name: string }
+export interface BillingConfig {
+  subscriptionFee: number; commissionType: CommissionType; commissionValue: number;
+  accounts: MobileMoneyAccount[]; operators: string[];
+}
+export interface Payment {
+  id: string; companyId: string; company?: Company; kind: PaymentKind; amount: number;
+  operator: string; senderPhone: string; reference: string | null; proofUrl: string;
+  status: PaymentStatus; submittedBy: string | null; reviewNote: string | null;
+  reviewedBy: string | null; reviewedAt: string | null; createdAt: string;
+}
+export interface CreditTransaction {
+  id: string; type: CreditType; amount: number; balanceAfter: number;
+  deliveryId: string | null; paymentId: string | null; note: string | null; createdBy: string | null; createdAt: string;
+}
+export interface BillingOverview {
+  credit: number; reserved: number; available: number;
+  subscriptionEndsAt: string | null; subscribed: boolean;
+  rule: { type: CommissionType; value: number; custom: boolean; label: string };
+  month: { commissions: number; topups: number };
+  config: BillingConfig; transactions: CreditTransaction[]; payments: Payment[];
+}
+export const PAYMENT_KIND_LABEL: Record<PaymentKind, string> = { SUBSCRIPTION: 'Abonnement annuel', TOPUP: 'Recharge de crédit' };
+export const PAYMENT_STATUS: Record<PaymentStatus, [string, string]> = {
+  PENDING: ['À vérifier', 'yellow'], APPROVED: ['Validé', 'green'], REJECTED: ['Refusé', 'red'],
+};
+export const CREDIT_LABEL: Record<CreditType, string> = {
+  TOPUP: 'Recharge', COMMISSION: 'Commission', REFUND: 'Remboursement', ADJUSTMENT: 'Ajustement LETO',
+};
+export const ruleLabel = (type: CommissionType, value: number) => (type === 'PERCENT' ? `${value} %` : fcfa(value));
+export const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
+/** Jours restants avant la fin de l'abonnement (négatif = expiré) */
+export const daysLeft = (iso: string | null) => (iso ? Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000) : null);
 
 export interface Stats {
   days: number;
@@ -111,6 +155,16 @@ export async function api<T>(path: string, options: { method?: string; body?: un
     throw new Error(msg ?? 'Erreur réseau');
   }
   return data as T;
+}
+
+/** Envoi d'une image (preuve de paiement…) : renvoie son chemin /uploads/… */
+export async function upload(file: File): Promise<string> {
+  const body = new FormData();
+  body.append('file', file);
+  const res = await fetch(API_URL + '/uploads', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new Error(data?.message ?? 'Envoi de l’image impossible');
+  return data.url as string;
 }
 
 /** Export CSV (séparateur « ; » pour Excel en français) */
