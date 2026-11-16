@@ -2,6 +2,9 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'SUPER_ADMIN';
 export type Status = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
+export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
+export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
+export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED';
 
 export interface Company { id: string; name: string; phone: string; active: boolean; createdAt: string }
 export interface User {
@@ -9,59 +12,80 @@ export interface User {
   companyId: string | null; company?: Company | null; createdAt: string;
   lastLat?: number | null; lastLng?: number | null; lastLocationAt?: string | null;
 }
-export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
-export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
-
-export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED';
 
 /** Un arrêt d'une course (tournée = plusieurs arrêts) */
 export interface Stop {
   id: string; position: number; status: StopStatus;
   address: string; commune: string; details: string | null; lat: number; lng: number;
-  recipientName: string; recipientPhone: string;
+  recipientName: string; recipientPhone: string; packageDescription: string | null; photoUrl: string | null;
   codAmount: number; codRemittedAt: string | null;
   arrivedAt: string | null; deliveredAt: string | null;
   failedAt: string | null; failureReason: 'ABSENT' | 'REFUSED' | null; failurePhotoUrl: string | null;
   failureNote: string | null; failureLat: number | null; failureLng: number | null;
   disputedAt: string | null; disputeNote: string | null;
+  disputeDecision: 'UPHELD' | 'REJECTED' | null; disputeResolutionNote: string | null;
+  disputeResolvedBy: string | null; disputeResolvedAt: string | null;
 }
 
 export interface Delivery {
   id: string; status: Status; price: number;
   vehicleType: Vehicle; speed: Speed;
-  distanceKm: number | null; deliveredAt: string | null;
-  pickupCommune: string; pickupAddress: string; pickupPhone: string;
+  distanceKm: number | null; durationMin: number | null;
+  pickupCommune: string; pickupAddress: string; pickupDetails: string | null; pickupPhone: string;
+  pickupContactName: string | null; pickupLat: number; pickupLng: number; courierComment: string | null;
   stops: Stop[];
-  client: User; driver: User | null; company: Company | null; createdAt: string;
+  client: User; driver: User | null; company: Company | null;
+  createdAt: string; acceptedAt: string | null; pickedUpAt: string | null; deliveredAt: string | null;
+  cancelledAt: string | null; cancelReason: string | null; cancelledBy: string | null;
 }
 
-/** Total à encaisser sur une course (tous arrêts) */
-export const codTotal = (d: Delivery) => d.stops.reduce((s, x) => s + x.codAmount, 0);
+export interface Stats {
+  days: number;
+  series: { day: string; created: number; delivered: number; volume: number }[];
+  totals: {
+    pending: number; inProgress: number; createdToday: number; deliveredToday: number;
+    volumeToday: number; volumeWeek: number; volumeMonth: number; cancelledWeek: number;
+    stopsDelivered: number; stopsFailed: number; disputesOpen: number; codToRemit: number;
+    driversOnline: number; drivers: number; clients: number; companies: number; failureRateWeek: number;
+  };
+  topCompanies: { id: string; name: string; delivered: number; volume: number }[];
+  topClients: { id: string; name: string; deliveries: number; volume: number }[];
+}
 
-export const FAILURE_LABEL = { ABSENT: 'Destinataire absent', REFUSED: 'Refusé par le destinataire' } as const;
+export interface VehicleConfig { label: string; description: string; base: number; perKm: number; min: number; enabled: boolean }
+export interface SpeedConfig { label: string; description: string; factor: number }
+export interface PricingGrid {
+  vehicles: Record<Vehicle, VehicleConfig>;
+  speeds: Record<Speed, SpeedConfig>;
+  codFee: number; extraStopFee: number; maxStops: number; absenceWaitMin: number;
+  updatedAt?: string | null; updatedBy?: string | null;
+}
 
+// ---------- Libellés ----------
 export const STATUS_LABEL: Record<Status, string> = {
-  PENDING: 'En attente',
-  ACCEPTED: 'Acceptée',
-  PICKED_UP: 'En cours',
-  DELIVERED: 'Livrée',
-  CANCELLED: 'Annulée',
+  PENDING: 'En attente', ACCEPTED: 'Acceptée', PICKED_UP: 'En cours', DELIVERED: 'Terminée', CANCELLED: 'Annulée',
 };
-
+export const STATUS_COLOR: Record<Status, string> = {
+  PENDING: 'yellow', ACCEPTED: 'blue', PICKED_UP: 'purple', DELIVERED: 'green', CANCELLED: 'gray',
+};
 export const VEHICLE_LABEL: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
 export const SPEED_LABEL: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: 'Dans 2 h' };
-export const ROLE_LABEL: Record<Role, string> = {
-  CLIENT: 'Client',
-  DRIVER: 'Livreur',
-  COMPANY: 'Gérant entreprise',
-  SUPER_ADMIN: 'Super Admin',
-};
+export const FAILURE_LABEL = { ABSENT: 'Destinataire absent', REFUSED: 'Colis refusé' } as const;
+export const ROLE_LABEL: Record<Role, string> = { CLIENT: 'Client', DRIVER: 'Livreur', COMPANY: 'Gérant', SUPER_ADMIN: 'Super Admin' };
 
-export const fcfa = (n: number) => `${n.toLocaleString('fr-FR')} FCFA`;
+// ---------- Formatage ----------
+export const fcfa = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
+export const codTotal = (d: Delivery) => d.stops.reduce((s, x) => s + x.codAmount, 0);
+export const dateTime = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+export const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—');
+export const isOnline = (u: User) => !!u.lastLocationAt && Date.now() - new Date(u.lastLocationAt).getTime() < 120_000;
+export const photoUrl = (path: string) => API_URL + path;
+export const initial = (name?: string | null) => (name?.trim()?.[0] ?? '?').toUpperCase();
 
+// ---------- Session ----------
 let token = localStorage.getItem('leto_token');
 export const getToken = () => token;
-
 export function setToken(t: string | null) {
   token = t;
   if (t) localStorage.setItem('leto_token', t);
@@ -71,10 +95,7 @@ export function setToken(t: string | null) {
 export async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
   const res = await fetch(API_URL + path, {
     method: options.method ?? 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: options.body ? JSON.stringify(options.body) : undefined,
   });
   const data = await res.json().catch(() => null);
@@ -87,4 +108,17 @@ export async function api<T>(path: string, options: { method?: string; body?: un
     throw new Error(msg ?? 'Erreur réseau');
   }
   return data as T;
+}
+
+/** Export CSV (séparateur « ; » pour Excel en français) */
+export function downloadCsv(filename: string, rows: (string | number | null | undefined)[][]) {
+  const esc = (v: string | number | null | undefined) => {
+    const s = v == null ? '' : String(v);
+    return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const csv = '﻿' + rows.map((r) => r.map(esc).join(';')).join('\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: filename });
+  a.click();
+  URL.revokeObjectURL(url);
 }
