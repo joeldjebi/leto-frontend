@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Delivery, fcfa, Status, STATUS_LABEL } from '../api';
+import { Delivery, fcfa, PAYMENT_LABEL, SPEED_LABEL, Status, STATUS_LABEL, VEHICLE_LABEL } from '../api';
 
 export default function DeliveriesTable({ deliveries, showCompany = false }: { deliveries: Delivery[]; showCompany?: boolean }) {
   const [filter, setFilter] = useState<Status | ''>('');
@@ -17,25 +17,27 @@ export default function DeliveriesTable({ deliveries, showCompany = false }: { d
         <table>
           <thead>
             <tr>
-              <th>Date</th><th>Trajet</th><th>Client</th><th>Destinataire</th>
-              <th>Livreur</th>{showCompany && <th>Entreprise</th>}<th>Prix</th><th>Statut</th>
+              <th>Date</th><th>Trajet</th><th>Offre</th><th>Client</th><th>Destinataire</th>
+              <th>Livreur</th>{showCompany && <th>Entreprise</th>}<th>Prix</th><th>À encaisser</th><th>Statut</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((d) => (
               <tr key={d.id}>
                 <td>{new Date(d.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</td>
-                <td>{d.pickupCommune} → {d.dropoffCommune}</td>
+                <td>{d.pickupCommune} → {d.dropoffCommune}{d.distanceKm != null && <><br /><small>{d.distanceKm} km</small></>}</td>
+                <td>{VEHICLE_LABEL[d.vehicleType]}<br /><small>{SPEED_LABEL[d.speed]}</small></td>
                 <td>{d.client.name}<br /><small>{d.client.phone}</small></td>
                 <td>{d.recipientName}<br /><small>{d.recipientPhone}</small></td>
                 <td>{d.driver?.name ?? '—'}</td>
                 {showCompany && <td>{d.company?.name ?? '—'}</td>}
-                <td>{fcfa(d.price)}</td>
+                <td>{fcfa(d.price)}<br /><small>{PAYMENT_LABEL[d.paymentMethod]}</small></td>
+                <td>{d.codAmount > 0 ? fcfa(d.codAmount) : '—'}</td>
                 <td><span className={`badge ${d.status}`}>{STATUS_LABEL[d.status]}</span></td>
               </tr>
             ))}
             {rows.length === 0 && (
-              <tr><td colSpan={8} className="muted center">Aucune course</td></tr>
+              <tr><td colSpan={11} className="muted center">Aucune course</td></tr>
             )}
           </tbody>
         </table>

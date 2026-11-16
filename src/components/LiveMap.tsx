@@ -34,6 +34,12 @@ export default function LiveMap({ drivers }: { drivers: User[] }) {
     socket.on('driver:location', (e: { driverId: string; lat: number; lng: number; at: string }) => {
       setPositions((p) => ({ ...p, [e.driverId]: { lat: e.lat, lng: e.lng, at: e.at } }));
     });
+    socket.on('driver:offline', (e: { driverId: string }) => {
+      setPositions((p) => {
+        const { [e.driverId]: _removed, ...rest } = p;
+        return rest;
+      });
+    });
     const timer = setInterval(() => tick((n) => n + 1), 15000); // rafraîchit l'état "en direct"
     return () => {
       socket.disconnect();

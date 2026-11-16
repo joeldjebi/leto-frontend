@@ -4,7 +4,7 @@ import DeliveriesTable from '../components/DeliveriesTable';
 import LiveMap from '../components/LiveMap';
 
 export default function CompanyDashboard() {
-  const [tab, setTab] = useState<'courses' | 'carte' | 'livreurs'>('courses');
+  const [tab, setTab] = useState<'courses' | 'carte' | 'encaissements' | 'livreurs'>('courses');
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [drivers, setDrivers] = useState<User[]>([]);
 
@@ -24,17 +24,23 @@ export default function CompanyDashboard() {
         <Stat label="En cours" value={inProgress.length} />
         <Stat label="Chiffre d'affaires" value={fcfa(delivered.reduce((s, d) => s + d.price, 0))} />
         <Stat label="Livreurs actifs" value={drivers.filter((d) => d.active).length} />
+        <Stat
+          label="À reverser aux boutiques"
+          value={fcfa(delivered.filter((d) => d.codAmount > 0 && !d.codRemittedAt).reduce((s, d) => s + d.codAmount, 0))}
+        />
       </div>
 
       <nav className="tabs">
         <button className={tab === 'courses' ? 'active' : ''} onClick={() => setTab('courses')}>Courses</button>
         <button className={tab === 'carte' ? 'active' : ''} onClick={() => setTab('carte')}>Carte en direct</button>
+        <button className={tab === 'encaissements' ? 'active' : ''} onClick={() => setTab('encaissements')}>Encaissements</button>
         <button className={tab === 'livreurs' ? 'active' : ''} onClick={() => setTab('livreurs')}>Livreurs</button>
         <button className="link" onClick={load}>↻ Actualiser</button>
       </nav>
 
       {tab === 'courses' && <DeliveriesTable deliveries={deliveries} />}
       {tab === 'carte' && <LiveMap drivers={drivers} />}
+      {tab === 'encaissements' && <Collections deliveries={deliveries} reload={load} />}
       {tab === 'livreurs' && <Drivers drivers={drivers} reload={load} />}
     </>
   );
@@ -83,6 +89,75 @@ function Drivers({ drivers, reload }: { drivers: User[]; reload: () => void }) {
               </tr>
             ))}
             {drivers.length === 0 && <tr><td colSpan={4} className="muted center">Aucun livreur</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+/**
+ * Paiement à la livraison : les livreurs encaissent le prix de la marchandise pour l'entreprise,
+ * qui le reverse ensuite à chaque client (boutique).
+ */
+function Collections({ deliveries, reload }: { deliveries: Delivery[]; reload: () => void }) {
+  const [error, setError] = useState('');
+  const cod = deliveries.filter((d) => d.status === 'DELIVERED' && d.codAmount > 0);
+  const pending = cod.filter((d) => !d.codRemittedAt);
+
+  // Montant à reverser par client
+  const byClient = Object.values(
+    pending.reduce<Record<string, { name: string; phone: string; total: number; count: number }>>((acc, d) => {
+      const c = (acc[d.client.id] ??= { name: d.client.name, phone: d.client.phone, total: 0, count: 0 });
+      c.total += d.codAmount;
+      c.count += 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b.total - a.total);
+
+  const remit = async (d: Delivery) => {
+    if (!confirm(`Confirmer le reversement de ${fcfa(d.codAmount)} à ${d.client.name} ?`)) return;
+    setError('');
+    try {
+      await api(`/deliveries/${d.id}/cod-remitted`, { method: 'POST' });
+      reload();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
+  return (
+    <>
+      <h3>À reverser par boutique</h3>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Client</th><th>Téléphone</th><th>Courses</th><th>Total à reverser</th></tr></thead>
+          <tbody>
+            {byClient.map((c) => (
+              <tr key={c.phone}><td>{c.name}</td><td>{c.phone}</td><td>{c.count}</td><td><strong>{fcfa(c.total)}</strong></td></tr>
+            ))}
+            {byClient.length === 0 && <tr><td colSpan={4} className="muted center">Rien à reverser</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {error && <p className="error">{error}</p>}
+      <h3>Détail des encaissements</h3>
+      <div className="table-wrap">
+        <table>
+          <thead><tr><th>Livrée le</th><th>Client</th><th>Destinataire</th><th>Livreur</th><th>Montant</th><th>Statut</th><th></th></tr></thead>
+          <tbody>
+            {cod.map((d) => (
+              <tr key={d.id}>
+                <td>{d.deliveredAt ? new Date(d.deliveredAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) : '—'}</td>
+                <td>{d.client.name}</td>
+                <td>{d.recipientName}</td>
+                <td>{d.driver?.name ?? '—'}</td>
+                <td>{fcfa(d.codAmount)}</td>
+                <td>{d.codRemittedAt ? `Reversé le ${new Date(d.codRemittedAt).toLocaleDateString('fr-FR')}` : 'À reverser'}</td>
+                <td>{!d.codRemittedAt && <button className="link" onClick={() => remit(d)}>Marquer reversé</button>}</td>
+              </tr>
+            ))}
+            {cod.length === 0 && <tr><td colSpan={7} className="muted center">Aucun paiement à la livraison</td></tr>}
           </tbody>
         </table>
       </div>

@@ -45,3 +45,4 @@ small, .muted { color: var(--muted); }
 .badge.CANCELLED { background: #f3f4f6; color: #6b7280; }
 .map-wrap { height: 520px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 .role { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; }
+h3 { margin: 24px 0 10px; }
