@@ -141,6 +141,37 @@ export default function Pricing() {
           </Card>
         </div>
 
+        <Card title="Annulations et retours" pad>
+          <div className="rows" style={{ margin: '0 -20px' }}>
+            <div>
+              <div className="grow"><div className="title">Frais de déplacement</div><small className="muted">Dus par l’expéditeur s’il annule alors que le livreur est déjà en route (récupérés par l’entreprise)</small></div>
+              <Switch checked={grid.cancelFeeEnabled} onChange={(on) => setGrid({ ...grid, cancelFeeEnabled: on })} label={grid.cancelFeeEnabled ? 'Désactiver' : 'Activer'} />
+            </div>
+            <div style={{ opacity: grid.cancelFeeEnabled ? 1 : 0.5 }}>
+              <div className="grow"><div className="title">Montant des frais</div><small className="muted">Pourcentage du prix de la course ou montant fixe</small></div>
+              <select value={grid.cancelFeeType} onChange={(e) => setGrid({ ...grid, cancelFeeType: e.target.value as 'PERCENT' | 'FIXED' })} aria-label="Type de frais" disabled={!grid.cancelFeeEnabled}>
+                <option value="FIXED">Montant fixe</option>
+                <option value="PERCENT">Pourcentage</option>
+              </select>
+              <input type="number" min={0} step={grid.cancelFeeType === 'PERCENT' ? 5 : 50} value={grid.cancelFeeValue} disabled={!grid.cancelFeeEnabled}
+                onChange={(e) => setGrid({ ...grid, cancelFeeValue: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Valeur des frais" />
+              <span className="muted">{grid.cancelFeeType === 'PERCENT' ? '%' : 'F'}</span>
+            </div>
+            <div style={{ opacity: grid.cancelFeeEnabled ? 1 : 0.5 }}>
+              <div className="grow"><div className="title">Annulation gratuite</div><small className="muted">Pendant ces minutes après l’acceptation par le livreur</small></div>
+              <input type="number" min={0} max={60} value={grid.cancelFreeMinutes} disabled={!grid.cancelFeeEnabled} onChange={(e) => setGrid({ ...grid, cancelFreeMinutes: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">min</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Annulation signalée par le livreur</div><small className="muted">Le destinataire annule : l’expéditeur confirme ; sans réponse, acceptée après ce délai</small></div>
+              <input type="number" min={1} max={120} value={grid.cancelRequestAutoMin} onChange={(e) => setGrid({ ...grid, cancelRequestAutoMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">min</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés (absence, refus, annulation après récupération) sont rapportés à l’expéditeur, qui confirme avec un code</small></div>
+              <Switch checked={grid.returnCodeEnabled} onChange={(on) => setGrid({ ...grid, returnCodeEnabled: on })} label={grid.returnCodeEnabled ? 'Désactiver' : 'Activer'} />
+            </div>
+          </div>
+        </Card>
+
         <Card title="Simulation" pad>
           <div className="toolbar">
             <label className="field"><span>Distance (km)</span><input type="number" min={0} step={0.5} value={sim.km} onChange={(e) => setSim({ ...sim, km: num(e.target.value) })} style={{ width: 110 }} /></label>

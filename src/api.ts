@@ -4,7 +4,7 @@ export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'SUPER_ADMIN';
 export type Status = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
 export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
 export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
-export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED';
+export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
 
 export interface Company {
   id: string; name: string; phone: string; active: boolean; createdAt: string;
@@ -30,6 +30,8 @@ export interface Stop {
   disputedAt: string | null; disputeNote: string | null;
   disputeDecision: 'UPHELD' | 'REJECTED' | null; disputeResolutionNote: string | null;
   disputeResolvedBy: string | null; disputeResolvedAt: string | null;
+  cancelledAt: string | null; cancelledBy: string | null; cancelReason: string | null;
+  cancelRequestedAt: string | null; cancelRequestNote: string | null;
 }
 
 export interface Delivery {
@@ -43,6 +45,8 @@ export interface Delivery {
   createdAt: string; acceptedAt: string | null; pickedUpAt: string | null; deliveredAt: string | null;
   cancelledAt: string | null; cancelReason: string | null; cancelledBy: string | null;
   commissionAmount: number | null; commissionRule: string | null; commissionChargedAt: string | null; commissionRefunded: number;
+  cancellationFee: number | null; cancellationFeeSettledAt: string | null;
+  returnRequired: boolean; returnedAt: string | null;
 }
 
 // ---------- Facturation ----------
@@ -102,7 +106,9 @@ export interface SpeedConfig { label: string; description: string; factor: numbe
 export interface PricingGrid {
   vehicles: Record<Vehicle, VehicleConfig>;
   speeds: Record<Speed, SpeedConfig>;
-  codEnabled: boolean; codFee: number; extraStopFee: number; maxStops: number; absenceWaitMin: number;
+  codEnabled: boolean; codFee: number; extraStopFee: number;
+  cancelFeeEnabled: boolean; cancelFeeType: 'PERCENT' | 'FIXED'; cancelFeeValue: number; cancelFreeMinutes: number;
+  returnCodeEnabled: boolean; cancelRequestAutoMin: number; maxStops: number; absenceWaitMin: number;
   updatedAt?: string | null; updatedBy?: string | null;
 }
 

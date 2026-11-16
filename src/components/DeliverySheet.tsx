@@ -8,7 +8,7 @@ import {
 import { useData } from '../data';
 import { Avatar, Badge, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
-const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : '#f77f00');
+const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#f77f00');
 
 /** Fiche détaillée d'une course : carte, chronologie, arrêts, preuves, actions */
 export default function DeliverySheet({ delivery, onClose }: { delivery: Delivery; onClose: () => void }) {
@@ -27,6 +27,12 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
     reload();
   };
 
+  const settleFee = async () => {
+    await api(`/deliveries/${d.id}/cancellation-fee/settled`, { method: 'POST' });
+    toast(`Frais de déplacement de ${fcfa(d.cancellationFee ?? 0)} marqués réglés`);
+    reload();
+  };
+
   const events = [
     { at: d.createdAt, label: `Commandée par ${d.client.name}`, color: '#8e8e93' },
     { at: d.acceptedAt, label: `Acceptée par ${d.driver?.name ?? 'un livreur'}`, color: '#0071e3' },
@@ -36,6 +42,17 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       label: s.deliveredAt ? `Livré à ${s.recipientName}` : `${FAILURE_LABEL[s.failureReason!]} · ${s.recipientName}`,
       color: s.deliveredAt ? '#34c759' : '#ff3b30',
     })),
+    ...d.stops.filter((s) => s.cancelledAt).map((s) => ({
+      at: s.cancelledAt,
+      label: `Arrêt annulé · ${s.recipientName} (${s.cancelledBy ?? 'Client'})${s.cancelReason ? ` · « ${s.cancelReason} »` : ''}`,
+      color: '#8e8e93',
+    })),
+    ...d.stops.filter((s) => s.cancelRequestedAt && s.status === 'PENDING').map((s) => ({
+      at: s.cancelRequestedAt,
+      label: `Le livreur signale que ${s.recipientName} annule — en attente de l’expéditeur`,
+      color: '#ff9f0a',
+    })),
+    { at: d.returnedAt, label: 'Colis non livrés rendus à l’expéditeur (code de retour)', color: '#34c759' },
     { at: d.cancelledAt, label: `Annulée${d.cancelledBy ? ` par ${d.cancelledBy}` : ''}${d.cancelReason ? ` · « ${d.cancelReason} »` : ''}`, color: '#8e8e93' },
   ].filter((e) => e.at).sort((a, b) => a.at!.localeCompare(b.at!));
 
@@ -69,6 +86,22 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
           Commission LETO {d.commissionRule} : {fcfa(d.commissionAmount)}
           {d.commissionChargedAt ? ' · prélevée' : d.status === 'CANCELLED' ? ' · non prélevée (annulée)' : ' · réservée, prélevée à la fin'}
           {d.commissionRefunded > 0 && ` · ${fcfa(d.commissionRefunded)} remboursé(s) (litige)`}
+        </div>
+      )}
+      {d.cancellationFee != null && d.cancellationFee > 0 && (
+        <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ flex: 1 }}>
+            <strong>Frais de déplacement : {fcfa(d.cancellationFee)}</strong> — course annulée alors que le livreur était en route, à récupérer auprès de l’expéditeur.
+          </span>
+          {d.cancellationFeeSettledAt ? <Badge color="green">Réglés le {new Date(d.cancellationFeeSettledAt).toLocaleDateString('fr-FR')}</Badge>
+            : !isSA ? <button className="btn" onClick={settleFee}>Marquer réglés</button> : <Badge color="orange">À récupérer</Badge>}
+        </div>
+      )}
+      {d.returnRequired && (
+        <div className={`alert ${d.returnedAt ? 'info' : 'error'}`}>
+          {d.returnedAt
+            ? <>Colis non livrés rendus à l’expéditeur le {dateTime(d.returnedAt)} (code de retour vérifié).</>
+            : <><strong>Retour en cours :</strong> le livreur doit rapporter {d.stops.filter((s) => s.status !== 'DELIVERED').length} colis à l’expéditeur et saisir son code de retour.</>}
         </div>
       )}
 
@@ -113,6 +146,8 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
                 </div>
                 {s.status === 'DELIVERED' && <Badge color="green">Livré {time(s.deliveredAt)}</Badge>}
                 {s.status === 'FAILED' && <Badge color="red">{FAILURE_LABEL[s.failureReason!]}</Badge>}
+                {s.status === 'CANCELLED' && <Badge>Annulé · {s.cancelledBy ?? 'Client'}</Badge>}
+                {s.status === 'PENDING' && s.cancelRequestedAt && <Badge color="yellow">Annulation demandée</Badge>}
                 {s.status === 'PENDING' && (d.status === 'CANCELLED' ? <Badge>Annulé</Badge> : <Badge color={s.arrivedAt ? 'blue' : 'gray'}>{s.arrivedAt ? 'Livreur sur place' : 'À livrer'}</Badge>)}
               </div>
               {s.codAmount > 0 && (

@@ -10,7 +10,7 @@ type Tab = 'deliveries' | 'stops' | 'collections' | 'disputes';
 type Metric = 'created' | 'volume';
 type StatusFilter = 'all' | 'active' | 'done' | 'cancelled';
 const DAY = 86_400_000;
-const STOP_LABEL = { PENDING: ['À livrer', 'gray'], DELIVERED: ['Livré', 'green'], FAILED: ['Échec', 'red'] } as const;
+const STOP_LABEL = { PENDING: ['À livrer', 'gray'], DELIVERED: ['Livré', 'green'], FAILED: ['Échec', 'red'], CANCELLED: ['Annulé', 'gray'] } as const;
 
 /** Fiche complète d'un livreur (SA : tous ; gérant : les siens) */
 export default function DriverDetail({ id }: { id: string }) {
