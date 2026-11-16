@@ -1,6 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useMemo, useState } from 'react';
-import { CircleMarker, MapContainer, TileLayer, Tooltip } from 'react-leaflet';
+import { CircleMarker, MapContainer, Tooltip } from 'react-leaflet';
+import MapTiles from '../components/MapTiles';
 import { io } from 'socket.io-client';
 import { API_URL, getToken, time } from '../api';
 import { useData } from '../data';
@@ -46,7 +47,7 @@ export default function LiveMapPage() {
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 16 }} className="map-layout">
         <div className="card map-wrap">
           <MapContainer center={ABIDJAN} zoom={12} style={{ height: '100%' }}>
-            <TileLayer attribution="&copy; OpenStreetMap" url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <MapTiles />
             {drivers.filter((d) => positions[d.id]).map((d) => {
               const p = positions[d.id];
               const on = live(d.id);

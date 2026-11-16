@@ -1,6 +1,7 @@
 import 'leaflet/dist/leaflet.css';
 import { useState } from 'react';
-import { CircleMarker, MapContainer, Polyline, TileLayer, Tooltip } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
+import MapTiles from './MapTiles';
 import {
   api, codTotal, dateTime, Delivery, fcfa, FAILURE_LABEL, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
 } from '../api';
@@ -46,7 +47,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
     >
       <div className="map-box">
         <MapContainer bounds={points.length > 1 ? points : undefined} center={points[0]} zoom={13} boundsOptions={{ padding: [30, 30] }} style={{ height: '100%' }} scrollWheelZoom={false}>
-          <TileLayer attribution="&copy; OpenStreetMap" url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <MapTiles />
           <Polyline positions={points} pathOptions={{ color: '#0071e3', weight: 3, opacity: 0.6, dashArray: '6 6' }} />
           <CircleMarker center={points[0]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#34c759', fillOpacity: 1 }}>
             <Tooltip direction="top" permanent>A</Tooltip>
