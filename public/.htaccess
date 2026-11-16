@@ -11,6 +11,12 @@ DirectoryIndex index.html
 </IfModule>
 
 <IfModule mod_headers.c>
+  # Politique de sécurité propre au back-office : remplace celle héritée d'un .htaccess parent
+  # (qui bloquait les appels vers l'API). Autorise l'API + temps réel, les cartes OpenStreetMap et les photos Wasabi.
+  Header always unset Content-Security-Policy
+  Header unset Content-Security-Policy
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.leto.performx.online https://*.wasabisys.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org; connect-src 'self' https://api.leto.performx.online wss://api.leto.performx.online; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+
   # Fichiers versionnés par Vite : cache long
   <FilesMatch "\.(js|css|woff2?|svg|png)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
