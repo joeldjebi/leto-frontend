@@ -2,11 +2,12 @@ import 'leaflet/dist/leaflet.css';
 import { useState } from 'react';
 import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
 import MapTiles from './MapTiles';
+import { trackingUrl } from './NewDelivery';
 import {
-  api, codTotal, dateTime, Delivery, fcfa, FAILURE_LABEL, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
+  api, codTotal, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
 } from '../api';
 import { useData } from '../data';
-import { Avatar, Badge, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
+import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
 const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#f77f00');
 
@@ -26,6 +27,17 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
     toast(`${fcfa(s.codAmount)} marqué comme reversé`);
     reload();
   };
+
+  const { drivers, me } = useData();
+  const targeted = !isSA && d.status === 'PENDING' && d.targetCompanyId === me.companyId;
+  const assignedTo = drivers.find((x) => x.id === d.assignedDriverId);
+  const assign = async (driverId: string) => {
+    await api(`/deliveries/${d.id}/assign`, { method: 'POST', body: { driverId: driverId || null } });
+    toast(driverId ? `Course envoyée à ${drivers.find((x) => x.id === driverId)?.name}` : 'Affectation retirée — visible par tous vos livreurs');
+    reload();
+  };
+  const link = trackingUrl(d);
+  const copyLink = () => link && navigator.clipboard?.writeText(link).then(() => toast('Lien de suivi copié')).catch(() => {});
 
   const settleFee = async () => {
     await api(`/deliveries/${d.id}/cancellation-fee/settled`, { method: 'POST' });
@@ -86,6 +98,28 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
           Commission LETO {d.commissionRule} : {fcfa(d.commissionAmount)}
           {d.commissionChargedAt ? ' · prélevée' : d.status === 'CANCELLED' ? ' · non prélevée (annulée)' : ' · réservée, prélevée à la fin'}
           {d.commissionRefunded > 0 && ` · ${fcfa(d.commissionRefunded)} remboursé(s) (litige)`}
+        </div>
+      )}
+      {(d.source === 'COMPANY' || d.targetCompanyId) && d.status === 'PENDING' && (
+        <div className="alert info">
+          {d.source === 'COMPANY' ? 'Course créée par l’entreprise.' : `Course adressée à ${isSA ? 'une entreprise précise' : 'votre entreprise'} par le client.`}
+          {assignedTo ? ` Affectée à ${assignedTo.name}, en attente de son acceptation.` : ' Visible par tous les livreurs de l’entreprise.'}
+          {d.assignmentNote && <> Dernier refus : « {d.assignmentNote} ».</>}
+        </div>
+      )}
+      {targeted && (
+        <Field label="Affecter à un livreur">
+          <select value={d.assignedDriverId ?? ''} onChange={(e) => assign(e.target.value)}>
+            <option value="">Tous mes livreurs (le premier qui accepte)</option>
+            {drivers.filter((x) => x.active).map((x) => <option key={x.id} value={x.id}>{x.name}{isOnline(x) ? ' · en ligne' : ' · hors ligne'}</option>)}
+          </select>
+        </Field>
+      )}
+      {link && d.status !== 'CANCELLED' && (
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span className="muted" style={{ flex: 1 }}>Lien de suivi à partager au client et aux destinataires</span>
+          <a className="btn secondary" href={link} target="_blank" rel="noreferrer">Ouvrir</a>
+          <button className="btn" onClick={copyLink}>Copier le lien</button>
         </div>
       )}
       {d.cancellationFee != null && d.cancellationFee > 0 && (

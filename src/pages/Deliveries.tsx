@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { codTotal, dateTime, Delivery, downloadCsv, fcfa, SPEED_LABEL, STATUS_LABEL, VEHICLE_LABEL } from '../api';
 import DeliverySheet from '../components/DeliverySheet';
+import NewDelivery from '../components/NewDelivery';
 import { useData } from '../data';
 import { Card, Empty, Icon, PageHeader, Search, Segmented, StatusBadge } from '../ui';
 
@@ -16,6 +17,7 @@ export default function Deliveries() {
   const [period, setPeriod] = useState<Period>('7d');
   const [company, setCompany] = useState('');
   const [open, setOpen] = useState<Delivery | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const rows = useMemo(() => {
     const since = period === 'today' ? new Date().setHours(0, 0, 0, 0) : period === '7d' ? Date.now() - 7 * DAY : period === '30d' ? Date.now() - 30 * DAY : 0;
@@ -51,7 +53,10 @@ export default function Deliveries() {
       <PageHeader
         title="Courses"
         subtitle={`${rows.length} course(s) · ${fcfa(total)} de courses terminées`}
-        actions={<button className="btn secondary" onClick={exportCsv} disabled={!rows.length}><Icon name="download" size={15} />Exporter</button>}
+        actions={<>
+          <button className="btn secondary" onClick={exportCsv} disabled={!rows.length}><Icon name="download" size={15} />Exporter</button>
+          {!isSA && <button className="btn" onClick={() => setCreating(true)}><Icon name="plus" size={15} />Nouvelle course</button>}
+        </>}
       />
       <div className="toolbar">
         <Search value={q} onChange={setQ} placeholder="Client, destinataire, téléphone, adresse…" />
@@ -110,6 +115,7 @@ export default function Deliveries() {
         )}
       </Card>
       {open && <DeliverySheet delivery={open} onClose={() => setOpen(null)} />}
+      {creating && <NewDelivery onClose={() => setCreating(false)} />}
     </>
   );
 }

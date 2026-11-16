@@ -24,6 +24,8 @@ export interface Stop {
   id: string; position: number; status: StopStatus;
   address: string; commune: string; details: string | null; lat: number; lng: number;
   recipientName: string; recipientPhone: string; packageDescription: string | null; photoUrl: string | null;
+  /** Code de livraison (visible seulement par l'expéditeur et l'entreprise) */
+  confirmationCode?: string;
   codAmount: number; codRemittedAt: string | null;
   arrivedAt: string | null; deliveredAt: string | null;
   failedAt: string | null; failureReason: 'ABSENT' | 'REFUSED' | null; failurePhotoUrl: string | null;
@@ -48,6 +50,8 @@ export interface Delivery {
   commissionAmount: number | null; commissionRule: string | null; commissionChargedAt: string | null; commissionRefunded: number;
   cancellationFee: number | null; cancellationFeeSettledAt: string | null;
   returnRequired: boolean; returnedAt: string | null;
+  targetCompanyId: string | null; source: 'CLIENT' | 'COMPANY'; assignedDriverId: string | null;
+  assignmentNote: string | null; trackingToken: string | null;
 }
 
 // ---------- Facturation ----------

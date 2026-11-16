@@ -11,18 +11,20 @@ import LiveMapPage from './pages/LiveMapPage';
 import Login from './pages/Login';
 import Billing from './pages/Billing';
 import Payments from './pages/Payments';
+import CompanyPricing from './pages/CompanyPricing';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
+import PublicTracking from './pages/PublicTracking';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -44,7 +46,15 @@ export function useHashParam(route: Route): string | null {
 export const goTo = (route: Route, id: string) => { location.hash = `/${PATHS[route]}/${encodeURIComponent(id)}`; };
 export const go = (r: Route) => { location.hash = `/${PATHS[r]}`; };
 
+/** Lien de suivi public : #/suivi/<jeton> (sans connexion) */
+const trackingToken = () => location.hash.match(/^#\/suivi\/([0-9a-f]{32})/)?.[1] ?? null;
+
 export default function App() {
+  const [token] = useState(trackingToken);
+  return token ? <PublicTracking token={token} /> : <BackOffice />;
+}
+
+function BackOffice() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(!!localStorage.getItem('leto_token'));
 
@@ -106,7 +116,10 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       },
       isSA
         ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
-        : { section: 'Compte', links: [{ r: 'billing', icon: 'card', label: 'Crédit et abonnement', count: billingAlert || undefined, alert: true }] },
+        : { section: 'Compte', links: [
+            { r: 'myPricing', icon: 'tag', label: 'Mes tarifs' },
+            { r: 'billing', icon: 'card', label: 'Crédit et abonnement', count: billingAlert || undefined, alert: true },
+          ] },
     ];
     if (isSA) items.push({ section: 'Réglages', links: [{ r: 'pricing', icon: 'tag', label: 'Tarifs et règles' }] });
     return items;
@@ -171,6 +184,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'pricing' && <Pricing />}
           {current === 'billing' && <Billing />}
           {current === 'payments' && <Payments />}
+          {current === 'myPricing' && <CompanyPricing />}
         </div>
       </main>
     </div>
