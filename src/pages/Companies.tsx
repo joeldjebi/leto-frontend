@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, Company, fcfa, isOnline } from '../api';
+import { api, Company, fcfa, isOnline, phoneError } from '../api';
 import { useData } from '../data';
-import { Avatar, Card, Empty, Icon, Modal, PageHeader, Search, Switch, useToast } from '../ui';
+import { Avatar, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Switch, useToast } from '../ui';
 import CompanyDetail, { EditCompany } from './CompanyDetail';
 
 /** Entreprises de livraison partenaires (SA) */
@@ -82,34 +82,64 @@ function CompanyList() {
 }
 
 const EMPTY = { name: '', phone: '', managerName: '', managerPhone: '', managerPassword: '' };
+type Form = typeof EMPTY;
+
+/** Vérification avant envoi, avec un message par champ */
+function validate(f: Form): Partial<Record<keyof Form, string>> {
+  const e: Partial<Record<keyof Form, string>> = {};
+  if (!f.name.trim()) e.name = 'Nom obligatoire';
+  const p1 = phoneError(f.phone);
+  if (p1) e.phone = p1;
+  if (!f.managerName.trim()) e.managerName = 'Nom du gérant obligatoire';
+  const p2 = phoneError(f.managerPhone);
+  if (p2) e.managerPhone = p2;
+  if (f.managerPassword.length < 6) e.managerPassword = '6 caractères minimum';
+  return e;
+}
 
 function CreateCompany({ onClose }: { onClose: () => void }) {
   const { reload } = useData();
   const toast = useToast();
   const [form, setForm] = useState(EMPTY);
+  const [errors, setErrors] = useState<Partial<Record<keyof Form, string>>>({});
   const [error, setError] = useState('');
-  const field = (key: keyof typeof EMPTY, label: string, type = 'text', placeholder = '') => (
-    <label className="field"><span>{label}</span><input type={type} placeholder={placeholder} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} /></label>
-  );
+  const set = (key: keyof Form) => (v: string) => {
+    setForm({ ...form, [key]: v });
+    if (errors[key]) setErrors({ ...errors, [key]: undefined });
+  };
   const submit = async () => {
+    const e = validate(form);
+    setErrors(e);
+    if (Object.keys(e).length) return;
+    setError('');
     try {
       await api('/companies', { method: 'POST', body: form });
-      toast(`${form.name} créée — le gérant peut se connecter`);
+      toast(`${form.name} créée — le gérant peut se connecter avec ${form.managerPhone}`);
       await reload();
       onClose();
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (err) {
+      setError((err as Error).message);
     }
   };
   return (
     <Modal title="Nouvelle entreprise" subtitle="Le compte du gérant est créé en même temps." onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Créer</button></>}>
-      {field('name', 'Nom de l’entreprise', 'text', 'Ex. : Rapid Express')}
-      {field('phone', 'Téléphone de l’entreprise', 'tel', '0711111111')}
+      <Field label="Nom de l’entreprise" error={errors.name}>
+        <input autoComplete="off" placeholder="Ex. : Rapid Express" value={form.name} onChange={(e) => set('name')(e.target.value)} />
+      </Field>
+      <Field label="Téléphone de l’entreprise" error={errors.phone}>
+        <PhoneInput value={form.phone} onChange={set('phone')} placeholder="0711111111" />
+      </Field>
       <div className="section-title" style={{ marginTop: 6, marginBottom: 0 }}>Gérant</div>
-      {field('managerName', 'Nom')}
-      {field('managerPhone', 'Téléphone (identifiant)', 'tel', '0722222222')}
-      {field('managerPassword', 'Mot de passe provisoire', 'password', '6 caractères minimum')}
+      <Field label="Nom du gérant" error={errors.managerName}>
+        <input autoComplete="off" data-lpignore="true" value={form.managerName} onChange={(e) => set('managerName')(e.target.value)} />
+      </Field>
+      <Field label="Téléphone du gérant" error={errors.managerPhone} hint="Sert d’identifiant pour se connecter au back-office (10 chiffres)">
+        <PhoneInput value={form.managerPhone} onChange={set('managerPhone')} placeholder="0722222222" />
+      </Field>
+      <Field label="Mot de passe provisoire" error={errors.managerPassword} hint="À transmettre au gérant (6 caractères minimum)">
+        <input type="password" autoComplete="new-password" value={form.managerPassword} onChange={(e) => set('managerPassword')(e.target.value)} />
+      </Field>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );

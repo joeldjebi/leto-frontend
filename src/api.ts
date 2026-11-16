@@ -81,6 +81,9 @@ export const dateTime = (iso: string | null) =>
 export const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—');
 export const isOnline = (u: User) => !!u.lastLocationAt && Date.now() - new Date(u.lastLocationAt).getTime() < 120_000;
 export const photoUrl = (path: string) => API_URL + path;
+/** Numéro ivoirien à 10 chiffres (ex. 0701020304) : renvoie un message d'erreur ou null */
+export const phoneError = (v: string) =>
+  /^0\d{9}$/.test(v) ? null : v ? `${v.length} chiffre(s) sur 10 — format attendu : 0701020304` : 'Numéro obligatoire';
 export const initial = (name?: string | null) => (name?.trim()?.[0] ?? '?').toUpperCase();
 
 // ---------- Session ----------

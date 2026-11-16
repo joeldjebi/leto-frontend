@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
-import { api, fcfa, isOnline, time, User } from '../api';
+import { api, fcfa, isOnline, phoneError, time, User } from '../api';
 import { useData } from '../data';
-import { Avatar, Badge, Card, Empty, Icon, Modal, PageHeader, Search, Segmented, Switch, useToast } from '../ui';
+import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 
 type Filter = 'all' | 'online' | 'blocked';
 
@@ -93,23 +93,38 @@ function AddDriver({ onClose }: { onClose: () => void }) {
   const { reload } = useData();
   const toast = useToast();
   const [form, setForm] = useState({ name: '', phone: '', password: '' });
+  const [errors, setErrors] = useState<{ name?: string; phone?: string | null; password?: string }>({});
   const [error, setError] = useState('');
   const submit = async () => {
+    const e = {
+      name: form.name.trim() ? undefined : 'Nom obligatoire',
+      phone: phoneError(form.phone),
+      password: form.password.length >= 6 ? undefined : '6 caractères minimum',
+    };
+    setErrors(e);
+    if (e.name || e.phone || e.password) return;
+    setError('');
     try {
       await api('/companies/me/drivers', { method: 'POST', body: form });
-      toast(`${form.name} ajouté — il peut se connecter à l’app LETO`);
+      toast(`${form.name} ajouté — il se connecte à l’app LETO avec ${form.phone}`);
       await reload();
       onClose();
-    } catch (e) {
-      setError((e as Error).message);
+    } catch (err) {
+      setError((err as Error).message);
     }
   };
   return (
     <Modal title="Ajouter un livreur" subtitle="Il se connectera à l’application mobile avec ce téléphone." onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Ajouter</button></>}>
-      <label className="field"><span>Nom</span><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></label>
-      <label className="field"><span>Téléphone</span><input type="tel" placeholder="0701020304" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /></label>
-      <label className="field"><span>Mot de passe provisoire</span><input type="password" placeholder="6 caractères minimum" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></label>
+      <Field label="Nom du livreur" error={errors.name}>
+        <input autoComplete="off" data-lpignore="true" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+      </Field>
+      <Field label="Téléphone du livreur" error={errors.phone} hint="Sert d’identifiant dans l’app (10 chiffres)">
+        <PhoneInput value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
+      </Field>
+      <Field label="Mot de passe provisoire" error={errors.password} hint="À transmettre au livreur (6 caractères minimum)">
+        <input type="password" autoComplete="new-password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+      </Field>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );

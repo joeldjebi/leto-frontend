@@ -328,3 +328,6 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 .hero h1 { font-size: 30px; font-weight: 700; }
 .meta-row { display: flex; gap: 16px; flex-wrap: wrap; color: var(--secondary); font-size: 13px; margin-top: 4px; }
 .meta-row span { display: inline-flex; align-items: center; gap: 5px; }
+
+.field.invalid input { border-color: var(--red); box-shadow: 0 0 0 3px var(--red-soft); }
+.field small { font-size: 12px; }

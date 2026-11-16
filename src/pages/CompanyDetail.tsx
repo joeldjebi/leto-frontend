@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { go } from '../App';
-import { api, codTotal, Company, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
+import { phoneError, api, codTotal, Company, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
-import { Avatar, Badge, BarChart, Card, Empty, Icon, Modal, Search, Segmented, Stat, StatusBadge, Switch, useToast } from '../ui';
+import { Avatar, Badge, BarChart, Card, Empty, Field, Icon, Modal, PhoneInput, Search, Segmented, Stat, StatusBadge, Switch, useToast } from '../ui';
 
 type Tab = 'deliveries' | 'drivers' | 'collections' | 'disputes';
 type Metric = 'created' | 'volume';
@@ -347,6 +347,7 @@ export function EditCompany({ company, onClose }: { company: Company; onClose: (
   const [phone, setPhone] = useState(company.phone);
   const [error, setError] = useState('');
   const submit = async () => {
+    if (phoneError(phone) || !name.trim()) return;
     try {
       await api(`/companies/${company.id}`, { method: 'PATCH', body: { name, phone } });
       toast('Entreprise modifiée');
@@ -360,7 +361,7 @@ export function EditCompany({ company, onClose }: { company: Company; onClose: (
     <Modal title="Modifier l’entreprise" onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Enregistrer</button></>}>
       <label className="field"><span>Nom</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
-      <label className="field"><span>Téléphone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
+      <Field label="Téléphone" error={phone ? phoneError(phone) : 'Numéro obligatoire'}><PhoneInput value={phone} onChange={setPhone} /></Field>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );

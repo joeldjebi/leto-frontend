@@ -118,6 +118,27 @@ export function Search({ value, onChange, placeholder = 'Rechercher' }: { value:
   );
 }
 
+/** Champ de formulaire avec libellé et message d'erreur propre au champ */
+export function Field({ label, error, hint, children }: { label: string; error?: string | null; hint?: string; children: ReactNode }) {
+  return (
+    <label className={`field${error ? ' invalid' : ''}`}>
+      <span>{label}</span>
+      {children}
+      {error ? <small className="error">{error}</small> : hint ? <small className="muted">{hint}</small> : null}
+    </label>
+  );
+}
+
+/** Téléphone ivoirien : chiffres uniquement (10 au plus), sans remplissage automatique du navigateur */
+export function PhoneInput({ value, onChange, placeholder = '0701020304' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <input
+      type="tel" inputMode="numeric" maxLength={10} autoComplete="off" data-lpignore="true" data-1p-ignore
+      placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 10))}
+    />
+  );
+}
+
 export function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label?: string }) {
   return (
     <label className="switch" title={label}>
