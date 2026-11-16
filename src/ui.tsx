@@ -35,6 +35,9 @@ const PATHS: Record<string, string> = {
   upload: 'M12 16V5 M7.5 9.5L12 5l4.5 4.5 M5 19h14',
   card: 'M3 6h18v12H3z M3 10h18 M7 15h3',
   calendar: 'M4 6h16v14H4z M4 10h16 M8 3v4 M16 3v4',
+  moto: 'M5.5 18a3 3 0 100-6 3 3 0 000 6z M18.5 18a3 3 0 100-6 3 3 0 000 6z M5.5 15h5l3.5-6h3.5l1.5 6 M14 9l-1.5-3H9.5 M10.5 12H7',
+  car: 'M4 16.5h16v-4.2l-2.2-5.3H6.2L4 12.3v4.2z M5.5 16.5V19 M18.5 16.5V19 M4 12.3h16 M7.5 14.4v.01 M16.5 14.4v.01',
+  truck: 'M2.5 6h11.5v10H2.5z M14 9.5h4l3.5 3.5v3H14z M6.5 18.5a2 2 0 100-4 2 2 0 000 4z M17.5 18.5a2 2 0 100-4 2 2 0 000 4z',
 };
 
 export function Icon({ name, size = 18, className }: { name: string; size?: number; className?: string }) {

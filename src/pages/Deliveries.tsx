@@ -48,6 +48,8 @@ export default function Deliveries() {
       ]),
     ]);
 
+  if (creating) return <NewDelivery onClose={() => setCreating(false)} onOpen={(d) => { setCreating(false); setOpen(d); }} />;
+
   return (
     <>
       <PageHeader
@@ -115,7 +117,6 @@ export default function Deliveries() {
         )}
       </Card>
       {open && <DeliverySheet delivery={open} onClose={() => setOpen(null)} />}
-      {creating && <NewDelivery onClose={() => setCreating(false)} />}
     </>
   );
 }
