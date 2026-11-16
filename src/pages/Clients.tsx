@@ -1,12 +1,20 @@
 import { useMemo, useState } from 'react';
+import { goTo, useHashParam } from '../App';
 import { api, dateTime, fcfa, User } from '../api';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, PageHeader, Search, Segmented, Switch, useToast } from '../ui';
+import ClientDetail from './ClientDetail';
 
 type Sort = 'volume' | 'recent' | 'name';
 
-/** Clients et boutiques (SA) : activité, encaissements, blocage */
+/** Clients : liste, ou fiche détaillée (#/clients/<id>) */
 export default function Clients() {
+  const detailId = useHashParam('clients');
+  return detailId ? <ClientDetail id={detailId} /> : <ClientList />;
+}
+
+/** Clients et boutiques (SA) : activité, encaissements, blocage */
+function ClientList() {
   const { users, deliveries, reload } = useData();
   const toast = useToast();
   const [q, setQ] = useState('');
@@ -58,7 +66,7 @@ export default function Clients() {
                 {rows.map((u) => {
                   const a = activity.get(u.id);
                   return (
-                    <tr key={u.id}>
+                    <tr key={u.id} className="clickable" onClick={() => goTo('clients', u.id)}>
                       <td>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                           <Avatar name={u.name} />
@@ -71,7 +79,7 @@ export default function Clients() {
                       <td className="num">{a?.cod ? fcfa(a.cod) : <span className="muted">—</span>}</td>
                       <td>{a?.last ? dateTime(a.last) : <span className="muted">—</span>}</td>
                       <td>{new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
-                      <td><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
+                      <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                     </tr>
                   );
                 })}

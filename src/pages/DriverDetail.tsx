@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
 import { api, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, Stop, time } from '../api';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
+import { EarningsTab } from '../components/Remittances';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Icon, Segmented, Stat, Switch, useToast } from '../ui';
 import { CollectionsTab, DeliveriesTab } from './CompanyDetail';
 
-type Tab = 'deliveries' | 'stops' | 'collections' | 'disputes';
+type Tab = 'deliveries' | 'earnings' | 'stops' | 'collections' | 'disputes';
 type Metric = 'created' | 'volume';
 type StatusFilter = 'all' | 'active' | 'done' | 'cancelled';
 const DAY = 86_400_000;
@@ -169,6 +170,7 @@ export default function DriverDetail({ id }: { id: string }) {
             onChange={setTab}
             options={[
               ['deliveries', `Courses (${k.total})`],
+              ['earnings', 'Gains et versements'],
               ['stops', `Colis (${k.stops.length})`],
               ['collections', `Encaissements (${k.cod.length})`],
               ['disputes', `Échecs et litiges (${k.failed.length})`],
@@ -176,6 +178,7 @@ export default function DriverDetail({ id }: { id: string }) {
           />
         </div>
 
+        {tab === 'earnings' && <EarningsTab driver={driver} canManage={!isSA} />}
         {tab === 'deliveries' && <DeliveriesTab deliveries={mine} q={q} setQ={setQ} status={status} setStatus={setStatus} onOpen={setOpen} />}
         {tab === 'stops' && (
           <Card>

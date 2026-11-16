@@ -4,6 +4,7 @@ import { api, fcfa, isOnline, phoneError, time, User } from '../api';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import DriverDetail from './DriverDetail';
+import { RemittanceTable, Remittance, ReviewRemittance, ShareDialog, useCompanyCash } from '../components/Remittances';
 
 type Filter = 'all' | 'online' | 'blocked';
 
@@ -21,6 +22,10 @@ function DriverList() {
   const [filter, setFilter] = useState<Filter>('all');
   const [company, setCompany] = useState('');
   const [adding, setAdding] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [review, setReview] = useState<Remittance | null>(null);
+  const { data: cash, reload: reloadCash } = useCompanyCash(!isSA);
+  const cashOf = (id: string) => cash?.balances.find((b) => b.driverId === id);
 
   const activity = useMemo(() => {
     const m = new Map<string, { delivered: number; volume: number; failed: number; busy: boolean }>();
@@ -51,8 +56,17 @@ function DriverList() {
       <PageHeader
         title="Livreurs"
         subtitle={`${drivers.length} livreur(s) · ${drivers.filter(isOnline).length} en ligne`}
-        actions={!isSA && <button className="btn" onClick={() => setAdding(true)}><Icon name="plus" size={15} />Ajouter un livreur</button>}
+        actions={!isSA && <>
+          <button className="btn secondary" onClick={() => setShareOpen(true)}><Icon name="wallet" size={15} />Part des livreurs · {cash?.sharePercent ?? 0} %</button>
+          <button className="btn" onClick={() => setAdding(true)}><Icon name="plus" size={15} />Ajouter un livreur</button>
+        </>}
       />
+      {!isSA && cash && cash.pending.length > 0 && (
+        <Card title={`Versements à confirmer (${cash.pending.length})`}>
+          <RemittanceTable rows={cash.pending} showDriver onReview={setReview} />
+        </Card>
+      )}
+      {!isSA && cash && <div style={{ height: 16 }} />}
       <div className="toolbar">
         <Search value={q} onChange={setQ} placeholder="Nom ou téléphone" />
         <Segmented<Filter> value={filter} onChange={setFilter} options={[['all', 'Tous'], ['online', 'En ligne'], ['blocked', 'Bloqués']]} />
@@ -68,7 +82,7 @@ function DriverList() {
         {rows.length === 0 ? <Empty icon="bike">Aucun livreur</Empty> : (
           <div className="table-scroll">
             <table className="list">
-              <thead><tr><th>Livreur</th>{isSA && <th>Entreprise</th>}<th>Statut</th><th className="num">Courses terminées</th><th className="num">Volume</th><th className="num">Échecs</th><th>Accès</th></tr></thead>
+              <thead><tr><th>Livreur</th>{isSA && <th>Entreprise</th>}<th>Statut</th><th className="num">Courses terminées</th><th className="num">Volume</th><th className="num">Échecs</th>{!isSA && <th className="num">À verser</th>}<th>Accès</th></tr></thead>
               <tbody>
                 {rows.map((u) => {
                   const a = activity.get(u.id);
@@ -83,6 +97,7 @@ function DriverList() {
                       <td className="num">{a?.delivered ?? 0}</td>
                       <td className="num">{fcfa(a?.volume ?? 0)}</td>
                       <td className="num">{a?.failed ?? 0}</td>
+                      {!isSA && <td className="num">{cashOf(u.id)?.toRemit ? <strong>{fcfa(cashOf(u.id)!.toRemit)}</strong> : <span className="muted">—</span>}{cashOf(u.id)?.pending ? <span className="sub">{fcfa(cashOf(u.id)!.pending)} en attente</span> : null}</td>}
                       <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                     </tr>
                   );
@@ -93,6 +108,8 @@ function DriverList() {
         )}
       </Card>
       {adding && <AddDriver onClose={() => setAdding(false)} />}
+      {shareOpen && <ShareDialog current={cash?.sharePercent ?? 0} onClose={() => setShareOpen(false)} onDone={reloadCash} />}
+      {review && <ReviewRemittance r={review} onClose={() => setReview(null)} onDone={reloadCash} />}
     </>
   );
 }

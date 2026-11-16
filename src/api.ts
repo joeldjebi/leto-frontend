@@ -16,6 +16,7 @@ export interface User {
   companyId: string | null; company?: Company | null; createdAt: string;
   lastLat?: number | null; lastLng?: number | null; lastLocationAt?: string | null;
   accountType?: 'INDIVIDUAL' | 'SHOP' | null;
+  avatarUrl?: string | null;
 }
 
 /** Un arrêt d'une course (tournée = plusieurs arrêts) */
