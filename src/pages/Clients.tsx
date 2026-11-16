@@ -62,7 +62,7 @@ export default function Clients() {
                       <td>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                           <Avatar name={u.name} />
-                          <div>{u.name} {(a?.stops ?? 0) > (a?.count ?? 0) && <Badge color="blue">Tournées</Badge>}<span className="sub">{u.phone}</span></div>
+                          <div>{u.name} {u.accountType && <Badge color={u.accountType === 'SHOP' ? 'purple' : 'gray'}>{u.accountType === 'SHOP' ? 'Boutique' : 'Particulier'}</Badge>} {(a?.stops ?? 0) > (a?.count ?? 0) && <Badge color="blue">Tournées</Badge>}<span className="sub">{u.phone}</span></div>
                         </div>
                       </td>
                       <td className="num">{a?.count ?? 0}</td>

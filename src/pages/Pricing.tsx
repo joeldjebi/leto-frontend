@@ -117,7 +117,11 @@ export default function Pricing() {
           <Card title="Règles" pad>
             <div className="rows" style={{ margin: '0 -20px' }}>
               <div>
-                <div className="grow"><div className="title">Paiement à la livraison</div><small className="muted">Frais par arrêt où le livreur encaisse la marchandise</small></div>
+                <div className="grow"><div className="title">Proposer le paiement à la livraison</div><small className="muted">Le client peut demander au livreur d’encaisser la marchandise (désactivé par défaut)</small></div>
+                <Switch checked={grid.codEnabled} onChange={(on) => setGrid({ ...grid, codEnabled: on })} label={grid.codEnabled ? 'Désactiver' : 'Activer'} />
+              </div>
+              <div style={{ opacity: grid.codEnabled ? 1 : 0.5 }}>
+                <div className="grow"><div className="title">Frais de paiement à la livraison</div><small className="muted">Par arrêt où le livreur encaisse la marchandise</small></div>
                 <input type="number" min={0} step={50} value={grid.codFee} onChange={(e) => setGrid({ ...grid, codFee: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">F</span>
               </div>
               <div>

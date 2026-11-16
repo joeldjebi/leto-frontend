@@ -15,6 +15,7 @@ export interface User {
   id: string; name: string; phone: string; role: Role; active: boolean;
   companyId: string | null; company?: Company | null; createdAt: string;
   lastLat?: number | null; lastLng?: number | null; lastLocationAt?: string | null;
+  accountType?: 'INDIVIDUAL' | 'SHOP' | null;
 }
 
 /** Un arrêt d'une course (tournée = plusieurs arrêts) */
@@ -101,7 +102,7 @@ export interface SpeedConfig { label: string; description: string; factor: numbe
 export interface PricingGrid {
   vehicles: Record<Vehicle, VehicleConfig>;
   speeds: Record<Speed, SpeedConfig>;
-  codFee: number; extraStopFee: number; maxStops: number; absenceWaitMin: number;
+  codEnabled: boolean; codFee: number; extraStopFee: number; maxStops: number; absenceWaitMin: number;
   updatedAt?: string | null; updatedBy?: string | null;
 }
 
