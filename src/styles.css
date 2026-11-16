@@ -46,3 +46,10 @@ small, .muted { color: var(--muted); }
 .map-wrap { height: 520px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); }
 .role { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; }
 h3 { margin: 24px 0 10px; }
+.stop-line { white-space: nowrap; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; margin-right: 4px; }
+.dot.DELIVERED { background: #16a34a; }
+.dot.FAILED { background: #dc2626; }
+.photo-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); }
+.tag { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #991b1b; font-weight: 600; }
+.tag.ok { background: #f3f4f6; color: #374151; }

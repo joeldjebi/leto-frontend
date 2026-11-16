@@ -1,10 +1,11 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { api, Company, Delivery, fcfa, Role, ROLE_LABEL, User } from '../api';
 import DeliveriesTable from '../components/DeliveriesTable';
+import Disputes from '../components/Disputes';
 import LiveMap from '../components/LiveMap';
 import { Stat } from './CompanyDashboard';
 
-type Tab = 'courses' | 'carte' | 'entreprises' | 'utilisateurs';
+type Tab = 'courses' | 'carte' | 'litiges' | 'entreprises' | 'utilisateurs';
 const EMPTY = { name: '', phone: '', managerName: '', managerPhone: '', managerPassword: '' };
 
 /** Tableau de bord du Super Admin (SA) : vue sur toute la plateforme */
@@ -26,6 +27,7 @@ export default function SuperAdminDashboard() {
   const tabs: [Tab, string][] = [
     ['courses', 'Courses'],
     ['carte', 'Carte en direct'],
+    ['litiges', 'Litiges'],
     ['entreprises', 'Entreprises'],
     ['utilisateurs', 'Utilisateurs'],
   ];
@@ -50,6 +52,7 @@ export default function SuperAdminDashboard() {
 
       {tab === 'courses' && <DeliveriesTable deliveries={deliveries} showCompany />}
       {tab === 'carte' && <LiveMap drivers={drivers} />}
+      {tab === 'litiges' && <Disputes deliveries={deliveries} />}
       {tab === 'entreprises' && <Companies companies={companies} reload={load} />}
       {tab === 'utilisateurs' && <Users users={users} reload={load} />}
     </>

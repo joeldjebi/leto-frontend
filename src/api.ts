@@ -12,15 +12,33 @@ export interface User {
 export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
 export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
 
+export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED';
+
+/** Un arrêt d'une course (tournée = plusieurs arrêts) */
+export interface Stop {
+  id: string; position: number; status: StopStatus;
+  address: string; commune: string; details: string | null; lat: number; lng: number;
+  recipientName: string; recipientPhone: string;
+  codAmount: number; codRemittedAt: string | null;
+  arrivedAt: string | null; deliveredAt: string | null;
+  failedAt: string | null; failureReason: 'ABSENT' | 'REFUSED' | null; failurePhotoUrl: string | null;
+  failureNote: string | null; failureLat: number | null; failureLng: number | null;
+  disputedAt: string | null; disputeNote: string | null;
+}
+
 export interface Delivery {
   id: string; status: Status; price: number;
   vehicleType: Vehicle; speed: Speed;
-  distanceKm: number | null; codAmount: number; codRemittedAt: string | null; deliveredAt: string | null;
+  distanceKm: number | null; deliveredAt: string | null;
   pickupCommune: string; pickupAddress: string; pickupPhone: string;
-  dropoffCommune: string; dropoffAddress: string; recipientName: string; recipientPhone: string;
-  packageDescription: string | null;
+  stops: Stop[];
   client: User; driver: User | null; company: Company | null; createdAt: string;
 }
+
+/** Total à encaisser sur une course (tous arrêts) */
+export const codTotal = (d: Delivery) => d.stops.reduce((s, x) => s + x.codAmount, 0);
+
+export const FAILURE_LABEL = { ABSENT: 'Destinataire absent', REFUSED: 'Refusé par le destinataire' } as const;
 
 export const STATUS_LABEL: Record<Status, string> = {
   PENDING: 'En attente',
