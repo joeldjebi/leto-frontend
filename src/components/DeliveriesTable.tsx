@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Delivery, fcfa, PAYMENT_LABEL, SPEED_LABEL, Status, STATUS_LABEL, VEHICLE_LABEL } from '../api';
+import { Delivery, fcfa, SPEED_LABEL, Status, STATUS_LABEL, VEHICLE_LABEL } from '../api';
 
 export default function DeliveriesTable({ deliveries, showCompany = false }: { deliveries: Delivery[]; showCompany?: boolean }) {
   const [filter, setFilter] = useState<Status | ''>('');
@@ -31,7 +31,7 @@ export default function DeliveriesTable({ deliveries, showCompany = false }: { d
                 <td>{d.recipientName}<br /><small>{d.recipientPhone}</small></td>
                 <td>{d.driver?.name ?? '—'}</td>
                 {showCompany && <td>{d.company?.name ?? '—'}</td>}
-                <td>{fcfa(d.price)}<br /><small>{PAYMENT_LABEL[d.paymentMethod]}</small></td>
+                <td>{fcfa(d.price)}<br /><small>Espèces</small></td>
                 <td>{d.codAmount > 0 ? fcfa(d.codAmount) : '—'}</td>
                 <td><span className={`badge ${d.status}`}>{STATUS_LABEL[d.status]}</span></td>
               </tr>

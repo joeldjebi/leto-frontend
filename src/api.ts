@@ -11,11 +11,10 @@ export interface User {
 }
 export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
 export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
-export type PaymentMethod = 'CASH' | 'WAVE' | 'ORANGE_MONEY' | 'MTN_MOMO';
 
 export interface Delivery {
   id: string; status: Status; price: number;
-  vehicleType: Vehicle; speed: Speed; paymentMethod: PaymentMethod;
+  vehicleType: Vehicle; speed: Speed;
   distanceKm: number | null; codAmount: number; codRemittedAt: string | null; deliveredAt: string | null;
   pickupCommune: string; pickupAddress: string; pickupPhone: string;
   dropoffCommune: string; dropoffAddress: string; recipientName: string; recipientPhone: string;
@@ -33,13 +32,6 @@ export const STATUS_LABEL: Record<Status, string> = {
 
 export const VEHICLE_LABEL: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
 export const SPEED_LABEL: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: 'Dans 2 h' };
-export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
-  CASH: 'Espèces',
-  WAVE: 'Wave',
-  ORANGE_MONEY: 'Orange Money',
-  MTN_MOMO: 'MTN MoMo',
-};
-
 export const ROLE_LABEL: Record<Role, string> = {
   CLIENT: 'Client',
   DRIVER: 'Livreur',
