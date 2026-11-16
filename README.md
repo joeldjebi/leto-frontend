@@ -1,6 +1,6 @@
 # LETO — Back-office (React)
 
-Back-office web au **design inspiré des apps Apple** (barre latérale macOS, grands titres, cartes et listes, fiches en panneau latéral, police système, mode sombre automatique).
+Back-office web au **design inspiré des apps Apple** (barre latérale macOS, grands titres, cartes et listes, fiches en panneau latéral, police système, mode sombre). Thème au choix dans la barre latérale : Automatique, Clair ou Sombre.
 
 ## Super Admin (SA)
 
@@ -11,7 +11,7 @@ Back-office web au **design inspiré des apps Apple** (barre latérale macOS, gr
 | Carte en direct | Positions des livreurs en temps réel (disponible / en course / hors ligne) |
 | Litiges | Échecs de livraison avec preuves (GPS, attente, photo) ; trancher les contestations |
 | Encaissements | Paiements à la livraison encaissés, à reverser par entreprise |
-| Entreprises | Création (avec gérant), modification, suspension, livreurs et activité |
+| Entreprises | Création (avec gérant), modification, suspension ; **fiche complète** : chiffres clés, activité 30 jours, gérants, courses, livreurs, encaissements, litiges |
 | Livreurs · Clients | Activité, statut, blocage immédiat |
 | Tarifs et règles | Grille de prix, offres actives, coefficients de délai, frais, arrêts max, attente avant absence, simulateur |
 

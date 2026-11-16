@@ -27,6 +27,9 @@ const PATHS: Record<string, string> = {
   clock: 'M12 21a9 9 0 100-18 9 9 0 000 18z M12 7v5l3 2',
   edit: 'M4 20h4L19 9l-4-4L4 16v4z M13.5 6.5l4 4',
   chevron: 'M9 6l6 6-6 6',
+  sun: 'M12 16.5a4.5 4.5 0 100-9 4.5 4.5 0 000 9z M12 2.5v2 M12 19.5v2 M4.6 4.6L6 6 M18 18l1.4 1.4 M2.5 12h2 M19.5 12h2 M4.6 19.4L6 18 M18 6l1.4-1.4',
+  moon: 'M20 14.5A8.5 8.5 0 019.5 4 8.5 8.5 0 1020 14.5z',
+  auto: 'M12 21a9 9 0 100-18 9 9 0 000 18z M12 3v18 M12 7.5h4 M12 12h5 M12 16.5h4',
   shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6l8-3z M8.5 12l2.5 2.5 4.5-5',
 };
 
@@ -87,11 +90,18 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
   );
 }
 
-export function Segmented<T extends string>({ value, options, onChange }: { value: T; options: [T, string][]; onChange: (v: T) => void }) {
+export function Segmented<T extends string>({ value, options, onChange, labels }: {
+  value: T;
+  options: [T, ReactNode][];
+  onChange: (v: T) => void;
+  /** Nom accessible / infobulle (utile quand l'option est une icône) */
+  labels?: Partial<Record<T, string>>;
+}) {
   return (
     <div className="segmented" role="tablist">
       {options.map(([k, label]) => (
-        <button key={k} role="tab" aria-selected={value === k} className={value === k ? 'on' : ''} onClick={() => onChange(k)}>
+        <button key={k} role="tab" aria-selected={value === k} className={value === k ? 'on' : ''} onClick={() => onChange(k)}
+          title={labels?.[k]} aria-label={labels?.[k]}>
           {label}
         </button>
       ))}

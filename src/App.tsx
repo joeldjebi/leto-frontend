@@ -11,7 +11,8 @@ import LiveMapPage from './pages/LiveMapPage';
 import Login from './pages/Login';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
-import { Avatar, Icon, ToastProvider } from './ui';
+import { useTheme } from './theme';
+import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
 export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing';
 
@@ -20,7 +21,24 @@ const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
 };
-const fromHash = (): Route => (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}`)?.[0] as Route) ?? 'overview';
+const fromHash = (): Route =>
+  (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
+
+/** Identifiant dans l'adresse : #/entreprises/<id> → <id> */
+export function useHashParam(route: Route): string | null {
+  const read = () => {
+    const m = location.hash.match(new RegExp(`^#/${PATHS[route]}/([^/?#]+)`));
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+  const [v, setV] = useState(read);
+  useEffect(() => {
+    const on = () => setV(read());
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  return v;
+}
+export const goTo = (route: Route, id: string) => { location.hash = `/${PATHS[route]}/${encodeURIComponent(id)}`; };
 export const go = (r: Route) => { location.hash = `/${PATHS[r]}`; };
 
 export default function App() {
@@ -52,6 +70,7 @@ export default function App() {
 function Shell({ onLogout }: { onLogout: () => void }) {
   const { me, isSA, stats, deliveries } = useData();
   const [route, setRoute] = useState<Route>(fromHash());
+  const [theme, setTheme] = useTheme();
   useEffect(() => {
     const on = () => setRoute(fromHash());
     window.addEventListener('hashchange', on);
@@ -111,6 +130,18 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             ))}
           </div>
         ))}
+        <div className="theme-switch" title="Apparence">
+          <Segmented
+            value={theme}
+            onChange={setTheme}
+            options={[
+              ['auto', <Icon key="a" name="auto" size={15} />],
+              ['light', <Icon key="l" name="sun" size={15} />],
+              ['dark', <Icon key="d" name="moon" size={15} />],
+            ]}
+            labels={{ auto: 'Automatique', light: 'Clair', dark: 'Sombre' }}
+          />
+        </div>
         <div className="sidebar-footer">
           <Avatar name={me.name} />
           <div className="who">

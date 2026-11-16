@@ -1,16 +1,22 @@
 import { useMemo, useState } from 'react';
+import { goTo, useHashParam } from '../App';
 import { api, Company, fcfa, isOnline } from '../api';
 import { useData } from '../data';
-import { Avatar, Badge, Card, Empty, Icon, Modal, PageHeader, Search, Sheet, Switch, useToast } from '../ui';
+import { Avatar, Card, Empty, Icon, Modal, PageHeader, Search, Switch, useToast } from '../ui';
+import CompanyDetail, { EditCompany } from './CompanyDetail';
 
 /** Entreprises de livraison partenaires (SA) */
 export default function Companies() {
+  const detailId = useHashParam('companies');
+  return detailId ? <CompanyDetail id={detailId} /> : <CompanyList />;
+}
+
+function CompanyList() {
   const { companies, users, deliveries, reload } = useData();
   const toast = useToast();
   const [q, setQ] = useState('');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
-  const [open, setOpen] = useState<Company | null>(null);
 
   const statsOf = useMemo(() => {
     const m = new Map<string, { drivers: number; online: number; delivered: number; volume: number; active: number }>();
@@ -53,7 +59,7 @@ export default function Companies() {
                 {rows.map((c) => {
                   const s = statsOf.get(c.id)!;
                   return (
-                    <tr key={c.id} className="clickable" onClick={() => setOpen(c)}>
+                    <tr key={c.id} className="clickable" onClick={() => goTo('companies', c.id)}>
                       <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={c.name} /><div>{c.name}<span className="sub">{c.phone}</span></div></div></td>
                       <td className="num">{s.drivers}<span className="sub">{s.online} en ligne</span></td>
                       <td className="num">{s.active}</td>
@@ -71,36 +77,6 @@ export default function Companies() {
       </Card>
       {creating && <CreateCompany onClose={() => setCreating(false)} />}
       {editing && <EditCompany company={editing} onClose={() => setEditing(null)} />}
-      {open && (
-        <Sheet title={open.name} onClose={() => setOpen(null)} actions={open.active ? <Badge color="green">Active</Badge> : <Badge color="red">Suspendue</Badge>}>
-          <dl className="kv">
-            <dt>Téléphone</dt><dd>{open.phone}</dd>
-            <dt>Partenaire depuis</dt><dd>{new Date(open.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</dd>
-            <dt>Courses terminées</dt><dd>{statsOf.get(open.id)?.delivered} · {fcfa(statsOf.get(open.id)?.volume ?? 0)}</dd>
-          </dl>
-          <div>
-            <div className="section-title">Gérant(s)</div>
-            <div className="group">
-              {users.filter((u) => u.role === 'COMPANY' && u.companyId === open.id).map((u) => (
-                <div key={u.id}><Avatar name={u.name} /><div style={{ flex: 1 }}><strong>{u.name}</strong><small className="muted" style={{ display: 'block' }}>{u.phone}</small></div></div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="section-title">Livreurs</div>
-            <div className="group">
-              {users.filter((u) => u.role === 'DRIVER' && u.companyId === open.id).map((u) => (
-                <div key={u.id}>
-                  <Avatar name={u.name} />
-                  <div style={{ flex: 1 }}><strong>{u.name}</strong><small className="muted" style={{ display: 'block' }}>{u.phone}</small></div>
-                  {!u.active ? <Badge color="red">Bloqué</Badge> : isOnline(u) ? <Badge color="green">En ligne</Badge> : <Badge>Hors ligne</Badge>}
-                </div>
-              ))}
-              {!users.some((u) => u.role === 'DRIVER' && u.companyId === open.id) && <div><span className="muted">Aucun livreur</span></div>}
-            </div>
-          </div>
-        </Sheet>
-      )}
     </>
   );
 }
@@ -134,32 +110,6 @@ function CreateCompany({ onClose }: { onClose: () => void }) {
       {field('managerName', 'Nom')}
       {field('managerPhone', 'Téléphone (identifiant)', 'tel', '0722222222')}
       {field('managerPassword', 'Mot de passe provisoire', 'password', '6 caractères minimum')}
-      {error && <div className="alert error">{error}</div>}
-    </Modal>
-  );
-}
-
-function EditCompany({ company, onClose }: { company: Company; onClose: () => void }) {
-  const { reload } = useData();
-  const toast = useToast();
-  const [name, setName] = useState(company.name);
-  const [phone, setPhone] = useState(company.phone);
-  const [error, setError] = useState('');
-  const submit = async () => {
-    try {
-      await api(`/companies/${company.id}`, { method: 'PATCH', body: { name, phone } });
-      toast('Entreprise modifiée');
-      await reload();
-      onClose();
-    } catch (e) {
-      setError((e as Error).message);
-    }
-  };
-  return (
-    <Modal title="Modifier l’entreprise" onClose={onClose}
-      footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Enregistrer</button></>}>
-      <label className="field"><span>Nom</span><input value={name} onChange={(e) => setName(e.target.value)} /></label>
-      <label className="field"><span>Téléphone</span><input value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );
