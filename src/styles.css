@@ -239,6 +239,7 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 .sheet-header { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--separator); }
 .sheet-header h2 { font-size: 17px; font-weight: 600; flex: 1; min-width: 0; }
 .sheet-body { overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 18px; }
+.sheet-body > * { flex-shrink: 0; }
 .modal {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: min(460px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto;
@@ -254,6 +255,8 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 
 .section-title { font-size: 12px; font-weight: 600; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px; }
 .group { background: var(--bg); border-radius: 12px; }
+.reorder { display: flex; flex-direction: column; gap: 8px; padding: 12px; margin-bottom: 10px; border-radius: 12px; border: 1.5px solid var(--accent); background: var(--accent-soft); }
+.reorder-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--card); }
 :root[data-theme="dark"] .group { background: var(--elevated); }
 .group > * { display: flex; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--separator); align-items: flex-start; }
 .group > *:last-child { border-bottom: 0; }
@@ -409,6 +412,13 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 .nd-dot.small { width: 24px; height: 24px; margin: 0; font-size: 12px; box-shadow: none; }
 .nd-remove { margin-top: 26px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: var(--fill); color: var(--secondary); display: grid; place-items: center; cursor: pointer; }
 .nd-remove:hover { background: var(--red-soft); color: var(--red); }
+.nd-order { display: flex; flex-direction: column; gap: 2px; margin-top: 20px; }
+.nd-order button { width: 26px; height: 20px; border: 0; border-radius: 6px; background: var(--fill); color: var(--secondary); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.nd-order button svg { transform: rotate(-90deg); }
+.nd-order button + button svg { transform: rotate(90deg); }
+.nd-order button:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent-text); }
+.nd-order button:disabled { opacity: 0.35; cursor: default; }
+.nd-route-foot > div { display: flex; gap: 8px; }
 .nd-route-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px 12px 56px; border-top: 1px solid var(--separator); font-size: 13px; }
 .nd-pill { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: 0; background: var(--accent-soft); color: var(--accent-text); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap; }
 .address-input { position: relative; }
@@ -542,3 +552,11 @@ small.down { color: var(--green); }
 .cp-factor input::-webkit-inner-spin-button, .cp-factor input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 .cp-amount-input input, .cp-factor input { -moz-appearance: textfield; }
 .nd-fields + .nd-fields { margin-top: 10px; }
+
+/* ----- Carnet des livreurs ----- */
+.lb-thumb { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; background: var(--fill); display: block; }
+.lb-dialog { display: flex; flex-direction: column; gap: 14px; }
+.lb-photo { width: 100%; max-height: 340px; object-fit: contain; border-radius: 12px; background: var(--fill); }
+.lb-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.lb-facts > div { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; min-width: 0; }
+.modal:has(.lb-dialog) { width: min(560px, calc(100vw - 32px)); }

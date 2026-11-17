@@ -97,6 +97,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
   const [created, setCreated] = useState<Delivery | null>(null);
+  const [optimizing, setOptimizing] = useState(false);
 
   const placed = stops.filter((s) => s.place);
   const ready = !!pickup && placed.length === stops.length;
@@ -105,7 +106,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
     setQuote(null);
     if (!ready) return;
     setQuoting(true);
-    api<Quote>('/pricing/quote', { method: 'POST', body: { companyId: me.companyId, pickupLat: pickup!.lat, pickupLng: pickup!.lng, stops: stops.map((s) => ({ lat: s.place!.lat, lng: s.place!.lng })) } })
+    api<Quote>('/pricing/quote', { method: 'POST', body: { companyId: me.companyId, pickupLat: pickup!.lat, pickupLng: pickup!.lng, stops: stops.map((s) => ({ lat: s.place!.lat, lng: s.place!.lng })), keepOrder: true } })
       .then((q) => { setQuote(q); setError(''); if (!q.offers.some((o) => o.vehicle === vehicle) && q.offers[0]) setVehicle(q.offers[0].vehicle); })
       .catch((e) => setError((e as Error).message))
       .finally(() => setQuoting(false));
@@ -120,6 +121,29 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
     const s = (u: User) => (isOnline(u) ? (busy.has(u.id) ? 1 : 0) : 2);
     return s(a) - s(b) || (distanceTo(a) ?? 99) - (distanceTo(b) ?? 99);
   });
+
+  /** Ordre de passage : choisi par le gérant (flèches), ou calculé à la demande */
+  const move = (i: number, dir: -1 | 1) => {
+    const j = i + dir;
+    if (j < 0 || j >= stops.length) return;
+    const next = [...stops];
+    [next[i], next[j]] = [next[j], next[i]];
+    setStops(next);
+  };
+  const optimize = async () => {
+    if (!ready) return;
+    setOptimizing(true);
+    try {
+      const q = await api<Quote>('/pricing/quote', { method: 'POST', body: { companyId: me.companyId, pickupLat: pickup!.lat, pickupLng: pickup!.lng, stops: stops.map((s) => ({ lat: s.place!.lat, lng: s.place!.lng })) } });
+      const same = q.order.every((x, i) => x === i);
+      setStops(q.order.map((i) => stops[i]));
+      toast(same ? 'Votre ordre est déjà le plus court' : `Ordre optimisé · ≈ ${q.durationMin} min · ${q.distanceKm} km`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setOptimizing(false);
+    }
+  };
 
   const setStop = (k: number, patch: Partial<StopForm>) => setStops(stops.map((s) => (s.key === k ? { ...s, ...patch } : s)));
   const pickOnMap = async (lat: number, lng: number) => {
@@ -155,6 +179,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
           pickupLat: pickup!.lat, pickupLng: pickup!.lng, pickupAddress: pickup!.label, pickupPhone: clientPhone, pickupContactName: clientName.trim(),
           stops: stops.map((s) => ({ lat: s.place!.lat, lng: s.place!.lng, address: s.place!.label, recipientName: s.name.trim(), recipientPhone: s.phone })),
           driverId: driverId || undefined,
+          keepOrder: true,
           price: manual !== null && manual !== '' ? total : undefined,
         },
       });
@@ -231,13 +256,22 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
                   <label className="nd-caption">{stops.length > 1 ? `Livraison ${i + 1}` : 'Livraison'}</label>
                   <AddressInput value={s.place} onChange={(p) => setStop(s.key, { place: p })} placeholder="Adresse de livraison" onMap={() => setPicking(picking === s.key ? null : s.key)} picking={picking === s.key} />
                 </div>
+                {stops.length > 1 && (
+                  <div className="nd-order">
+                    <button onClick={() => move(i, -1)} disabled={i === 0} aria-label="Livrer plus tôt" title="Livrer plus tôt"><Icon name="chevron" size={13} /></button>
+                    <button onClick={() => move(i, 1)} disabled={i === stops.length - 1} aria-label="Livrer plus tard" title="Livrer plus tard"><Icon name="chevron" size={13} /></button>
+                  </div>
+                )}
                 {stops.length > 1 && <button className="nd-remove" onClick={() => setStops(stops.filter((x) => x.key !== s.key))} aria-label="Retirer l’arrêt"><Icon name="close" size={14} /></button>}
               </div>
             ))}
           </div>
           <div className="nd-route-foot">
-            <span className="muted">{quote ? `≈ ${quote.durationMin} min · ${quote.distanceKm} km${stops.length > 1 ? ' · ordre optimisé' : ''}` : quoting ? 'Calcul de l’itinéraire…' : 'Saisissez une adresse ou choisissez-la sur la carte'}</span>
+            <span className="muted">{quote ? `≈ ${quote.durationMin} min · ${quote.distanceKm} km${stops.length > 1 ? ' · livrées dans cet ordre' : ''}` : quoting ? 'Calcul de l’itinéraire…' : 'Saisissez une adresse ou choisissez-la sur la carte'}</span>
+            <div>
+            {stops.length > 1 && ready && <button className="nd-pill" onClick={optimize} disabled={optimizing} title="Calculer l’ordre le plus court"><Icon name="route" size={14} />{optimizing ? 'Calcul…' : 'Optimiser'}</button>}
             {stops.length < 10 && <button className="nd-pill" onClick={() => setStops([...stops, { key: Date.now(), place: null, name: '', phone: '' }])}><Icon name="plus" size={14} />Arrêt</button>}
+            </div>
           </div>
         </section>
 

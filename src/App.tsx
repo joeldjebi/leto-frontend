@@ -11,6 +11,7 @@ import LiveMapPage from './pages/LiveMapPage';
 import Login from './pages/Login';
 import Billing from './pages/Billing';
 import Payments from './pages/Payments';
+import Logbook from './pages/Logbook';
 import CompanyPricing from './pages/CompanyPricing';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
@@ -18,13 +19,13 @@ import PublicTracking from './pages/PublicTracking';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -110,9 +111,10 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           ? [
               { r: 'companies', icon: 'building', label: 'Entreprises' },
               { r: 'drivers', icon: 'bike', label: 'Livreurs' },
+              { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
               { r: 'clients', icon: 'people', label: 'Clients' },
             ]
-          : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }],
+          : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }, { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' }],
       },
       isSA
         ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
@@ -185,6 +187,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'billing' && <Billing />}
           {current === 'payments' && <Payments />}
           {current === 'myPricing' && <CompanyPricing />}
+          {current === 'logbook' && <Logbook />}
         </div>
       </main>
     </div>

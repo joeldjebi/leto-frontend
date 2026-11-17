@@ -1,6 +1,6 @@
 import 'leaflet/dist/leaflet.css';
-import { useState } from 'react';
-import { CircleMarker, MapContainer, Polyline, Tooltip } from 'react-leaflet';
+import { useEffect, useState } from 'react';
+import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
 import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
@@ -10,6 +10,24 @@ import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
 const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#6d28d9');
+
+/** Recadre la carte une fois la fiche ouverte (sa taille n'est connue qu'après l'animation) */
+function FitPoints({ points }: { points: [number, number][] }) {
+  const map = useMap();
+  const key = JSON.stringify(points);
+  useEffect(() => {
+    const fit = () => {
+      map.invalidateSize();
+      if (points.length > 1) map.fitBounds(points, { padding: [36, 36], maxZoom: 15 });
+      else map.setView(points[0], 15);
+    };
+    fit();
+    const t = [setTimeout(fit, 250), setTimeout(fit, 600)];
+    return () => t.forEach(clearTimeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, key]);
+  return null;
+}
 
 /** Fiche détaillée d'une course : carte, chronologie, arrêts, preuves, actions */
 export default function DeliverySheet({ delivery, onClose }: { delivery: Delivery; onClose: () => void }) {
@@ -35,6 +53,29 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
     await api(`/deliveries/${d.id}/assign`, { method: 'POST', body: { driverId: driverId || null } });
     toast(driverId ? `Course envoyée à ${drivers.find((x) => x.id === driverId)?.name}` : 'Affectation retirée — visible par tous vos livreurs');
     reload();
+  };
+  // Ordre de passage des arrêts restant à livrer (gérant)
+  const pendingStops = d.stops.filter((s) => s.status === 'PENDING');
+  const canReorder = !isSA && d.status !== 'DELIVERED' && d.status !== 'CANCELLED' && pendingStops.length > 1;
+  const [order, setOrder] = useState<string[] | null>(null);
+  const moveStop = (i: number, dir: -1 | 1) => {
+    if (!order) return;
+    const j = i + dir;
+    if (j < 0 || j >= order.length) return;
+    const next = [...order];
+    [next[i], next[j]] = [next[j], next[i]];
+    setOrder(next);
+  };
+  const saveOrder = async () => {
+    if (!order) return;
+    try {
+      await api(`/deliveries/${d.id}/stops/order`, { method: 'POST', body: { stopIds: order } });
+      toast(d.driver ? `Nouvel ordre envoyé à ${d.driver.name}` : 'Ordre de passage enregistré');
+      setOrder(null);
+      reload();
+    } catch (e) {
+      toast((e as Error).message);
+    }
   };
   const link = trackingUrl(d);
   const copyLink = () => link && navigator.clipboard?.writeText(link).then(() => toast('Lien de suivi copié')).catch(() => {});
@@ -77,6 +118,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       <div className="map-box">
         <MapContainer bounds={points.length > 1 ? points : undefined} center={points[0]} zoom={13} boundsOptions={{ padding: [30, 30] }} style={{ height: '100%' }} scrollWheelZoom={false}>
           <MapTiles />
+          <FitPoints points={points} />
           <Polyline positions={points} pathOptions={{ color: '#0071e3', weight: 3, opacity: 0.6, dashArray: '6 6' }} />
           <CircleMarker center={points[0]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#34c759', fillOpacity: 1 }}>
             <Tooltip direction="top" permanent>A</Tooltip>
@@ -167,7 +209,32 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       </div>
 
       <div>
-        <div className="section-title">{d.stops.length > 1 ? `Arrêts (${d.stops.length})` : 'Destinataire'}</div>
+        <div className="section-title" style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ flex: 1 }}>{d.stops.length > 1 ? `Arrêts (${d.stops.length})` : 'Destinataire'}</span>
+          {canReorder && !order && <button className="btn plain" onClick={() => setOrder(pendingStops.map((s) => s.id))}>Modifier l’ordre</button>}
+        </div>
+        {order && (
+          <div className="reorder">
+            <small className="muted">Ordre de passage des colis restant à livrer{d.driver ? ` — ${d.driver.name} sera prévenu` : ''}. Le prix ne change pas.</small>
+            {order.map((id, i) => {
+              const s = d.stops.find((x) => x.id === id)!;
+              return (
+                <div key={id} className="reorder-row">
+                  <span className="stop-num" style={{ background: 'var(--accent)' }}>{d.stops.length - pendingStops.length + i + 1}</span>
+                  <div style={{ flex: 1, minWidth: 0 }}><strong>{s.recipientName}</strong><small className="muted" style={{ display: 'block' }}>{s.address} ({s.commune})</small></div>
+                  <div className="nd-order" style={{ marginTop: 0 }}>
+                    <button onClick={() => moveStop(i, -1)} disabled={i === 0} aria-label="Livrer plus tôt"><Icon name="chevron" size={13} /></button>
+                    <button onClick={() => moveStop(i, 1)} disabled={i === order.length - 1} aria-label="Livrer plus tard"><Icon name="chevron" size={13} /></button>
+                  </div>
+                </div>
+              );
+            })}
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn secondary" onClick={() => setOrder(null)}>Annuler</button>
+              <button className="btn" onClick={saveOrder} disabled={order.every((x, i) => x === pendingStops[i]?.id)}>Enregistrer l’ordre</button>
+            </div>
+          </div>
+        )}
         <div className="group">
           {d.stops.map((s) => (
             <div key={s.id} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
