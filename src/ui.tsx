@@ -5,7 +5,7 @@ import { initial, Status, STATUS_COLOR, STATUS_LABEL } from './api';
 // Icônes (trait fin, façon SF Symbols)
 // ============================================================================
 
-const PATHS: Record<string, string> = {
+export const ICON_PATHS: Record<string, string> = {
   overview: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
   box: 'M21 8l-9-5-9 5 9 5 9-5z M3 8v8l9 5 9-5V8 M12 13v8',
   map: 'M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z M9 4v14 M15 6v14',
@@ -51,7 +51,7 @@ export function Icon({ name, size = 18, className }: { name: string; size?: numb
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}
       strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden="true">
-      <path d={PATHS[name] ?? ''} />
+      <path d={ICON_PATHS[name] ?? ''} />
     </svg>
   );
 }

@@ -1,10 +1,24 @@
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import { connectRealtime } from '../realtime';
-import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { CircleMarker, MapContainer, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import { API_URL, time, VEHICLE_LABEL, Vehicle } from '../api';
 import MapTiles from '../components/MapTiles';
-import { Icon } from '../ui';
+import { Icon, ICON_PATHS } from '../ui';
+
+/** Marqueur du livreur : l'icône de son engin (moto, voiture, cargo) dans une pastille */
+function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
+  const name = vehicle === 'CAR' ? 'car' : vehicle === 'CARGO' ? 'truck' : 'bike';
+  const d = ICON_PATHS[name] ?? ICON_PATHS.bike;
+  const bg = live ? '#6D28D9' : '#8e8e93';
+  return L.divIcon({
+    className: 'track-vehicle',
+    iconSize: [46, 46],
+    iconAnchor: [23, 23],
+    html: `<div style="width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
+  });
+}
 
 interface Track {
   status: 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
@@ -16,7 +30,7 @@ interface Track {
   pickup: { address: string; commune: string; lat: number; lng: number };
   stops: { position: number; recipient: string; address: string; commune: string; lat: number; lng: number; status: string; deliveredAt: string | null }[];
   company: { name: string; phone: string } | null;
-  driver: { name: string; phone: string | null; position: { lat: number; lng: number; at: string } | null } | null;
+  driver: { name: string; phone: string | null; vehicle?: Vehicle; position: { lat: number; lng: number; at: string; live?: boolean } | null } | null;
   etaMin: number | null; nextStop: number | null;
 }
 
@@ -37,7 +51,7 @@ function Fit({ points, fitKey }: { points: [number, number][]; fitKey: string })
   const map = useMap();
   useEffect(() => {
     if (!points.length) return;
-    const fit = () => { map.invalidateSize(); map.fitBounds(points, { paddingTopLeft: [36, 36], paddingBottomRight: [36, 56], maxZoom: 16 }); };
+    const fit = () => { map.invalidateSize(); map.fitBounds(points, { paddingTopLeft: [40, 84], paddingBottomRight: [40, 56], maxZoom: 16 }); };
     fit();
     const timers = [250, 700].map((ms) => window.setTimeout(fit, ms));
     return () => timers.forEach((x) => window.clearTimeout(x));
@@ -69,7 +83,7 @@ export default function PublicTracking({ token }: { token: string }) {
     socket.on('connect', () => setLive(true));
     socket.on('disconnect', () => setLive(false));
     socket.on('driver:location', (e: { lat: number; lng: number; at: string }) => {
-      setT((cur) => (cur?.driver ? { ...cur, driver: { ...cur.driver, position: { lat: e.lat, lng: e.lng, at: e.at } } } : cur));
+      setT((cur) => (cur?.driver ? { ...cur, driver: { ...cur.driver, position: { lat: e.lat, lng: e.lng, at: e.at, live: true } } } : cur));
       // L'itinéraire d'approche et l'heure d'arrivée suivent le livreur (au plus toutes les 8 s)
       if (!reloadTimer) reloadTimer = window.setTimeout(() => { reloadTimer = 0; load(); }, 8000);
     });
@@ -123,9 +137,9 @@ export default function PublicTracking({ token }: { token: string }) {
             </CircleMarker>
           ))}
           {pos && (
-            <CircleMarker center={[pos.lat, pos.lng]} radius={12} pathOptions={{ color: '#fff', weight: 4, fillColor: '#8B5CF6', fillOpacity: 1 }}>
-              <Tooltip permanent direction="top">{t.driver?.name}</Tooltip>
-            </CircleMarker>
+            <Marker position={[pos.lat, pos.lng]} icon={vehicleIcon(t.driver?.vehicle ?? t.vehicleType, pos.live !== false)} zIndexOffset={1000}>
+              <Tooltip permanent direction="top" offset={[0, -24]}>{t.driver?.name}{pos.live === false ? ` · vu à ${time(pos.at)}` : ''}</Tooltip>
+            </Marker>
           )}
         </MapContainer>
       </div>
