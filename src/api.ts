@@ -226,3 +226,32 @@ export function downloadCsv(filename: string, rows: (string | number | null | un
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ---------- Livreurs indépendants (LI) ----------
+export type IndependentStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+export interface IndependentsConfig { registrationOpen: boolean; enabled: boolean; commissionType: CommissionType; commissionValue: number }
+export interface IndependentCounts { pending: number; approved: number; rejected: number; suspended: number; draft: number }
+export interface IndependentRow {
+  id: string; status: IndependentStatus; vehicleType: Vehicle | null; vehiclePlate: string | null; commune: string | null;
+  submittedAt: string | null; reviewedAt: string | null; reviewNote: string | null; createdAt: string;
+  userId: string; name: string; phone: string; active: boolean; lastLocationAt: string | null;
+  companyId: string; credit: number | string; completed: number;
+}
+export type IndependentDoc = 'selfieUrl' | 'docsSelfieUrl' | 'idFrontUrl' | 'idBackUrl' | 'licenseUrl' | 'registrationUrl' | 'insuranceUrl';
+export interface IndependentDossier {
+  id: string; status: IndependentStatus; companyId: string;
+  birthDate: string | null; commune: string | null; address: string | null;
+  idType: 'CNI' | 'PASSPORT' | 'CONSULAR' | 'RESIDENCE' | null; idNumber: string | null;
+  emergencyName: string | null; emergencyPhone: string | null;
+  vehicleType: Vehicle | null; vehicleBrand: string | null; vehiclePlate: string | null; licenseNumber: string | null;
+  consentAt: string | null; submittedAt: string | null; reviewedAt: string | null; reviewedBy: string | null; reviewNote: string | null;
+  createdAt: string;
+  history: { at: string; action: 'CREATED' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'REACTIVATED'; by?: string; note?: string }[];
+  user: User;
+  links: Partial<Record<IndependentDoc, string | null>>;
+  required: { key: string; label: string; ok: boolean }[];
+}
+export const INDEPENDENT_STATUS: Record<IndependentStatus, [string, string]> = {
+  PENDING: ['À vérifier', 'orange'], APPROVED: ['Validé', 'green'], REJECTED: ['Refusé', 'red'],
+  SUSPENDED: ['Suspendu', 'gray'], DRAFT: ['Brouillon', 'gray'],
+};

@@ -15,17 +15,18 @@ import Logbook from './pages/Logbook';
 import CompanyPricing from './pages/CompanyPricing';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
+import Independents from './pages/Independents';
 import PublicTracking from './pages/PublicTracking';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -92,6 +93,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
   }, []);
 
   const billingAlert = useBillingBadge(isSA);
+  const liPending = useIndependentsBadge(isSA);
   const active = deliveries.filter((d) => d.status === 'PENDING' || d.status === 'ACCEPTED' || d.status === 'PICKED_UP').length;
   const nav = useMemo(() => {
     const items: { section: string; links: { r: Route; icon: string; label: string; count?: number; alert?: boolean }[] }[] = [
@@ -111,6 +113,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           ? [
               { r: 'companies', icon: 'building', label: 'Entreprises' },
               { r: 'drivers', icon: 'bike', label: 'Livreurs' },
+              { r: 'independents', icon: 'shield', label: 'Indépendants', count: liPending || undefined, alert: true },
               { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
               { r: 'clients', icon: 'people', label: 'Clients' },
             ]
@@ -125,7 +128,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     ];
     if (isSA) items.push({ section: 'Réglages', links: [{ r: 'pricing', icon: 'tag', label: 'Tarifs et règles' }] });
     return items;
-  }, [isSA, active, stats, billingAlert]);
+  }, [isSA, active, stats, billingAlert, liPending]);
 
   const allowed = nav.flatMap((s) => s.links.map((l) => l.r));
   const current = allowed.includes(route) ? route : 'overview';
@@ -188,6 +191,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'payments' && <Payments />}
           {current === 'myPricing' && <CompanyPricing />}
           {current === 'logbook' && <Logbook />}
+          {current === 'independents' && <Independents />}
         </div>
       </main>
     </div>
@@ -206,6 +210,20 @@ function useBillingBadge(isSA: boolean) {
     load();
     const t = window.setInterval(load, 30_000);
     return () => window.clearInterval(t);
+  }, [isSA]);
+  return n;
+}
+
+/** Pastille du menu (SA) : dossiers de livreurs indépendants à vérifier */
+function useIndependentsBadge(isSA: boolean) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!isSA) return;
+    const load = () => api<{ counts: { pending: number } }>('/independents?status=PENDING').then((r) => setN(r.counts.pending)).catch(() => {});
+    load();
+    const t = window.setInterval(load, 30_000);
+    window.addEventListener('independents:changed', load);
+    return () => { window.clearInterval(t); window.removeEventListener('independents:changed', load); };
   }, [isSA]);
   return n;
 }

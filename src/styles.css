@@ -593,3 +593,26 @@ small.down { color: var(--green); }
 .vehicle-pick button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; border-radius: 12px; border: 1.5px solid var(--separator); background: var(--card); color: var(--label); font: inherit; font-size: 13px; cursor: pointer; }
 .vehicle-pick button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
 .inline-select { height: 26px; padding: 0 22px 0 6px; font-size: 13px; width: auto; border-radius: 6px; }
+
+/* ----- Livreurs indépendants ----- */
+.li-avatar { width: 56px; height: 56px; border-radius: 16px; object-fit: cover; flex: none; background: var(--fill); cursor: zoom-in; font-size: 22px; }
+.li-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); }
+.li-actions .grow { flex: 1; min-width: 160px; }
+.li-photos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 8px; }
+.li-photos figure { margin: 0; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.li-photos button { padding: 0; border: 1px solid var(--separator); border-radius: 10px; overflow: hidden; background: var(--fill); cursor: zoom-in; aspect-ratio: 1; display: block; width: 100%; }
+.li-photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.li-photos figcaption { font-size: 11px; color: var(--secondary); line-height: 1.25; }
+.li-missing { aspect-ratio: 1; border-radius: 10px; border: 1.5px dashed var(--separator); display: flex; flex-direction: column; gap: 4px; align-items: center; justify-content: center; color: var(--tertiary); font-size: 11px; }
+@media (max-width: 480px) { .li-photos { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.group > dl.kv { margin: 0; display: grid; }
+.li-checklist { display: grid; grid-template-columns: 1fr 1fr; }
+.li-checklist > * { align-items: center; font-size: 13px; }
+
+.li-check { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; flex: none; background: var(--red-soft); color: var(--red); }
+.li-check.ok { background: var(--green-soft); color: var(--green); }
+.li-adjust { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.li-adjust input { background: var(--card); }
+.li-tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.li-tabs::-webkit-scrollbar { display: none; }
+@media (max-width: 560px) { .toolbar .search, .toolbar .search input { width: 100%; } .li-checklist { grid-template-columns: 1fr; } }
