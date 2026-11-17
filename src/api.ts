@@ -115,7 +115,7 @@ export interface PricingGrid {
   speeds: Record<Speed, SpeedConfig>;
   codEnabled: boolean; codFee: number; extraStopFee: number;
   cancelFeeEnabled: boolean; cancelFeeType: 'PERCENT' | 'FIXED'; cancelFeeValue: number; cancelFreeMinutes: number;
-  returnCodeEnabled: boolean; cancelRequestAutoMin: number; maxStops: number; absenceWaitMin: number;
+  returnCodeEnabled: boolean; deliveryCodeEnabled: boolean; cancelRequestAutoMin: number; maxStops: number; absenceWaitMin: number;
   multiStopDiscountPct: number; multiStopDiscountMaxPct: number; surcharges: SurchargeRules;
   updatedAt?: string | null; updatedBy?: string | null;
 }

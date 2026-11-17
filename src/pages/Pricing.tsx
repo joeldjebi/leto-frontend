@@ -193,6 +193,10 @@ export default function Pricing() {
               <input type="number" min={1} max={120} value={grid.cancelRequestAutoMin} onChange={(e) => setGrid({ ...grid, cancelRequestAutoMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">min</span>
             </div>
             <div>
+              <div className="grow"><div className="title">Code de livraison</div><small className="muted">Le destinataire donne son code à 4 chiffres au livreur pour confirmer la réception. Désactivé : le livreur valide seul la livraison</small></div>
+              <Switch checked={grid.deliveryCodeEnabled !== false} onChange={(on) => setGrid({ ...grid, deliveryCodeEnabled: on })} label={grid.deliveryCodeEnabled !== false ? 'Désactiver' : 'Activer'} />
+            </div>
+            <div>
               <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés (absence, refus, annulation après récupération) sont rapportés à l’expéditeur, qui confirme avec un code</small></div>
               <Switch checked={grid.returnCodeEnabled} onChange={(on) => setGrid({ ...grid, returnCodeEnabled: on })} label={grid.returnCodeEnabled ? 'Désactiver' : 'Activer'} />
             </div>

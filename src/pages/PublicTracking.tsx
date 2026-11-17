@@ -1,5 +1,6 @@
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
+import { connectRealtime } from '../realtime';
 import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-leaflet';
 import { API_URL, time, VEHICLE_LABEL, Vehicle } from '../api';
 import MapTiles from '../components/MapTiles';
@@ -7,6 +8,9 @@ import { Icon } from '../ui';
 
 interface Track {
   status: 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
+  /** Itinéraire réel de la tournée restante, et approche du livreur vers sa prochaine étape */
+  route: [number, number][] | null;
+  approach: [number, number][] | null;
   createdAt: string; acceptedAt: string | null; pickedUpAt: string | null; deliveredAt: string | null; cancelledAt: string | null;
   vehicleType: Vehicle; sender: string | null;
   pickup: { address: string; commune: string; lat: number; lng: number };
@@ -25,22 +29,30 @@ const TITLE: Record<Track['status'], string> = {
 };
 const STEPS = ['PENDING', 'ACCEPTED', 'PICKED_UP', 'DELIVERED'] as const;
 
-/** Recentre la carte quand les points changent */
-function Fit({ points }: { points: [number, number][] }) {
+/**
+ * Cadre la carte sur le trajet. Recadre seulement quand le trajet change (pas à chaque mouvement du livreur),
+ * après que la carte a pris sa taille (mise en page mobile).
+ */
+function Fit({ points, fitKey }: { points: [number, number][]; fitKey: string }) {
   const map = useMap();
-  const key = points.map((p) => p.join(',')).join('|');
   useEffect(() => {
-    if (points.length) map.fitBounds(points, { padding: [40, 40], maxZoom: 16 });
-  }, [key]);
+    if (!points.length) return;
+    const fit = () => { map.invalidateSize(); map.fitBounds(points, { paddingTopLeft: [36, 36], paddingBottomRight: [36, 56], maxZoom: 16 }); };
+    fit();
+    const timers = [250, 700].map((ms) => window.setTimeout(fit, ms));
+    return () => timers.forEach((x) => window.clearTimeout(x));
+  }, [fitKey]);
   return null;
 }
 
-/** Page publique de suivi (lien partagé au client ou aux destinataires), rafraîchie toutes les 5 s */
+/** Page publique de suivi (lien partagé au client ou aux destinataires), en temps réel */
 export default function PublicTracking({ token }: { token: string }) {
   const [t, setT] = useState<Track | null>(null);
   const [error, setError] = useState('');
+  const [live, setLive] = useState(false);
   useEffect(() => {
     let stop = false;
+    let reloadTimer = 0;
     const load = async () => {
       try {
         const res = await fetch(`${API_URL}/track/${encodeURIComponent(token)}`);
@@ -52,8 +64,19 @@ export default function PublicTracking({ token }: { token: string }) {
       }
     };
     load();
-    const timer = window.setInterval(load, 5000);
-    return () => { stop = true; window.clearInterval(timer); };
+    // Temps réel : position du livreur à chaque mouvement, étapes dès qu'elles changent
+    const socket = connectRealtime({ trackToken: token });
+    socket.on('connect', () => setLive(true));
+    socket.on('disconnect', () => setLive(false));
+    socket.on('driver:location', (e: { lat: number; lng: number; at: string }) => {
+      setT((cur) => (cur?.driver ? { ...cur, driver: { ...cur.driver, position: { lat: e.lat, lng: e.lng, at: e.at } } } : cur));
+      // L'itinéraire d'approche et l'heure d'arrivée suivent le livreur (au plus toutes les 8 s)
+      if (!reloadTimer) reloadTimer = window.setTimeout(() => { reloadTimer = 0; load(); }, 8000);
+    });
+    for (const ev of ['delivery:updated', 'stop:arrived', 'stop:failed', 'stop:cancelled']) socket.on(ev, () => load());
+    // Filet de sécurité si la connexion temps réel est coupée
+    const timer = window.setInterval(load, 20000);
+    return () => { stop = true; window.clearInterval(timer); window.clearTimeout(reloadTimer); socket.disconnect(); };
   }, [token]);
 
   if (!t) {
@@ -73,10 +96,23 @@ export default function PublicTracking({ token }: { token: string }) {
   return (
     <div className="track-page">
       <div className="track-map">
-        <MapContainer center={[t.pickup.lat, t.pickup.lng]} zoom={13} style={{ height: '100%' }} zoomControl={false}>
+        <MapContainer center={[t.pickup.lat, t.pickup.lng]} zoom={13} zoomSnap={0.25} style={{ height: '100%' }} zoomControl={false}>
           <MapTiles />
-          <Fit points={points} />
-          <Polyline positions={[[t.pickup.lat, t.pickup.lng], ...t.stops.map((s) => [s.lat, s.lng] as [number, number])]} pathOptions={{ color: '#6D28D9', weight: 3, opacity: 0.5, dashArray: '6 8' }} />
+          <Fit points={points} fitKey={`${t.status}|${t.stops.map((x) => x.status).join(',')}|${pos ? 1 : 0}`} />
+          {t.route && t.route.length > 1 ? (
+            <>
+              <Polyline positions={t.route} pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.9 }} />
+              <Polyline positions={t.route} pathOptions={{ color: '#6D28D9', weight: 5, opacity: 0.95 }} />
+            </>
+          ) : (
+            <Polyline positions={[[t.pickup.lat, t.pickup.lng], ...t.stops.map((s) => [s.lat, s.lng] as [number, number])]} pathOptions={{ color: '#6D28D9', weight: 3, opacity: 0.5, dashArray: '6 8' }} />
+          )}
+          {t.approach && t.approach.length > 1 && (
+            <>
+              <Polyline positions={t.approach} pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.9 }} />
+              <Polyline positions={t.approach} pathOptions={{ color: '#2563EB', weight: 4, opacity: 1, dashArray: '1 9', lineCap: 'round' }} />
+            </>
+          )}
           <CircleMarker center={[t.pickup.lat, t.pickup.lng]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#121214', fillOpacity: 1 }}>
             <Tooltip>Départ · {t.pickup.address}</Tooltip>
           </CircleMarker>
@@ -131,7 +167,7 @@ export default function PublicTracking({ token }: { token: string }) {
           ))}
         </div>
         {t.stops.length > 1 && <small className="muted">{done}/{t.stops.length} colis livrés</small>}
-        <small className="muted">Mis à jour automatiquement toutes les 5 secondes.</small>
+        <small className="muted">{live ? '● En direct : la position du livreur se met à jour en temps réel.' : 'Mise à jour automatique.'}</small>
       </div>
     </div>
   );

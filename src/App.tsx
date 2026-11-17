@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, BillingOverview, ROLE_LABEL, setToken, User } from './api';
+import { api, BillingOverview, getToken, ROLE_LABEL, setToken, User } from './api';
 import { DataProvider, useData } from './data';
 import Clients from './pages/Clients';
 import Collections from './pages/Collections';
@@ -18,6 +18,7 @@ import Pricing from './pages/Pricing';
 import Independents from './pages/Independents';
 import Sounds from './pages/Sounds';
 import PublicTracking from './pages/PublicTracking';
+import { connectRealtime } from './realtime';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
@@ -85,6 +86,13 @@ function BackOffice() {
 
 function Shell({ onLogout }: { onLogout: () => void }) {
   const { me, isSA, stats, deliveries } = useData();
+  // Temps réel : fond de carte mis à jour dès que l'admin le change
+  useEffect(() => {
+    const t = getToken();
+    if (!t) return;
+    const s = connectRealtime({ token: t });
+    return () => { s.disconnect(); };
+  }, []);
   const [route, setRoute] = useState<Route>(fromHash());
   const [theme, setTheme] = useTheme();
   useEffect(() => {
