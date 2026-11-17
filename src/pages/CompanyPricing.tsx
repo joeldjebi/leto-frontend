@@ -1,19 +1,14 @@
 import { useEffect, useState } from 'react';
-import { api, fcfa, PricingGrid, Speed, Vehicle, VEHICLE_LABEL } from '../api';
+import { api, capFromKm, computePrice, fcfa, PricingGrid, Speed, Vehicle, VEHICLE_LABEL } from '../api';
 import { Badge, Icon, Modal, Switch, useToast } from '../ui';
 
-interface CompanyPricingData { custom: Partial<PricingGrid> | null; effective: PricingGrid; platform: PricingGrid }
+interface CompanyPricingData { custom: Partial<PricingGrid> | null; effective: PricingGrid; platform: PricingGrid; vehicles: Vehicle[] }
 const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
 const SPEEDS: Speed[] = ['EXPRESS', 'STANDARD', 'SCHEDULED'];
 const VEHICLE_ICON: Record<Vehicle, string> = { MOTO: 'moto', CAR: 'car', CARGO: 'truck' };
 const VEHICLE_HINT: Record<Vehicle, string> = { MOTO: 'Petits colis, documents', CAR: 'Colis moyens ou fragiles', CARGO: 'Gros volumes' };
 
-/** Même formule que le serveur (pricing.ts) */
-function price(g: PricingGrid, km: number, v: Vehicle, s: Speed, stops: number) {
-  const c = g.vehicles[v];
-  const raw = (Math.max(c.min, c.base + c.perKm * km) + g.extraStopFee * Math.max(0, stops - 1)) * g.speeds[s].factor;
-  return Math.ceil(raw / 50) * 50;
-}
+const SPEED_SHORT: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: '2 h' };
 
 /** Montant éditable, avec la valeur LETO en repère */
 function Amount({ label, value, platform, step, onChange, suffix = 'F' }: { label: string; value: number; platform: number; step: number; onChange: (n: number) => void; suffix?: string }) {
@@ -42,6 +37,8 @@ export default function CompanyPricing() {
   const [km, setKm] = useState(5);
   const [stops, setStops] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [abidjan, setAbidjan] = useState(true);
+  const price = (g: PricingGrid, km: number, v: Vehicle, s: Speed, n: number) => computePrice(g, km, v, s, n, 0, abidjan);
   const load = (d: CompanyPricingData) => { setData(d); setGrid(structuredClone(d.effective)); };
   useEffect(() => { api<CompanyPricingData>('/companies/me/pricing').then(load); }, []);
   if (!data || !grid) return <div className="cp"><h1 className="cp-title">Mes tarifs</h1><p className="muted">Chargement…</p></div>;
@@ -50,6 +47,19 @@ export default function CompanyPricing() {
   const dirty = JSON.stringify(grid) !== JSON.stringify(data.effective);
   const setVehicle = (v: Vehicle, patch: Partial<PricingGrid['vehicles'][Vehicle]>) =>
     setGrid({ ...grid, vehicles: { ...grid.vehicles, [v]: { ...grid.vehicles[v], ...patch } } });
+  const setCap = (v: Vehicle, s: Speed, n: number) => setVehicle(v, { maxAbidjan: { ...grid.vehicles[v].maxAbidjan, [s]: n } });
+  /** Engins dont l'entreprise dispose : enregistré tout de suite, sans toucher aux prix en cours de saisie */
+  const toggleVehicle = async (v: Vehicle, on: boolean) => {
+    const next = on ? [...new Set([...data.vehicles, v])] : data.vehicles.filter((x) => x !== v);
+    try {
+      const d = await api<CompanyPricingData>('/companies/me/vehicles', { method: 'PUT', body: { vehicles: next } });
+      setData(d);
+      setGrid({ ...grid, vehicles: Object.fromEntries(VEHICLES.map((x) => [x, { ...grid.vehicles[x], enabled: d.effective.vehicles[x].enabled }])) as PricingGrid['vehicles'] });
+      toast(on ? `${VEHICLE_LABEL[v]} : proposé à vos clients` : `${VEHICLE_LABEL[v]} : retiré de vos offres`);
+    } catch (e) {
+      toast((e as Error).message);
+    }
+  };
   const setFactor = (s: Speed, factor: number) => setGrid({ ...grid, speeds: { ...grid.speeds, [s]: { ...grid.speeds[s], factor } } });
 
   const save = async () => {
@@ -58,7 +68,10 @@ export default function CompanyPricing() {
     try {
       load(await api<CompanyPricingData>('/companies/me/pricing', {
         method: 'PUT',
-        body: { vehicles: grid.vehicles, speeds: grid.speeds, extraStopFee: grid.extraStopFee, codFee: grid.codFee },
+        body: {
+          vehicles: Object.fromEntries(VEHICLES.map((v) => [v, { base: grid.vehicles[v].base, perKm: grid.vehicles[v].perKm, min: grid.vehicles[v].min, maxAbidjan: grid.vehicles[v].maxAbidjan }])),
+          speeds: grid.speeds, extraStopFee: grid.extraStopFee, codFee: grid.codFee,
+        },
       }));
       toast('Tarifs enregistrés — appliqués aux prochaines commandes');
     } catch (e) {
@@ -94,20 +107,44 @@ export default function CompanyPricing() {
           <div className="cp-vehicles">
             {VEHICLES.map((v) => {
               const c = grid.vehicles[v];
+              const letoOff = !P.vehicles[v].enabled;
+              const has = data.vehicles.includes(v);
               return (
                 <section key={v} className={`cp-vehicle${c.enabled ? '' : ' off'}`}>
                   <div className="cp-vehicle-head">
                     <span className="cp-vehicle-icon"><Icon name={VEHICLE_ICON[v]} size={28} /></span>
                     <div className="grow"><strong>{VEHICLE_LABEL[v]}</strong><small className="muted">{VEHICLE_HINT[v]}</small></div>
-                    <Switch checked={c.enabled} onChange={(on) => setVehicle(v, { enabled: on })} label={c.enabled ? 'Ne plus proposer' : 'Proposer'} />
+                    {letoOff ? <Badge>Désactivé par LETO</Badge> : (
+                      <label className="cp-has">
+                        <span>{has ? 'J’en dispose' : 'Je n’en ai pas'}</span>
+                        <Switch checked={has} onChange={(on) => toggleVehicle(v, on)} label={has ? `Je n’ai pas de ${VEHICLE_LABEL[v].toLowerCase()}` : `Je dispose de ${VEHICLE_LABEL[v].toLowerCase()}`} />
+                      </label>
+                    )}
                   </div>
                   <div className="cp-amounts">
                     <Amount label="Prise en charge" value={c.base} platform={P.vehicles[v].base} step={50} onChange={(n) => setVehicle(v, { base: n })} />
                     <Amount label="Par kilomètre" value={c.perKm} platform={P.vehicles[v].perKm} step={10} onChange={(n) => setVehicle(v, { perKm: n })} />
                     <Amount label="Minimum" value={c.min} platform={P.vehicles[v].min} step={50} onChange={(n) => setVehicle(v, { min: n })} />
                   </div>
+                  <div className="cp-caps">
+                    <span className="cp-amount-label">Prix maximum · Grand Abidjan</span>
+                    <div className="cp-caps-row">
+                      {SPEEDS.map((s) => {
+                        const cap = c.maxAbidjan?.[s] ?? 0;
+                        const leto = P.vehicles[v].maxAbidjan?.[s] ?? 0;
+                        return (
+                          <label key={s} className="cp-cap">
+                            <small>{SPEED_SHORT[s]}</small>
+                            <input type="number" min={0} step={50} value={cap} onChange={(e) => setCap(v, s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Prix maximum ${VEHICLE_LABEL[v]} ${SPEED_SHORT[s]}`} />
+                            <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`LETO : ${leto ? fcfa(leto) : 'aucun plafond'}`}>{cap === leto ? '= LETO' : leto ? `LETO ${leto}` : 'LETO : —'}</small>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <small className="muted">{(() => { const f = capFromKm(grid, v, 'STANDARD'); return c.maxAbidjan?.STANDARD ? (f !== null ? `Standard plafonné dès ${f} km` : 'Plafonné') : '0 = pas de plafond'; })()}</small>
+                  </div>
                   <div className="cp-vehicle-foot">
-                    {c.enabled ? <>Course de {km} km : <strong>{fcfa(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">Non proposé aux clients</span>}
+                    {c.enabled ? <>Course de {km} km : <strong>{fcfa(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">{letoOff ? 'Désactivé par LETO' : 'Non proposé : vous n’en disposez pas'}</span>}
                   </div>
                 </section>
               );
@@ -145,6 +182,13 @@ export default function CompanyPricing() {
               <input type="range" min={1} max={30} step={0.5} value={km} onChange={(e) => setKm(Number(e.target.value))} />
             </label>
             <div className="cp-stepper">
+              <span>Zone</span>
+              <div className="cp-zone">
+                <button className={abidjan ? 'on' : ''} onClick={() => setAbidjan(true)}>Abidjan</button>
+                <button className={abidjan ? '' : 'on'} onClick={() => setAbidjan(false)}>Hors</button>
+              </div>
+            </div>
+            <div className="cp-stepper">
               <span>Adresses de livraison</span>
               <div>
                 <button onClick={() => setStops(Math.max(1, stops - 1))} aria-label="Moins">−</button>
@@ -164,7 +208,7 @@ export default function CompanyPricing() {
                 </div>
               ))}
             </div>
-            <small className="muted">Prix = max(minimum, prise en charge + prix par km × distance) + arrêts supplémentaires, × coefficient du délai, arrondi aux 50 F.</small>
+            <small className="muted">Prix = max(minimum, prise en charge + prix par km × distance) × coefficient du délai, sans dépasser le prix maximum dans le Grand Abidjan, + arrêts supplémentaires, arrondi aux 50 F.</small>
           </section>
         </aside>
       </div>

@@ -1,18 +1,15 @@
 import { useEffect, useState } from 'react';
-import { api, dateTime, fcfa, PricingGrid, Speed, Vehicle } from '../api';
+import { api, capFromKm, computePrice, dateTime, fcfa, PricingGrid, Speed, Vehicle } from '../api';
 import BillingSettings from '../components/BillingSettings';
 import MapSettings from '../components/MapSettings';
+import SurchargeSettings from '../components/SurchargeSettings';
 import { Card, Modal, PageHeader, Switch, useToast } from '../ui';
 
 const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
 const SPEEDS: Speed[] = ['EXPRESS', 'STANDARD', 'SCHEDULED'];
 
-/** Même formule que le serveur (pricing.ts) — pour la simulation en direct */
-function price(g: PricingGrid, km: number, v: Vehicle, s: Speed, stops: number, cod: number) {
-  const c = g.vehicles[v];
-  const raw = (Math.max(c.min, c.base + c.perKm * km) + g.extraStopFee * Math.max(0, stops - 1)) * g.speeds[s].factor + g.codFee * cod;
-  return Math.ceil(raw / 50) * 50;
-}
+const price = (g: PricingGrid, km: number, v: Vehicle, s: Speed, stops: number, cod: number, abidjan: boolean, up = 0) => computePrice(g, km, v, s, stops, cod, abidjan, up);
+const VNAME: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
 
 /** Tarifs et règles de la plateforme (SA) */
 export default function Pricing() {
@@ -22,7 +19,7 @@ export default function Pricing() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [sim, setSim] = useState({ km: 6, stops: 1, cod: 0 });
+  const [sim, setSim] = useState({ km: 6, stops: 1, cod: 0, abidjan: true, up: 0 });
 
   useEffect(() => {
     api<PricingGrid>('/admin/settings').then((g) => { setSaved(g); setGrid(g); });
@@ -78,7 +75,7 @@ export default function Pricing() {
 
       <div className="stack">
         <Card title="Offres" pad>
-          <p className="muted" style={{ marginTop: 0 }}>Prix = max(minimum, base + prix par km × distance) × coefficient du délai, arrondi aux 50 F supérieurs.</p>
+          <p className="muted" style={{ marginTop: 0 }}>Prix = max(minimum, base + prix par km × distance) × coefficient du délai, arrondi aux 50 F supérieurs, sans dépasser le prix maximum dans le Grand Abidjan. Un engin désactivé n’est proposé par aucune entreprise ; chaque entreprise indique aussi les engins dont elle dispose.</p>
           <div className="table-scroll">
             <table className="list">
               <thead><tr><th>Offre</th><th>Nom affiché</th><th>Description</th><th className="num">Base (F)</th><th className="num">Par km (F)</th><th className="num">Minimum (F)</th><th>Active</th></tr></thead>
@@ -87,7 +84,7 @@ export default function Pricing() {
                   const c = grid.vehicles[v];
                   return (
                     <tr key={v} style={{ opacity: c.enabled ? 1 : 0.55 }}>
-                      <td><strong>{v === 'MOTO' ? 'Moto' : v === 'CAR' ? 'Voiture' : 'Cargo'}</strong></td>
+                      <td><strong>{VNAME[v]}</strong></td>
                       <td><input value={c.label} onChange={(e) => setVehicle(v, { label: e.target.value })} style={{ width: 160 }} /></td>
                       <td><input value={c.description} onChange={(e) => setVehicle(v, { description: e.target.value })} style={{ width: 200 }} /></td>
                       <td className="num"><input type="number" min={0} step={50} value={c.base} onChange={(e) => setVehicle(v, { base: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /></td>
@@ -97,6 +94,34 @@ export default function Pricing() {
                     </tr>
                   );
                 })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+
+        <Card title="Prix maximum dans le Grand Abidjan" pad>
+          <p className="muted" style={{ marginTop: 0 }}>
+            Quand le départ et toutes les adresses sont dans le Grand Abidjan (13 communes, de Songon à Bingerville, d’Anyama à Port-Bouët), le prix d’une course ne dépasse pas ce montant. Les arrêts supplémentaires s’ajoutent. Laissez 0 pour ne pas plafonner.
+          </p>
+          <div className="table-scroll">
+            <table className="list">
+              <thead><tr><th>Offre</th>{SPEEDS.map((s) => <th key={s} className="num">{grid.speeds[s].label}</th>)}</tr></thead>
+              <tbody>
+                {VEHICLES.map((v) => (
+                  <tr key={v} style={{ opacity: grid.vehicles[v].enabled ? 1 : 0.55 }}>
+                    <td><strong>{VNAME[v]}</strong></td>
+                    {SPEEDS.map((s) => {
+                      const cap = grid.vehicles[v].maxAbidjan?.[s] ?? 0;
+                      const from = capFromKm(grid, v, s);
+                      return (
+                        <td key={s} className="num">
+                          <input type="number" min={0} step={50} value={cap} onChange={(e) => setVehicle(v, { maxAbidjan: { ...grid.vehicles[v].maxAbidjan, [s]: num(e.target.value) } })} style={{ width: 100, textAlign: 'right' }} aria-label={`Prix maximum ${VNAME[v]} ${grid.speeds[s].label}`} />
+                          <span className="sub">{cap ? (from !== null ? `atteint dès ${from} km` : 'plafonné') : 'pas de plafond'}</span>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -141,6 +166,8 @@ export default function Pricing() {
           </Card>
         </div>
 
+        <SurchargeSettings grid={grid} setGrid={setGrid} />
+
         <Card title="Annulations et retours" pad>
           <div className="rows" style={{ margin: '0 -20px' }}>
             <div>
@@ -176,6 +203,14 @@ export default function Pricing() {
           <div className="toolbar">
             <label className="field"><span>Distance (km)</span><input type="number" min={0} step={0.5} value={sim.km} onChange={(e) => setSim({ ...sim, km: num(e.target.value) })} style={{ width: 110 }} /></label>
             <label className="field"><span>Arrêts</span><input type="number" min={1} max={10} value={sim.stops} onChange={(e) => setSim({ ...sim, stops: Math.max(1, num(e.target.value)) })} style={{ width: 90 }} /></label>
+            <label className="field"><span>Zone</span><select value={sim.abidjan ? 'in' : 'out'} onChange={(e) => setSim({ ...sim, abidjan: e.target.value === 'in' })}><option value="in">Grand Abidjan</option><option value="out">Hors Grand Abidjan</option></select></label>
+            <label className="field"><span>Majorations</span><select value={sim.up} onChange={(e) => setSim({ ...sim, up: Number(e.target.value) })}>
+              <option value={0}>Aucune</option>
+              <option value={grid.surcharges.rushPct}>Heure de pointe (+{grid.surcharges.rushPct} %)</option>
+              <option value={grid.surcharges.nightPct}>Nuit (+{grid.surcharges.nightPct} %)</option>
+              <option value={grid.surcharges.rainPct}>Pluie (+{grid.surcharges.rainPct} %)</option>
+              <option value={grid.surcharges.rainPct + grid.surcharges.floodPct}>Pluie + zone inondable (+{grid.surcharges.rainPct + grid.surcharges.floodPct} %)</option>
+            </select></label>
             <label className="field"><span>Dont paiement à la livraison</span><input type="number" min={0} max={sim.stops} value={sim.cod} onChange={(e) => setSim({ ...sim, cod: Math.min(sim.stops, num(e.target.value)) })} style={{ width: 90 }} /></label>
           </div>
           <table className="list">
@@ -185,8 +220,8 @@ export default function Pricing() {
                 <tr key={v}>
                   <td>{grid.vehicles[v].label}</td>
                   {SPEEDS.map((s) => {
-                    const now = price(grid, sim.km, v, s, sim.stops, sim.cod);
-                    const before = price(saved, sim.km, v, s, sim.stops, sim.cod);
+                    const now = price(grid, sim.km, v, s, sim.stops, sim.cod, sim.abidjan, sim.up);
+                    const before = price(saved, sim.km, v, s, sim.stops, sim.cod, sim.abidjan, sim.up);
                     return (
                       <td key={s} className="num">
                         <strong>{fcfa(now)}</strong>

@@ -9,7 +9,7 @@ import MapTiles from './MapTiles';
 
 interface Place { label: string; sublabel?: string; lat: number; lng: number }
 interface StopForm { key: number; place: Place | null; name: string; phone: string }
-interface Quote { distanceKm: number; durationMin: number; points: [number, number][]; order: number[]; offers: { vehicle: Vehicle; label: string; prices: Record<Speed, number> }[] }
+interface Quote { distanceKm: number; durationMin: number; points: [number, number][]; order: number[]; offers: { vehicle: Vehicle; label: string; prices: Record<Speed, number> }[]; surcharges?: { key: string; label: string; pct: number }[]; stopDiscountPct?: number; inAbidjan?: boolean }
 
 export const trackingUrl = (d: Pick<Delivery, 'trackingToken'>) => (d.trackingToken ? `${location.origin}${location.pathname}#/suivi/${d.trackingToken}` : null);
 
@@ -359,7 +359,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
         {/* ----- Total ----- */}
         <div className="nd-footer">
           <div className="nd-total">
-            <small className="muted">Total · espèces</small>
+            <small className="muted">Total · espèces{quote?.surcharges?.map((x) => ` · ${x.label} +${x.pct} %`).join('')}{quote?.stopDiscountPct ? ` · tournée −${quote.stopDiscountPct} %` : ''}</small>
             {manual !== null ? (
               <div className="nd-manual"><input inputMode="numeric" autoFocus value={manual} onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))} placeholder={gridPrice ? String(gridPrice) : 'Prix'} /><span>F</span></div>
             ) : (

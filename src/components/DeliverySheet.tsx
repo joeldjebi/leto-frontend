@@ -135,6 +135,13 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
         <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{fcfa(d.price)}</span>
         <span className="muted">Espèces · {VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
       </div>
+      {d.pricingDetails && (d.pricingDetails.surcharges.length > 0 || d.pricingDetails.stopDiscountPct > 0 || d.pricingDetails.inAbidjan) && (
+        <div className="price-factors">
+          {d.pricingDetails.inAbidjan && <span className="pf">Grand Abidjan</span>}
+          {d.pricingDetails.surcharges.map((s) => <span key={s.key} className="pf up">{s.label} +{s.pct} %</span>)}
+          {d.pricingDetails.stopDiscountPct > 0 && <span className="pf down">Tournée −{d.pricingDetails.stopDiscountPct} %</span>}
+        </div>
+      )}
       {d.commissionAmount != null && (
         <div className="muted" style={{ marginTop: -8 }}>
           Commission LETO {d.commissionRule} : {fcfa(d.commissionAmount)}

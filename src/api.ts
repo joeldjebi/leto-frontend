@@ -39,6 +39,7 @@ export interface Stop {
 
 export interface Delivery {
   id: string; status: Status; price: number;
+  pricingDetails?: { inAbidjan: boolean; surchargePct: number; surcharges: { key: string; label: string; pct: number }[]; stopDiscountPct: number } | null;
   vehicleType: Vehicle; speed: Speed;
   distanceKm: number | null; durationMin: number | null;
   pickupCommune: string; pickupAddress: string; pickupDetails: string | null; pickupPhone: string;
@@ -106,7 +107,7 @@ export interface Stats {
   topClients: { id: string; name: string; deliveries: number; volume: number }[];
 }
 
-export interface VehicleConfig { label: string; description: string; base: number; perKm: number; min: number; enabled: boolean }
+export interface VehicleConfig { label: string; description: string; base: number; perKm: number; min: number; enabled: boolean; maxAbidjan: Record<Speed, number> }
 export interface SpeedConfig { label: string; description: string; factor: number }
 export interface PricingGrid {
   vehicles: Record<Vehicle, VehicleConfig>;
@@ -114,7 +115,40 @@ export interface PricingGrid {
   codEnabled: boolean; codFee: number; extraStopFee: number;
   cancelFeeEnabled: boolean; cancelFeeType: 'PERCENT' | 'FIXED'; cancelFeeValue: number; cancelFreeMinutes: number;
   returnCodeEnabled: boolean; cancelRequestAutoMin: number; maxStops: number; absenceWaitMin: number;
+  multiStopDiscountPct: number; multiStopDiscountMaxPct: number; surcharges: SurchargeRules;
   updatedAt?: string | null; updatedBy?: string | null;
+}
+
+export interface SurchargeRules {
+  rushEnabled: boolean; rushPct: number; rushRanges: string[];
+  nightEnabled: boolean; nightPct: number; nightRange: string;
+  rainMode: 'AUTO' | 'ON' | 'OFF'; rainPct: number; rainThresholdMm: number;
+  floodPct: number; floodCommunes: string[]; aboveCap: boolean;
+}
+export const COMMUNES = ['Abobo', 'Adjamé', 'Anyama', 'Attécoubé', 'Bingerville', 'Cocody', 'Koumassi', 'Marcory', 'Plateau', 'Port-Bouët', 'Songon', 'Treichville', 'Yopougon'];
+export const stopDiscount = (g: PricingGrid, stops: number) => Math.min(g.multiStopDiscountMaxPct ?? 0, (g.multiStopDiscountPct ?? 0) * Math.max(0, stops - 1));
+
+/**
+ * Même formule que le serveur (pricing.ts) : course = max(minimum, base + prix/km × distance) × coefficient du délai,
+ * plafonnée dans le Grand Abidjan ; + arrêts supplémentaires (× coefficient) + frais d'encaissement, arrondi aux 50 F.
+ */
+export function computePrice(g: PricingGrid, km: number, v: Vehicle, s: Speed, stops = 1, cod = 0, inAbidjan = true, surchargePct = 0) {
+  const c = g.vehicles[v];
+  const factor = g.speeds[s].factor;
+  const up = 1 + surchargePct / 100;
+  let course = Math.ceil((Math.max(c.min, c.base + c.perKm * km) * factor * up) / 50) * 50;
+  const cap = c.maxAbidjan?.[s] ?? 0;
+  if (inAbidjan && cap > 0) course = Math.min(course, g.surcharges?.aboveCap ? Math.ceil((cap * up) / 50) * 50 : cap);
+  const discounted = (course + g.extraStopFee * Math.max(0, stops - 1) * factor * up) * (1 - stopDiscount(g, stops) / 100);
+  return Math.ceil((discounted + g.codFee * cod) / 50) * 50;
+}
+/** Distance à partir de laquelle le plafond s'applique (km), ou null */
+export function capFromKm(g: PricingGrid, v: Vehicle, s: Speed) {
+  const c = g.vehicles[v];
+  const cap = c.maxAbidjan?.[s] ?? 0;
+  if (!cap || !c.perKm) return null;
+  const km = (cap / g.speeds[s].factor - c.base) / c.perKm;
+  return km > 0 ? Math.round(km * 10) / 10 : 0;
 }
 
 // ---------- Libellés ----------
