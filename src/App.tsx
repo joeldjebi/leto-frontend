@@ -16,17 +16,18 @@ import CompanyPricing from './pages/CompanyPricing';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
 import Independents from './pages/Independents';
+import Sounds from './pages/Sounds';
 import PublicTracking from './pages/PublicTracking';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -126,7 +127,10 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             { r: 'billing', icon: 'card', label: 'Crédit et abonnement', count: billingAlert || undefined, alert: true },
           ] },
     ];
-    if (isSA) items.push({ section: 'Réglages', links: [{ r: 'pricing', icon: 'tag', label: 'Tarifs et règles' }] });
+    if (isSA) items.push({ section: 'Réglages', links: [
+      { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
+      { r: 'sounds', icon: 'bell', label: 'Sons' },
+    ] });
     return items;
   }, [isSA, active, stats, billingAlert, liPending]);
 
@@ -192,6 +196,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'myPricing' && <CompanyPricing />}
           {current === 'logbook' && <Logbook />}
           {current === 'independents' && <Independents />}
+          {current === 'sounds' && <Sounds />}
         </div>
       </main>
     </div>

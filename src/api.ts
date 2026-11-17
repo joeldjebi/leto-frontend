@@ -255,3 +255,24 @@ export const INDEPENDENT_STATUS: Record<IndependentStatus, [string, string]> = {
   PENDING: ['À vérifier', 'orange'], APPROVED: ['Validé', 'green'], REJECTED: ['Refusé', 'red'],
   SUSPENDED: ['Suspendu', 'gray'], DRAFT: ['Brouillon', 'gray'],
 };
+
+// ---------- Sons des notifications (SA) ----------
+export type SoundEvent = 'NEW_ORDER' | 'ASSIGNED' | 'CANCELLED' | 'UPDATED' | 'CLIENT_UPDATE';
+export interface NotificationSound { id: string; name: string; url: string | null; builtin: boolean }
+export interface SoundsConfig { sounds: NotificationSound[]; events: Record<SoundEvent, string>; labels: Record<SoundEvent, string> }
+/** Lien d'écoute : sons intégrés copiés dans le back-office, sons ajoutés servis par l'API */
+export const soundSrc = (s: NotificationSound) => (s.url ? API_URL + s.url : `${import.meta.env.BASE_URL}sounds/${s.id}.wav`);
+
+/** Ajout d'un son (WAV) : envoi multipart avec le nom */
+export async function uploadSound(name: string, file: File): Promise<SoundsConfig> {
+  const body = new FormData();
+  body.append('name', name);
+  body.append('file', file);
+  const res = await fetch(API_URL + '/notifications/sounds', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = Array.isArray(data?.message) ? data.message.join(', ') : data?.message;
+    throw new Error(msg ?? 'Envoi du son impossible');
+  }
+  return data as SoundsConfig;
+}
