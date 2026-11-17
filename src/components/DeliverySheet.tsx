@@ -9,7 +9,7 @@ import {
 import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
-const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#f77f00');
+const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#6d28d9');
 
 /** Fiche détaillée d'une course : carte, chronologie, arrêts, preuves, actions */
 export default function DeliverySheet({ delivery, onClose }: { delivery: Delivery; onClose: () => void }) {
