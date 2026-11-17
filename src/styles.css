@@ -587,3 +587,9 @@ small.down { color: var(--green); }
 .chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
 .cp-stepper .cp-zone button { width: auto; height: auto; border-radius: 6px; padding: 4px 10px; background: none; }
 .cp-stepper .cp-zone button.on { background: var(--card); }
+
+/* ----- Engin du livreur ----- */
+.vehicle-pick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vehicle-pick button { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px; border-radius: 12px; border: 1.5px solid var(--separator); background: var(--card); color: var(--label); font: inherit; font-size: 13px; cursor: pointer; }
+.vehicle-pick button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-text); font-weight: 600; }
+.inline-select { height: 26px; padding: 0 22px 0 6px; font-size: 13px; width: auto; border-radius: 6px; }

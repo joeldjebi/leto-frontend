@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { api, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, Stop, time } from '../api';
+import { api, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, Stop, time, Vehicle } from '../api';
 import { LogbookView } from './Logbook';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { EarningsTab } from '../components/Remittances';
@@ -111,6 +111,15 @@ export default function DriverDetail({ id }: { id: string }) {
             </h1>
             <div className="meta-row">
               <span><Icon name="phone" size={14} />{driver.phone}</span>
+              <span>
+                <Icon name={driver.vehicleType === 'CAR' ? 'car' : driver.vehicleType === 'CARGO' ? 'truck' : 'moto'} size={14} />
+                {isSA ? ({ MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' } as Record<Vehicle, string>)[driver.vehicleType ?? 'MOTO'] : (
+                  <select className="inline-select" value={driver.vehicleType ?? 'MOTO'} aria-label="Engin du livreur"
+                    onChange={async (e) => { await api(`/companies/me/drivers/${driver.id}/vehicle`, { method: 'PATCH', body: { vehicleType: e.target.value } }); toast('Engin du livreur mis à jour'); reload(); }}>
+                    <option value="MOTO">Moto</option><option value="CAR">Voiture</option><option value="CARGO">Cargo</option>
+                  </select>
+                )}
+              </span>
               {isSA && driver.company && (
                 <span><Icon name="building" size={14} /><button className="btn plain" style={{ padding: 0 }} onClick={() => goTo('companies', driver.company!.id)}>{driver.company.name}</button></span>
               )}
