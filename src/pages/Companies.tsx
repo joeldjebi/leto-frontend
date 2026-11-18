@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, Company, fcfa, isOnline, phoneError } from '../api';
+import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, fcfa, isOnline, phoneError, VEHICLE_LABEL } from '../api';
 import { useData } from '../data';
-import { Avatar, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Switch, useToast } from '../ui';
+import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import CompanyDetail, { EditCompany } from './CompanyDetail';
 
 /** Entreprises de livraison partenaires (SA) */
@@ -11,12 +11,27 @@ export default function Companies() {
   return detailId ? <CompanyDetail id={detailId} /> : <CompanyList />;
 }
 
+type Tab = 'ALL' | 'PENDING' | 'REJECTED';
+const statusOf = (c: Company): CompanyStatus => c.status ?? 'APPROVED';
+const vehicleIcon = (v: string) => (v === 'CAR' ? 'car' : v === 'CARGO' ? 'truck' : 'moto');
+
+export const CompanyStatusBadge = ({ c }: { c: Company }) =>
+  statusOf(c) === 'APPROVED' ? null : <Badge color={COMPANY_STATUS[statusOf(c)][1]}>{COMPANY_STATUS[statusOf(c)][0]}</Badge>;
+
 function CompanyList() {
   const { companies, users, deliveries, reload } = useData();
   const toast = useToast();
   const [q, setQ] = useState('');
+  const [tab, setTab] = useState<Tab>('ALL');
   const [creating, setCreating] = useState(false);
   const [editing, setEditing] = useState<Company | null>(null);
+
+  // Demandes d'inscription : rechargées à chaque action, toutes les 30 s (DataProvider) et dès qu'une demande arrive (socket)
+  useEffect(() => {
+    const on = () => { reload().catch(() => {}); };
+    window.addEventListener('companies:changed', on);
+    return () => window.removeEventListener('companies:changed', on);
+  }, [reload]);
 
   const statsOf = useMemo(() => {
     const m = new Map<string, { drivers: number; online: number; delivered: number; volume: number; active: number }>();
@@ -40,44 +55,187 @@ function CompanyList() {
     reload();
   };
 
-  const rows = companies.filter((c) => (c.name + c.phone).toLowerCase().includes(q.toLowerCase()));
+  const match = (c: Company) =>
+    [c.name, c.phone, c.application?.commune, c.application?.managerName, c.application?.managerPhone].join(' ').toLowerCase().includes(q.toLowerCase());
+  const byDate = (a: Company, b: Company) => (b.application?.appliedAt ?? b.createdAt).localeCompare(a.application?.appliedAt ?? a.createdAt);
+  const pending = companies.filter((c) => statusOf(c) === 'PENDING').sort(byDate);
+  const rejected = companies.filter((c) => statusOf(c) === 'REJECTED').sort(byDate);
+  const approved = companies.filter((c) => statusOf(c) === 'APPROVED');
+  const rows = companies.filter(match);
 
   return (
     <>
       <PageHeader
         title="Entreprises"
-        subtitle={`${companies.length} entreprise(s) de livraison partenaire(s)`}
+        subtitle={`${approved.length} entreprise(s) partenaire(s)${pending.length ? ` · ${pending.length} demande(s) d’inscription à traiter` : ''}`}
         actions={<button className="btn" onClick={() => setCreating(true)}><Icon name="plus" size={15} />Nouvelle entreprise</button>}
       />
-      <div className="toolbar"><Search value={q} onChange={setQ} placeholder="Nom ou téléphone" /></div>
-      <Card>
-        {rows.length === 0 ? <Empty icon="building">Aucune entreprise</Empty> : (
-          <div className="table-scroll">
-            <table className="list">
-              <thead><tr><th>Entreprise</th><th className="num">Livreurs</th><th className="num">En course</th><th className="num">Courses terminées</th><th className="num">Volume</th><th>Active</th><th /></tr></thead>
-              <tbody>
-                {rows.map((c) => {
-                  const s = statsOf.get(c.id)!;
-                  return (
-                    <tr key={c.id} className="clickable" onClick={() => goTo('companies', c.id)}>
-                      <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={c.name} /><div>{c.name}<span className="sub">{c.phone}</span></div></div></td>
-                      <td className="num">{s.drivers}<span className="sub">{s.online} en ligne</span></td>
-                      <td className="num">{s.active}</td>
-                      <td className="num">{s.delivered}</td>
-                      <td className="num">{fcfa(s.volume)}</td>
-                      <td onClick={(e) => e.stopPropagation()}><Switch checked={c.active} onChange={(v) => toggle(c, v)} label={c.active ? 'Suspendre' : 'Réactiver'} /></td>
-                      <td onClick={(e) => e.stopPropagation()}><button className="btn plain" onClick={() => setEditing(c)}>Modifier</button></td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+      <div className="toolbar">
+        <div className="li-tabs"><Segmented<Tab>
+          value={tab}
+          onChange={setTab}
+          options={[
+            ['ALL', `Toutes (${companies.length})`],
+            ['PENDING', `Demandes en attente (${pending.length})`],
+            ['REJECTED', `Refusées (${rejected.length})`],
+          ]}
+        /></div>
+        <span className="spacer" />
+        <Search value={q} onChange={setQ} placeholder="Nom, téléphone, commune" />
+      </div>
+
+      <div className="stack">
+        {(tab === 'ALL' ? pending.length > 0 : true) && tab !== 'REJECTED' && (
+          <Card
+            title="Demandes d’inscription"
+            actions={<small className="muted">Envoyées depuis la landing page · {pending.length} en attente</small>}
+          >
+            {pending.filter(match).length === 0 ? <Empty icon="building">Aucune demande en attente</Empty> : (
+              <div className="rows">
+                {pending.filter(match).map((c) => <RequestRow key={c.id} c={c} onDone={reload} />)}
+              </div>
+            )}
+          </Card>
         )}
-      </Card>
+
+        {tab === 'REJECTED' && (
+          <Card title="Demandes refusées" actions={<small className="muted">Une demande refusée peut encore être acceptée</small>}>
+            {rejected.filter(match).length === 0 ? <Empty icon="building">Aucune demande refusée</Empty> : (
+              <div className="rows">
+                {rejected.filter(match).map((c) => <RequestRow key={c.id} c={c} onDone={reload} />)}
+              </div>
+            )}
+          </Card>
+        )}
+
+        {tab === 'ALL' && (
+          <Card>
+            {rows.length === 0 ? <Empty icon="building">Aucune entreprise</Empty> : (
+              <div className="table-scroll">
+                <table className="list">
+                  <thead><tr><th>Entreprise</th><th className="num">Livreurs</th><th className="num">En course</th><th className="num">Courses terminées</th><th className="num">Volume</th><th>Active</th><th /></tr></thead>
+                  <tbody>
+                    {rows.map((c) => {
+                      const s = statsOf.get(c.id)!;
+                      const approvedC = statusOf(c) === 'APPROVED';
+                      return (
+                        <tr key={c.id} className="clickable" onClick={() => (approvedC ? goTo('companies', c.id) : setTab(statusOf(c) === 'PENDING' ? 'PENDING' : 'REJECTED'))}>
+                          <td>
+                            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                              <Avatar name={c.name} />
+                              <div><span className="co-name">{c.name}<CompanyStatusBadge c={c} /></span><span className="sub">{c.phone}</span></div>
+                            </div>
+                          </td>
+                          <td className="num">{s.drivers}<span className="sub">{s.online} en ligne</span></td>
+                          <td className="num">{s.active}</td>
+                          <td className="num">{s.delivered}</td>
+                          <td className="num">{fcfa(s.volume)}</td>
+                          <td onClick={(e) => approvedC && e.stopPropagation()}>
+                            {approvedC ? <Switch checked={c.active} onChange={(v) => toggle(c, v)} label={c.active ? 'Suspendre' : 'Réactiver'} />
+                              : <small className="muted">{statusOf(c) === 'PENDING' ? 'À valider' : '—'}</small>}
+                          </td>
+                          <td onClick={(e) => e.stopPropagation()}><button className="btn plain" onClick={() => setEditing(c)}>Modifier</button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        )}
+      </div>
       {creating && <CreateCompany onClose={() => setCreating(false)} />}
       {editing && <EditCompany company={editing} onClose={() => setEditing(null)} />}
     </>
+  );
+}
+
+/** Une demande d'inscription : informations envoyées + Accepter / Refuser */
+function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
+  const toast = useToast();
+  const [confirm, setConfirm] = useState<'approve' | 'reject' | null>(null);
+  const [note, setNote] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const a = c.application ?? {};
+  const st = statusOf(c);
+
+  const act = async (kind: 'approve' | 'reject') => {
+    if (kind === 'reject' && !note.trim()) return setError('Motif obligatoire');
+    setBusy(true);
+    setError('');
+    try {
+      await api(`/companies/${c.id}/${kind}`, { method: 'POST', body: kind === 'reject' ? { note: note.trim() } : undefined });
+      toast(kind === 'approve' ? `${c.name} acceptée — le gérant peut se connecter` : `Demande de ${c.name} refusée`);
+      setConfirm(null);
+      setNote('');
+      window.dispatchEvent(new Event('companies:changed'));
+      onDone();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="co-request">
+      <Avatar name={c.name} />
+      <div className="grow">
+        <div className="co-request-head">
+          <span className="title">{c.name}</span>
+          <CompanyStatusBadge c={c} />
+          <small className="muted">{a.appliedAt ? `Envoyée le ${dateTime(a.appliedAt)}` : `Créée le ${dateTime(c.createdAt)}`}</small>
+        </div>
+        <div className="meta-row">
+          <span><Icon name="phone" size={14} />{c.phone}</span>
+          {a.commune && <span><Icon name="pin" size={14} />{a.commune}</span>}
+          {a.drivers != null && <span><Icon name="people" size={14} />{a.drivers} livreur{a.drivers > 1 ? 's' : ''}</span>}
+          {a.vehicles && a.vehicles.length > 0 && (
+            <span>{a.vehicles.map((v) => <span key={v} className="co-vehicle"><Icon name={vehicleIcon(v)} size={14} />{VEHICLE_LABEL[v] ?? v}</span>)}</span>
+          )}
+        </div>
+        {(a.managerName || a.managerPhone) && (
+          <div className="meta-row"><span><Icon name="shield" size={14} />Gérant : {a.managerName ?? '—'}{a.managerPhone && <> · <a href={`tel:${a.managerPhone}`}>{a.managerPhone}</a></>}</span></div>
+        )}
+        {a.message && <p className="co-message">« {a.message} »</p>}
+        {st === 'REJECTED' && c.reviewNote && (
+          <div className="alert error co-motif"><strong>Motif du refus :</strong> « {c.reviewNote} »{c.reviewedAt && <> · {dateTime(c.reviewedAt)}</>}</div>
+        )}
+      </div>
+      <div className="co-request-actions">
+        <button className="btn" disabled={busy} onClick={() => { setError(''); setConfirm('approve'); }}><Icon name="check" size={15} />{st === 'REJECTED' ? 'Accepter quand même' : 'Accepter'}</button>
+        {st === 'PENDING' && <button className="btn danger" disabled={busy} onClick={() => { setError(''); setConfirm('reject'); }}>Refuser</button>}
+      </div>
+
+      {confirm === 'approve' && (
+        <Modal
+          title={`Accepter ${c.name} ?`}
+          subtitle="L’entreprise pourra se connecter au back-office. Pensez à activer son abonnement dans Facturation."
+          onClose={() => setConfirm(null)}
+          footer={<><button className="btn secondary" onClick={() => setConfirm(null)}>Annuler</button><button className="btn" disabled={busy} onClick={() => act('approve')}>Accepter</button></>}
+        >
+          {(a.managerName || a.managerPhone) && (
+            <div className="alert info">Identifiant du gérant : <strong>{a.managerPhone ?? '—'}</strong>{a.managerName && <> ({a.managerName})</>}, avec le mot de passe choisi lors de la demande.</div>
+          )}
+          {error && <div className="alert error">{error}</div>}
+        </Modal>
+      )}
+      {confirm === 'reject' && (
+        <Modal
+          title={`Refuser la demande de ${c.name}`}
+          subtitle="Le motif est conservé avec la demande. Vous pourrez encore l’accepter plus tard."
+          onClose={() => setConfirm(null)}
+          footer={<><button className="btn secondary" onClick={() => setConfirm(null)}>Annuler</button><button className="btn danger" disabled={busy} onClick={() => act('reject')}>Refuser</button></>}
+        >
+          <Field label="Motif du refus" error={error}>
+            <textarea autoFocus maxLength={500} value={note} onChange={(e) => { setNote(e.target.value); if (error) setError(''); }}
+              placeholder="Ex. : informations incomplètes, entreprise injoignable…" />
+          </Field>
+        </Modal>
+      )}
+    </div>
   );
 }
 

@@ -10,7 +10,19 @@ export interface Company {
   id: string; name: string; phone: string; active: boolean; createdAt: string;
   credit: number; subscriptionEndsAt: string | null;
   commissionType: CommissionType | null; commissionValue: number | null;
+  /** Inscription en ligne : en attente, validée ou refusée par LETO */
+  status?: CompanyStatus;
+  application?: CompanyApplication | null;
+  reviewNote?: string | null; reviewedAt?: string | null;
 }
+export type CompanyStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export interface CompanyApplication {
+  commune?: string; drivers?: number; vehicles?: Vehicle[]; message?: string;
+  managerName?: string; managerPhone?: string; appliedAt?: string;
+}
+export const COMPANY_STATUS: Record<CompanyStatus, [string, string]> = {
+  PENDING: ['En attente', 'orange'], APPROVED: ['Validée', 'green'], REJECTED: ['Refusée', 'red'],
+};
 export interface User {
   id: string; name: string; phone: string; role: Role; active: boolean;
   companyId: string | null; company?: Company | null; createdAt: string;
@@ -275,4 +287,43 @@ export async function uploadSound(name: string, file: File): Promise<SoundsConfi
     throw new Error(msg ?? 'Envoi du son impossible');
   }
   return data as SoundsConfig;
+}
+
+// ---------- Landing page (SA) ----------
+export interface LandingText { title: string; text: string }
+export interface LandingContent {
+  hero: { badge: string; title1: string; title2: string; subtitle: string; ctaPrimary: string; ctaSecondary: string };
+  steps: LandingText[];
+  tour: LandingText;
+  price: { title1: string; title2: string; text: string };
+  trust: { title: string; items: LandingText[] };
+  pros: { companyTitle: string; companyText: string; driverTitle: string; driverText: string };
+  faq: { q: string; a: string }[];
+  final: LandingText;
+  contact: { phone: string; email: string; whatsapp: string; address: string };
+  apk: { url: string | null; version: string; sizeMb: number | null; updatedAt: string | null };
+}
+export const LANDING_URL = 'https://leto.performx.online';
+
+/** Nouvelle version de l'APK : XMLHttpRequest pour suivre la progression de l'envoi */
+export function uploadApk(file: File, version: string, onProgress: (pct: number) => void): Promise<LandingContent> {
+  return new Promise((resolve, reject) => {
+    const body = new FormData();
+    body.append('version', version);
+    body.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', API_URL + '/admin/landing/apk');
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100)); };
+    xhr.onload = () => {
+      let data: { message?: string | string[] } | null = null;
+      try { data = JSON.parse(xhr.responseText); } catch { /* réponse vide */ }
+      if (xhr.status >= 200 && xhr.status < 300) return resolve(data as unknown as LandingContent);
+      if (xhr.status === 413) return reject(new Error('Fichier trop lourd (200 Mo maximum)'));
+      const msg = Array.isArray(data?.message) ? data!.message.join(', ') : data?.message;
+      reject(new Error(msg ?? 'Envoi de l’APK impossible'));
+    };
+    xhr.onerror = () => reject(new Error('Envoi interrompu : vérifiez la connexion'));
+    xhr.send(body);
+  });
 }

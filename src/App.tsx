@@ -17,18 +17,19 @@ import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
 import Independents from './pages/Independents';
 import Sounds from './pages/Sounds';
+import Landing from './pages/Landing';
 import PublicTracking from './pages/PublicTracking';
 import { connectRealtime } from './realtime';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -103,6 +104,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
 
   const billingAlert = useBillingBadge(isSA);
   const liPending = useIndependentsBadge(isSA);
+  const coPending = useCompaniesBadge(isSA);
   const active = deliveries.filter((d) => d.status === 'PENDING' || d.status === 'ACCEPTED' || d.status === 'PICKED_UP').length;
   const nav = useMemo(() => {
     const items: { section: string; links: { r: Route; icon: string; label: string; count?: number; alert?: boolean }[] }[] = [
@@ -120,7 +122,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
         section: 'Réseau',
         links: isSA
           ? [
-              { r: 'companies', icon: 'building', label: 'Entreprises' },
+              { r: 'companies', icon: 'building', label: 'Entreprises', count: coPending || undefined, alert: true },
               { r: 'drivers', icon: 'bike', label: 'Livreurs' },
               { r: 'independents', icon: 'shield', label: 'Indépendants', count: liPending || undefined, alert: true },
               { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
@@ -138,9 +140,10 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     if (isSA) items.push({ section: 'Réglages', links: [
       { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
+      { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
     return items;
-  }, [isSA, active, stats, billingAlert, liPending]);
+  }, [isSA, active, stats, billingAlert, liPending, coPending]);
 
   const allowed = nav.flatMap((s) => s.links.map((l) => l.r));
   const current = allowed.includes(route) ? route : 'overview';
@@ -205,6 +208,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'logbook' && <Logbook />}
           {current === 'independents' && <Independents />}
           {current === 'sounds' && <Sounds />}
+          {current === 'landing' && <Landing />}
         </div>
       </main>
     </div>
@@ -237,6 +241,20 @@ function useIndependentsBadge(isSA: boolean) {
     const t = window.setInterval(load, 30_000);
     window.addEventListener('independents:changed', load);
     return () => { window.clearInterval(t); window.removeEventListener('independents:changed', load); };
+  }, [isSA]);
+  return n;
+}
+
+/** Pastille du menu (SA) : demandes d'inscription d'entreprises à traiter */
+function useCompaniesBadge(isSA: boolean) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (!isSA) return;
+    const load = () => api<unknown[]>('/companies?status=PENDING').then((r) => setN(r.length)).catch(() => {});
+    load();
+    const t = window.setInterval(load, 30_000);
+    window.addEventListener('companies:changed', load);
+    return () => { window.clearInterval(t); window.removeEventListener('companies:changed', load); };
   }, [isSA]);
   return n;
 }

@@ -9,5 +9,7 @@ import { refreshMapStyle } from './components/MapTiles';
 export function connectRealtime(auth: { token: string } | { trackToken: string }): Socket {
   const socket = io(API_URL, { auth, transports: ['websocket'], reconnection: true });
   socket.on('map:changed', () => { refreshMapStyle(); });
+  // SA : nouvelle demande d'inscription d'une entreprise → liste et pastille du menu rechargées
+  socket.on('companies:changed', () => { window.dispatchEvent(new Event('companies:changed')); });
   return socket;
 }
