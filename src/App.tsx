@@ -21,6 +21,8 @@ import CancelReasons from './pages/CancelReasons';
 import Landing from './pages/Landing';
 import PublicTracking from './pages/PublicTracking';
 import { connectRealtime } from './realtime';
+import { OfficeBell, OfficeInvite, OfficeToast } from './components/OfficeBell';
+import { attachOffice, initOfficeStore, OfficeNotification, registerOfficeWorker } from './officeNotify';
 import { loadCountries, useCountries } from './countries';
 import Countries from './pages/Countries';
 import { useTheme } from './theme';
@@ -94,11 +96,16 @@ function BackOffice() {
 function Shell({ onLogout }: { onLogout: () => void }) {
   const { me, isSA, stats, deliveries } = useData();
   // Temps réel : fond de carte mis à jour dès que l'admin le change
+  const [toast, setToast] = useState<OfficeNotification | null>(null);
   useEffect(() => {
     const t = getToken();
     if (!t) return;
+    initOfficeStore(me.id);
+    registerOfficeWorker();
     const s = connectRealtime({ token: t });
-    return () => { s.disconnect(); };
+    // Notifications locales (SA et gérants) : son, bandeau, notification du navigateur
+    const detach = attachOffice(s, setToast);
+    return () => { detach(); s.disconnect(); };
   }, []);
   const [route, setRoute] = useState<Route>(fromHash());
   const [theme, setTheme] = useTheme();
@@ -196,11 +203,14 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             <strong>{me.name}</strong>
             <small className="muted">{ROLE_LABEL[me.role]}</small>
           </div>
+          <OfficeBell isSA={isSA} />
           <button className="btn secondary icon-btn" onClick={onLogout} title="Se déconnecter" aria-label="Se déconnecter"><Icon name="logout" size={16} /></button>
         </div>
       </nav>
       <main className="main">
+        <OfficeToast n={toast} onClose={() => setToast(null)} />
         <div className="page">
+          <OfficeInvite />
           {current === 'overview' && <Overview />}
           {current === 'deliveries' && <Deliveries />}
           {current === 'map' && <LiveMapPage />}

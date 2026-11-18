@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { go, useHashParam } from '../App';
 import { codTotal, dateTime, Delivery, downloadCsv, SPEED_LABEL, STATUS_LABEL, VEHICLE_LABEL } from '../api';
 import { formatMoney, formatPhone, currencyOf } from '../countries';
 import DeliverySheet from '../components/DeliverySheet';
@@ -12,13 +13,23 @@ type Period = 'today' | '7d' | '30d' | 'all';
 const DAY = 86_400_000;
 
 export default function Deliveries() {
-  const { deliveries, companies, isSA } = useData();
+  const { deliveries, companies, isSA, reload } = useData();
+  // #/courses/<id> (ex. clic sur une notification) : ouvre la fiche de la course
+  const linked = useHashParam('deliveries');
   const [q, setQ] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
   const [period, setPeriod] = useState<Period>('7d');
   const [company, setCompany] = useState('');
   const [open, setOpen] = useState<Delivery | null>(null);
   const [creating, setCreating] = useState(false);
+  const asked = useRef<string | null>(null);
+  useEffect(() => {
+    if (!linked) return;
+    const d = deliveries.find((x) => x.id === linked);
+    if (d) setOpen(d);
+    else if (asked.current !== linked) { asked.current = linked; reload(); } // course toute récente : liste rechargée
+  }, [linked, deliveries]);
+  const closeSheet = () => { setOpen(null); if (linked) go('deliveries'); };
 
   const rows = useMemo(() => {
     const since = period === 'today' ? new Date().setHours(0, 0, 0, 0) : period === '7d' ? Date.now() - 7 * DAY : period === '30d' ? Date.now() - 30 * DAY : 0;
@@ -117,7 +128,7 @@ export default function Deliveries() {
           </div>
         )}
       </Card>
-      {open && <DeliverySheet delivery={open} onClose={() => setOpen(null)} />}
+      {open && <DeliverySheet delivery={open} onClose={closeSheet} />}
     </>
   );
 }
