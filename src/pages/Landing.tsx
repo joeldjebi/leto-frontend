@@ -198,13 +198,7 @@ export default function Landing() {
 
             <FaqCard faq={draft.faq} onChange={(v) => set('faq', v)} badge={modified('faq')} />
 
-            <div className="lp-pair">
-              <Card title="Appel final" actions={modified('final')}>
-                <div className="card-pad lp-col">
-                  <TextField label="Titre" value={draft.final.title} max={80} onChange={(v) => set('final', { ...draft.final, title: v })} />
-                  <TextField label="Texte" multiline value={draft.final.text} max={200} onChange={(v) => set('final', { ...draft.final, text: v })} />
-                </div>
-              </Card>
+            <div>
               <Card title="Coordonnées" actions={modified('contact')}>
                 <div className="card-pad lp-grid">
                   <TextField label="Téléphone" type="tel" value={draft.contact.phone} max={30} placeholder="07 00 00 00 00" onChange={(v) => set('contact', { ...draft.contact, phone: v })} />
