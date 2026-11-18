@@ -108,7 +108,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     return () => window.removeEventListener('hashchange', on);
   }, []);
 
-  const billingAlert = useBillingBadge(isSA);
+  const { n: billingAlert, subscriptions } = useBillingBadge(isSA);
   const liPending = useIndependentsBadge(isSA);
   const coPending = useCompaniesBadge(isSA);
   const active = deliveries.filter((d) => d.status === 'PENDING' || d.status === 'ACCEPTED' || d.status === 'PICKED_UP').length;
@@ -140,7 +140,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
         ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
         : { section: 'Compte', links: [
             { r: 'myPricing', icon: 'tag', label: 'Mes tarifs' },
-            { r: 'billing', icon: 'card', label: 'Crédit et abonnement', count: billingAlert || undefined, alert: true },
+            { r: 'billing', icon: 'card', label: subscriptions ? 'Crédit et abonnement' : 'Crédit', count: billingAlert || undefined, alert: true },
           ] },
     ];
     if (isSA) items.push({ section: 'Réglages', links: [
@@ -151,7 +151,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
     return items;
-  }, [isSA, active, stats, billingAlert, liPending, coPending]);
+  }, [isSA, active, stats, billingAlert, subscriptions, liPending, coPending]);
 
   const allowed = nav.flatMap((s) => s.links.map((l) => l.r));
   const current = allowed.includes(route) ? route : 'overview';
@@ -227,18 +227,22 @@ function Shell({ onLogout }: { onLogout: () => void }) {
 
 /** Pastille du menu : SA = paiements à vérifier ; gérant = 1 si l'entreprise ne peut pas travailler */
 function useBillingBadge(isSA: boolean) {
-  const [n, setN] = useState(0);
+  const [state, setState] = useState({ n: 0, subscriptions: true });
   useEffect(() => {
     const load = () =>
       (isSA
-        ? api<{ pending: number }>('/billing/summary').then((s) => s.pending)
-        : api<BillingOverview>('/billing/me').then((b) => (!b.subscribed || b.available <= 0 ? 1 : 0))
-      ).then(setN).catch(() => {});
+        ? api<{ pending: number }>('/billing/summary').then((s) => ({ n: s.pending, subscriptions: true }))
+        : api<BillingOverview>('/billing/me').then((b) => ({
+            // Pendant l'essai : alerte seulement dans les 3 derniers jours
+            n: (b.inTrial ? b.trialDaysLeft <= 3 : !b.subscribed || b.available <= 0) ? 1 : 0,
+            subscriptions: b.subscriptionRequired,
+          }))
+      ).then(setState).catch(() => {});
     load();
     const t = window.setInterval(load, 30_000);
     return () => window.clearInterval(t);
   }, [isSA]);
-  return n;
+  return state;
 }
 
 /** Pastille du menu (SA) : dossiers de livreurs indépendants à vérifier */

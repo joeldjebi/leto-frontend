@@ -11,6 +11,8 @@ export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
 export interface Company {
   id: string; name: string; phone: string; active: boolean; createdAt: string;
   credit: number; subscriptionEndsAt: string | null;
+  /** Fin de l'essai gratuit (sans crédit ni commission) */
+  trialEndsAt?: string | null;
   commissionType: CommissionType | null; commissionValue: number | null;
   /** Inscription en ligne : en attente, validée ou refusée par LETO */
   status?: CompanyStatus;
@@ -81,6 +83,10 @@ export interface MobileMoneyAccount { operator: string; number: string; name: st
 export interface BillingConfig {
   subscriptionFee: number; commissionType: CommissionType; commissionValue: number;
   accounts: MobileMoneyAccount[]; operators: string[];
+  /** Abonnement annuel exigé des entreprises */
+  subscriptionEnabled: boolean;
+  /** Essai gratuit des nouvelles entreprises, en jours (0 = aucun) */
+  trialDays: number;
 }
 export interface Payment {
   id: string; companyId: string; company?: Company; kind: PaymentKind; amount: number;
@@ -95,6 +101,7 @@ export interface CreditTransaction {
 export interface BillingOverview {
   credit: number; reserved: number; available: number;
   subscriptionEndsAt: string | null; subscribed: boolean;
+  subscriptionRequired: boolean; trialEndsAt: string | null; inTrial: boolean; trialDaysLeft: number;
   rule: { type: CommissionType; value: number; custom: boolean; label: string };
   month: { commissions: number; topups: number };
   config: BillingConfig; transactions: CreditTransaction[]; payments: Payment[];

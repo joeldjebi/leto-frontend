@@ -22,6 +22,20 @@ export function useBilling(companyId: string | null) {
 /** Bandeau d'alerte : abonnement expiré / bientôt expiré, crédit épuisé */
 export function BillingAlert({ b, onPay }: { b: BillingOverview; onPay?: (k: PaymentKind) => void }) {
   const left = daysLeft(b.subscriptionEndsAt);
+  if (b.inTrial) {
+    const soon = b.trialDaysLeft <= 3;
+    return (
+      <div className={`banner ${soon ? 'warn' : 'info'}`} role="status">
+        <Icon name="calendar" size={18} />
+        <span className="grow">
+          <strong>Essai gratuit : {b.trialDaysLeft} jour{b.trialDaysLeft > 1 ? 's' : ''} restant{b.trialDaysLeft > 1 ? 's' : ''}</strong> (jusqu’au {date(b.trialEndsAt)}).
+          {' '}Les livreurs prennent des courses sans crédit{b.subscriptionRequired ? ' ni abonnement' : ''}, aucune commission n’est prélevée.
+          {soon && onPay && ` Pensez à ${b.subscriptionRequired && !b.subscriptionEndsAt ? 'payer l’abonnement et ' : ''}recharger le crédit avant la fin.`}
+        </span>
+        {soon && onPay && <button className="btn secondary" onClick={() => onPay(b.subscriptionRequired && !b.subscriptionEndsAt ? 'SUBSCRIPTION' : 'TOPUP')}>{b.subscriptionRequired && !b.subscriptionEndsAt ? 'Payer l’abonnement' : 'Recharger'}</button>}
+      </div>
+    );
+  }
   if (!b.subscribed) {
     return (
       <div className="banner danger" role="alert">
@@ -40,7 +54,7 @@ export function BillingAlert({ b, onPay }: { b: BillingOverview; onPay?: (k: Pay
       </div>
     );
   }
-  if (left != null && left <= 30) {
+  if (b.subscriptionRequired && left != null && left <= 30) {
     return (
       <div className="banner warn">
         <Icon name="calendar" size={18} />
@@ -61,10 +75,17 @@ export function BillingStats({ b, onTopup }: { b: BillingOverview; onTopup?: () 
         foot={b.reserved ? `${formatMoney(b.reserved)} réservé(s) par les courses en cours` : 'Aucune course en cours'} onClick={onTopup} />
       <Stat icon="check" label="Disponible pour de nouvelles courses" value={formatMoney(Math.max(0, b.available))}
         foot={`${formatMoney(b.month.topups)} rechargé(s) ce mois-ci`} />
-      <Stat icon="calendar" label="Abonnement annuel" value={b.subscribed ? <Badge color="green">Actif</Badge> : <Badge color="red">Inactif</Badge>}
-        foot={b.subscriptionEndsAt ? `${b.subscribed ? 'Jusqu’au' : 'Expiré le'} ${date(b.subscriptionEndsAt)}${b.subscribed && left != null ? ` · ${left} j` : ''}` : `${formatMoney(b.config.subscriptionFee)} par an`} />
+      {b.inTrial ? (
+        <Stat icon="calendar" label="Essai gratuit" value={<Badge color="blue">{b.trialDaysLeft} j restant{b.trialDaysLeft > 1 ? 's' : ''}</Badge>}
+          foot={`Jusqu’au ${date(b.trialEndsAt)} · sans crédit ni commission`} />
+      ) : !b.subscriptionRequired ? (
+        <Stat icon="calendar" label="Abonnement annuel" value={<Badge>Non demandé</Badge>} foot="LETO ne demande pas d’abonnement pour le moment" />
+      ) : (
+        <Stat icon="calendar" label="Abonnement annuel" value={b.subscribed ? <Badge color="green">Actif</Badge> : <Badge color="red">Inactif</Badge>}
+          foot={b.subscriptionEndsAt ? `${b.subscribed ? 'Jusqu’au' : 'Expiré le'} ${date(b.subscriptionEndsAt)}${b.subscribed && left != null ? ` · ${left} j` : ''}` : `${formatMoney(b.config.subscriptionFee)} par an`} />
+      )}
       <Stat icon="tag" label="Commission par course" value={b.rule.label}
-        foot={`${b.rule.custom ? 'Tarif propre à l’entreprise' : 'Tarif standard'} · ${formatMoney(b.month.commissions)} prélevé(s) ce mois`} />
+        foot={b.inTrial ? 'Offerte pendant l’essai gratuit' : `${b.rule.custom ? 'Tarif propre à l’entreprise' : 'Tarif standard'} · ${formatMoney(b.month.commissions)} prélevé(s) ce mois`} />
     </div>
   );
 }
@@ -223,7 +244,7 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit} disabled={sending || uploading}>{sending ? 'Envoi…' : 'Envoyer la preuve'}</button></>}
     >
       <Segmented<PaymentKind> value={kind} onChange={(k) => { setKind(k); if (k === 'SUBSCRIPTION') setAmount(String(config.subscriptionFee)); }}
-        options={[['TOPUP', 'Recharge de crédit'], ['SUBSCRIPTION', `Abonnement · ${formatMoney(config.subscriptionFee)}/an`]]} />
+        options={config.subscriptionEnabled ? [['TOPUP', 'Recharge de crédit'], ['SUBSCRIPTION', `Abonnement · ${formatMoney(config.subscriptionFee)}/an`]] : [['TOPUP', 'Recharge de crédit']]} />
       <AccountsList config={config} />
       <Field label={`Montant envoyé (${currencyLabel()})`} error={tried ? errors.amount : null}>
         <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Ex. 50000" />
@@ -357,6 +378,52 @@ export function SubscriptionDialog({ companyId, current, onClose, onDone }: { co
       </>}>
       <Field label="Actif jusqu’au"><input type="date" value={value} onChange={(e) => setValue(e.target.value)} /></Field>
       <button className="btn plain" style={{ alignSelf: 'flex-start', paddingLeft: 0 }} onClick={() => setValue(inOneYear())}>Dans un an</button>
+      {error && <div className="alert error">{error}</div>}
+    </Modal>
+  );
+}
+
+/** SA : essai gratuit d'une entreprise (sans crédit ni abonnement, aucune commission) */
+export function TrialDialog({ companyId, b, onClose, onDone }: { companyId: string; b: BillingOverview; onClose: () => void; onDone: (b: BillingOverview) => void }) {
+  const toast = useToast();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const [value, setValue] = useState(b.inTrial && b.trialEndsAt ? b.trialEndsAt.slice(0, 10) : '');
+  const [error, setError] = useState('');
+  const save = async (endsAt: string | null) => {
+    try {
+      const next = await api<BillingOverview>(`/billing/companies/${companyId}/trial`, { method: 'PUT', body: { endsAt } });
+      onDone(next);
+      toast(endsAt && next.inTrial ? `Essai gratuit jusqu’au ${date(endsAt)}` : 'Essai gratuit arrêté');
+      onClose();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+  // Les raccourcis partent de la fin d'essai en cours (prolongation), sinon d'aujourd'hui
+  const from = () => (b.inTrial && b.trialEndsAt ? new Date(b.trialEndsAt) : new Date());
+  const plus = (days: number) => { const d = from(); d.setDate(d.getDate() + days); setValue(iso(d)); };
+  return (
+    <Modal
+      title="Essai gratuit"
+      subtitle="Pendant l’essai, les livreurs de l’entreprise prennent des courses sans crédit ni abonnement, et aucune commission n’est prélevée."
+      onClose={onClose}
+      footer={<>
+        {b.inTrial && <button className="btn danger" onClick={() => save(new Date().toISOString())}>Arrêter l’essai</button>}
+        <button className="btn secondary" onClick={onClose}>Annuler</button>
+        <button className="btn" onClick={() => {
+          if (!value) return setError('Choisissez une date');
+          if (value <= iso(new Date())) return setError('Choisissez une date à venir');
+          save(new Date(`${value}T23:59:59`).toISOString());
+        }}>{b.inTrial ? 'Enregistrer' : 'Démarrer l’essai'}</button>
+      </>}
+    >
+      <p className="muted" style={{ margin: 0 }}>
+        {b.inTrial ? `En cours : ${b.trialDaysLeft} jour(s) restant(s), jusqu’au ${date(b.trialEndsAt)}.` : b.trialEndsAt ? `Essai terminé le ${date(b.trialEndsAt)}.` : 'Cette entreprise n’a pas encore eu d’essai.'}
+      </p>
+      <Field label="Essai jusqu’au"><input type="date" min={iso(new Date(Date.now() + 86_400_000))} value={value} onChange={(e) => setValue(e.target.value)} /></Field>
+      <div className="chips">
+        {[7, 14, 30].map((n) => <button key={n} type="button" className="chip" onClick={() => plus(n)}>{b.inTrial ? `+ ${n} jours` : `${n} jours`}</button>)}
+      </div>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );

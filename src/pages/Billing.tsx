@@ -13,10 +13,12 @@ export default function Billing() {
   return (
     <>
       <PageHeader
-        title="Crédit et abonnement"
-        subtitle={`Commission LETO : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit à la fin de la tournée.`}
+        title={b.subscriptionRequired ? 'Crédit et abonnement' : 'Crédit'}
+        subtitle={b.inTrial
+          ? `Essai gratuit jusqu’au ${new Date(b.trialEndsAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : aucune commission. Ensuite : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit.`
+          : `Commission LETO : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit à la fin de la tournée.`}
         actions={<>
-          <button className="btn secondary" onClick={() => setPay('SUBSCRIPTION')}><Icon name="calendar" size={15} />{b.subscribed ? 'Renouveler l’abonnement' : 'Payer l’abonnement'}</button>
+          {b.subscriptionRequired && <button className="btn secondary" onClick={() => setPay('SUBSCRIPTION')}><Icon name="calendar" size={15} />{b.subscriptionEndsAt && b.subscribed ? 'Renouveler l’abonnement' : 'Payer l’abonnement'}</button>}
           <button className="btn" onClick={() => setPay('TOPUP')}><Icon name="plus" size={15} />Recharger</button>
         </>}
       />
@@ -35,7 +37,8 @@ export default function Billing() {
           </Card>
           <Card title="Bon à savoir" pad>
             <ul className="muted" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
-              <li>Abonnement annuel : {formatMoney(b.config.subscriptionFee)}, sans lui vos livreurs ne peuvent pas travailler.</li>
+              {b.inTrial && <li>Pendant l’essai gratuit, vos livreurs travaillent sans crédit et aucune commission n’est prélevée.</li>}
+              {b.subscriptionRequired && <li>Abonnement annuel : {formatMoney(b.config.subscriptionFee)}, sans lui vos livreurs ne peuvent pas travailler.</li>}
               <li>À l’acceptation d’une course, la commission est réservée sur votre crédit.</li>
               <li>Si le crédit disponible ne suffit pas, le livreur ne peut pas accepter.</li>
               <li>La commission est prélevée à la fin de la tournée, même si un destinataire était absent.</li>

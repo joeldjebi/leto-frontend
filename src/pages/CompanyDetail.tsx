@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
 import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
 import { formatMoney, phoneError, formatPhone } from '../countries';
-import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling } from '../components/Billing';
+import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling, TrialDialog } from '../components/Billing';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Field, Icon, Modal, PhoneInput, Search, Segmented, Stat, StatusBadge, Switch, useToast } from '../ui';
@@ -305,13 +305,14 @@ function CompanyBillingAlert({ companyId, onOpen }: { companyId: string; onOpen:
 /** SA : crédit, abonnement, commission, paiements et journal de l'entreprise */
 function BillingTab({ companyId }: { companyId: string }) {
   const { data: b, setData, error } = useBilling(companyId);
-  const [dialog, setDialog] = useState<'adjust' | 'subscription' | 'commission' | null>(null);
+  const [dialog, setDialog] = useState<'adjust' | 'subscription' | 'commission' | 'trial' | null>(null);
   if (!b) return error ? <div className="alert error">{error}</div> : <Card><Empty icon="wallet">Chargement…</Empty></Card>;
   return (
     <div className="stack">
       <div className="toolbar">
         <button className="btn secondary" onClick={() => setDialog('adjust')}><Icon name="wallet" size={15} />Ajuster le crédit</button>
-        <button className="btn secondary" onClick={() => setDialog('subscription')}><Icon name="calendar" size={15} />Abonnement</button>
+        <button className="btn secondary" onClick={() => setDialog('trial')}><Icon name="clock" size={15} />{b.inTrial ? `Essai · ${b.trialDaysLeft} j` : 'Essai gratuit'}</button>
+        {b.subscriptionRequired && <button className="btn secondary" onClick={() => setDialog('subscription')}><Icon name="calendar" size={15} />Abonnement</button>}
         <button className="btn secondary" onClick={() => setDialog('commission')}><Icon name="tag" size={15} />Commission</button>
       </div>
       <BillingStats b={b} />
@@ -319,6 +320,7 @@ function BillingTab({ companyId }: { companyId: string }) {
       <TransactionsCard b={b} />
       {dialog === 'adjust' && <AdjustDialog companyId={companyId} onClose={() => setDialog(null)} onDone={setData} />}
       {dialog === 'subscription' && <SubscriptionDialog companyId={companyId} current={b.subscriptionEndsAt} onClose={() => setDialog(null)} onDone={setData} />}
+      {dialog === 'trial' && <TrialDialog companyId={companyId} b={b} onClose={() => setDialog(null)} onDone={setData} />}
       {dialog === 'commission' && <CommissionDialog companyId={companyId} b={b} onClose={() => setDialog(null)} onDone={setData} />}
     </div>
   );

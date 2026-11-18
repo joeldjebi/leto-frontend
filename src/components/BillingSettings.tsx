@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, BillingConfig, CommissionType, MobileMoneyAccount } from '../api';
 import { formatMoney, currencySymbol } from '../countries';
-import { Card, Icon, Segmented, useToast } from '../ui';
+import { Card, Icon, Segmented, Switch, useToast } from '../ui';
 
 /** SA : abonnement annuel, commission par défaut, comptes Mobile Money de LETO */
 export default function BillingSettings() {
@@ -23,7 +23,7 @@ export default function BillingSettings() {
     try {
       const c = await api<BillingConfig>('/billing/config', {
         method: 'PUT',
-        body: { subscriptionFee: cfg.subscriptionFee, commissionType: cfg.commissionType, commissionValue: cfg.commissionValue, accounts: cfg.accounts },
+        body: { subscriptionEnabled: cfg.subscriptionEnabled, trialDays: cfg.trialDays, subscriptionFee: cfg.subscriptionFee, commissionType: cfg.commissionType, commissionValue: cfg.commissionValue, accounts: cfg.accounts },
       });
       setSaved(c);
       setCfg(c);
@@ -46,8 +46,26 @@ export default function BillingSettings() {
       <div className="grid grid-2">
         <div className="rows" style={{ margin: '0 -20px' }}>
           <div>
+            <div className="grow">
+              <div className="title">Abonnements</div>
+              <small className="muted">{cfg.subscriptionEnabled
+                ? 'Les entreprises paient un abonnement annuel pour que leurs livreurs prennent des courses'
+                : 'Désactivés : aucune entreprise n’a besoin d’abonnement, seul le crédit compte'}</small>
+            </div>
+            <Switch checked={cfg.subscriptionEnabled} onChange={(on) => setCfg({ ...cfg, subscriptionEnabled: on })} label={cfg.subscriptionEnabled ? 'Désactiver les abonnements' : 'Activer les abonnements'} />
+          </div>
+          <div style={{ opacity: cfg.subscriptionEnabled ? 1 : 0.5 }}>
             <div className="grow"><div className="title">Abonnement annuel</div><small className="muted">Payé par chaque entreprise pour accéder à la plateforme</small></div>
-            <input type="number" min={0} step={1000} value={cfg.subscriptionFee} onChange={(e) => setCfg({ ...cfg, subscriptionFee: Number(e.target.value) })} style={{ width: 120, textAlign: 'right' }} /><span className="muted">{currencySymbol()}</span>
+            <input type="number" min={0} step={1000} disabled={!cfg.subscriptionEnabled} value={cfg.subscriptionFee} onChange={(e) => setCfg({ ...cfg, subscriptionFee: Number(e.target.value) })} style={{ width: 120, textAlign: 'right' }} /><span className="muted">{currencySymbol()}</span>
+          </div>
+          <div>
+            <div className="grow">
+              <div className="title">Essai gratuit</div>
+              <small className="muted">{cfg.trialDays > 0
+                ? `Chaque nouvelle entreprise utilise LETO ${cfg.trialDays} jour(s) à partir de sa validation, sans recharger son crédit ni payer d’abonnement : aucune commission pendant l’essai. Modifiable par entreprise depuis sa fiche.`
+                : 'Aucun essai : les nouvelles entreprises doivent recharger leur crédit (et payer l’abonnement s’il est activé) avant de travailler.'}</small>
+            </div>
+            <input type="number" min={0} max={365} step={1} value={cfg.trialDays} onChange={(e) => setCfg({ ...cfg, trialDays: Math.max(0, Math.min(365, Math.round(Number(e.target.value) || 0))) })} style={{ width: 90, textAlign: 'right' }} aria-label="Durée de l’essai gratuit en jours" /><span className="muted">jours</span>
           </div>
           <div>
             <div className="grow">

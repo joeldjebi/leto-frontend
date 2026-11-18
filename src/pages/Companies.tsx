@@ -16,8 +16,12 @@ type Tab = 'ALL' | 'PENDING' | 'REJECTED';
 const statusOf = (c: Company): CompanyStatus => c.status ?? 'APPROVED';
 const vehicleIcon = (v: string) => (v === 'CAR' ? 'car' : v === 'CARGO' ? 'truck' : 'moto');
 
-export const CompanyStatusBadge = ({ c }: { c: Company }) =>
-  statusOf(c) === 'APPROVED' ? null : <Badge color={COMPANY_STATUS[statusOf(c)][1]}>{COMPANY_STATUS[statusOf(c)][0]}</Badge>;
+export const CompanyStatusBadge = ({ c }: { c: Company }) => {
+  if (statusOf(c) !== 'APPROVED') return <Badge color={COMPANY_STATUS[statusOf(c)][1]}>{COMPANY_STATUS[statusOf(c)][0]}</Badge>;
+  // Essai gratuit en cours
+  const left = c.trialEndsAt ? Math.ceil((new Date(c.trialEndsAt).getTime() - Date.now()) / 86_400_000) : 0;
+  return left > 0 ? <Badge color="blue">Essai · {left} j</Badge> : null;
+};
 
 function CompanyList() {
   const { companies, users, deliveries, reload } = useData();
@@ -213,7 +217,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
       {confirm === 'approve' && (
         <Modal
           title={`Accepter ${c.name} ?`}
-          subtitle="L’entreprise pourra se connecter au back-office. Pensez à activer son abonnement dans Facturation."
+          subtitle="L’entreprise pourra se connecter au back-office. L’essai gratuit éventuel démarre dès sa création (Tarifs et règles › Facturation)."
           onClose={() => setConfirm(null)}
           footer={<><button className="btn secondary" onClick={() => setConfirm(null)}>Annuler</button><button className="btn" disabled={busy} onClick={() => act('approve')}>Accepter</button></>}
         >
