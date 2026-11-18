@@ -194,6 +194,10 @@ export default function Pricing() {
               <input type="number" min={1} max={120} value={grid.cancelRequestAutoMin} onChange={(e) => setGrid({ ...grid, cancelRequestAutoMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">min</span>
             </div>
             <div>
+              <div className="grow"><div className="title">Expiration des commandes</div><small className="muted">{grid.orderExpiryMin > 0 ? `Une commande qu’aucun livreur n’a acceptée est annulée automatiquement après ${grid.orderExpiryMin} min ; le client est prévenu` : 'Désactivée : une commande attend un livreur sans limite de temps'} · 0 = jamais</small></div>
+              <input type="number" min={0} max={1440} value={grid.orderExpiryMin} onChange={(e) => setGrid({ ...grid, orderExpiryMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Expiration des commandes en minutes" /><span className="muted">min</span>
+            </div>
+            <div>
               <div className="grow"><div className="title">Code de livraison</div><small className="muted">Le destinataire donne son code à 4 chiffres au livreur pour confirmer la réception. Désactivé : le livreur valide seul la livraison</small></div>
               <Switch checked={grid.deliveryCodeEnabled !== false} onChange={(on) => setGrid({ ...grid, deliveryCodeEnabled: on })} label={grid.deliveryCodeEnabled !== false ? 'Désactiver' : 'Activer'} />
             </div>
