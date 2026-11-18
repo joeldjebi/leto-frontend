@@ -704,3 +704,11 @@ small.down { color: var(--green); }
   .lp-apk .btn { margin-left: 44px; }
   .lp-faq { padding: 12px 10px; gap: 8px; }
 }
+
+/* Motifs d'annulation */
+.cr-list { display: flex; flex-direction: column; gap: 8px; }
+.cr-row { display: flex; align-items: center; gap: 6px; }
+.cr-row input { flex: 1; min-width: 0; }
+.cr-num { width: 22px; flex: none; text-align: center; color: var(--secondary); font-size: 13px; font-variant-numeric: tabular-nums; display: inline-flex; justify-content: center; }
+.reason-chips { margin-bottom: 4px; }
+.btn.icon { padding: 0; width: 32px; justify-content: center; flex: none; }

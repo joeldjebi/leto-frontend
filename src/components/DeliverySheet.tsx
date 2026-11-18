@@ -384,6 +384,12 @@ function CancelDialog({ delivery, onClose }: { delivery: Delivery; onClose: () =
   const toast = useToast();
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
+  const [presets, setPresets] = useState<string[]>([]);
+  useEffect(() => {
+    api<{ client: string[]; driver: string[] }>('/cancel-reasons')
+      .then((c) => setPresets([...new Set([...c.client, ...c.driver])]))
+      .catch(() => setPresets([]));
+  }, []);
   const cancel = async () => {
     try {
       await api(`/deliveries/${delivery.id}/admin-cancel`, { method: 'POST', body: { reason } });
@@ -406,6 +412,13 @@ function CancelDialog({ delivery, onClose }: { delivery: Delivery; onClose: () =
         </>
       }
     >
+      {presets.length > 0 && (
+        <div className="chips reason-chips" role="group" aria-label="Motifs fréquents">
+          {presets.map((p) => (
+            <button key={p} type="button" className={`chip${reason === p ? ' on' : ''}`} onClick={() => setReason(p)}>{p}</button>
+          ))}
+        </div>
+      )}
       <label className="field">
         <span>Motif (obligatoire)</span>
         <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Ex. : commande en double" autoFocus />

@@ -17,19 +17,20 @@ import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
 import Independents from './pages/Independents';
 import Sounds from './pages/Sounds';
+import CancelReasons from './pages/CancelReasons';
 import Landing from './pages/Landing';
 import PublicTracking from './pages/PublicTracking';
 import { connectRealtime } from './realtime';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -139,6 +140,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     ];
     if (isSA) items.push({ section: 'Réglages', links: [
       { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
+      { r: 'cancelReasons', icon: 'close', label: 'Motifs d’annulation' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
       { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
@@ -208,6 +210,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'logbook' && <Logbook />}
           {current === 'independents' && <Independents />}
           {current === 'sounds' && <Sounds />}
+          {current === 'cancelReasons' && <CancelReasons />}
           {current === 'landing' && <Landing />}
         </div>
       </main>
