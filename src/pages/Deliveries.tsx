@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { codTotal, dateTime, Delivery, downloadCsv, fcfa, SPEED_LABEL, STATUS_LABEL, VEHICLE_LABEL } from '../api';
+import { codTotal, dateTime, Delivery, downloadCsv, SPEED_LABEL, STATUS_LABEL, VEHICLE_LABEL } from '../api';
+import { formatMoney, formatPhone, currencyOf } from '../countries';
 import DeliverySheet from '../components/DeliverySheet';
 import NewDelivery from '../components/NewDelivery';
 import { useData } from '../data';
@@ -40,11 +41,11 @@ export default function Deliveries() {
 
   const exportCsv = () =>
     downloadCsv(`leto-courses-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Date', 'Référence', 'Statut', 'Client', 'Téléphone client', 'Départ', 'Arrêts', 'Destinataires', 'Livreur', 'Entreprise', 'Offre', 'Délai', 'Distance (km)', 'Prix (F)', 'À encaisser (F)'],
+      ['Date', 'Référence', 'Statut', 'Client', 'Téléphone client', 'Départ', 'Arrêts', 'Destinataires', 'Livreur', 'Entreprise', 'Offre', 'Délai', 'Distance (km)', 'Prix', 'À encaisser', 'Devise'],
       ...rows.map((d) => [
         new Date(d.createdAt).toLocaleString('fr-FR'), d.id, STATUS_LABEL[d.status], d.client.name, d.client.phone,
         `${d.pickupAddress} (${d.pickupCommune})`, d.stops.length, d.stops.map((s) => s.recipientName).join(', '),
-        d.driver?.name, d.company?.name, VEHICLE_LABEL[d.vehicleType], SPEED_LABEL[d.speed], d.distanceKm, d.price, codTotal(d),
+        d.driver?.name, d.company?.name, VEHICLE_LABEL[d.vehicleType], SPEED_LABEL[d.speed], d.distanceKm, d.price, codTotal(d), d.currency ?? currencyOf().currencyCode,
       ]),
     ]);
 
@@ -54,7 +55,7 @@ export default function Deliveries() {
     <>
       <PageHeader
         title="Courses"
-        subtitle={`${rows.length} course(s) · ${fcfa(total)} de courses terminées`}
+        subtitle={`${rows.length} course(s) · ${formatMoney(total)} de courses terminées`}
         actions={<>
           <button className="btn secondary" onClick={exportCsv} disabled={!rows.length}><Icon name="download" size={15} />Exporter</button>
           {!isSA && <button className="btn" onClick={() => setCreating(true)}><Icon name="plus" size={15} />Nouvelle course</button>}
@@ -91,7 +92,7 @@ export default function Deliveries() {
                 {rows.map((d) => (
                   <tr key={d.id} className="clickable" onClick={() => setOpen(d)}>
                     <td style={{ whiteSpace: 'nowrap' }}>{dateTime(d.createdAt)}</td>
-                    <td>{d.client.name}<span className="sub">{d.client.phone}</span></td>
+                    <td>{d.client.name}<span className="sub">{formatPhone(d.client.phone)}</span></td>
                     <td>
                       {d.pickupCommune} → {d.stops.length > 1 ? `${d.stops.length} arrêts` : d.stops[0]?.commune}
                       <span className="sub">{VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
@@ -106,8 +107,8 @@ export default function Deliveries() {
                       {d.stops.length > 2 && <span className="sub">+ {d.stops.length - 2} autre(s)</span>}
                     </td>
                     <td>{d.driver?.name ?? <span className="muted">—</span>}{isSA && d.company && <span className="sub">{d.company.name}</span>}</td>
-                    <td className="num">{fcfa(d.price)}</td>
-                    <td className="num">{codTotal(d) ? fcfa(codTotal(d)) : <span className="muted">—</span>}</td>
+                    <td className="num">{formatMoney(d.price, d.currency)}</td>
+                    <td className="num">{codTotal(d) ? formatMoney(codTotal(d), d.currency) : <span className="muted">—</span>}</td>
                     <td><StatusBadge status={d.status} /></td>
                   </tr>
                 ))}

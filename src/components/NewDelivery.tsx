@@ -2,7 +2,8 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import { api, Delivery, fcfa, initial, isOnline, phoneError, Speed, SPEED_LABEL, User, Vehicle, VEHICLE_LABEL } from '../api';
+import { api, Delivery, initial, isOnline, Speed, SPEED_LABEL, User, Vehicle, VEHICLE_LABEL } from '../api';
+import { formatMoney, phoneError, formatPhone, currencySymbol } from '../countries';
 import { useData } from '../data';
 import { Badge, Icon, PhoneInput, useToast } from '../ui';
 import MapTiles from './MapTiles';
@@ -167,7 +168,10 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
     setError('');
     if (errors.pickup || errors.clientName || errors.clientPhone) return setError('Complétez le départ et le client');
     const bad = stops.findIndex((s) => !s.place || !s.name.trim() || phoneError(s.phone));
-    if (bad >= 0) return setError(`Destinataire ${bad + 1} : adresse, nom et téléphone à 10 chiffres`);
+    if (bad >= 0) {
+      const s = stops[bad];
+      return setError(`Destinataire ${bad + 1} : ${!s.place ? 'choisissez l’adresse' : !s.name.trim() ? 'nom obligatoire' : `téléphone — ${phoneError(s.phone)}`}`);
+    }
     if (!offer) return setError('Cet engin n’est pas proposé dans votre grille');
     if (total === undefined || !Number.isInteger(total) || total < 0) return setError('Prix invalide');
     setSending(true);
@@ -202,13 +206,13 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
         <div className="nd-done-card">
           <div className="nd-check"><Icon name="check" size={30} /></div>
           <h1>Course créée</h1>
-          <p className="muted">{driver ? `Envoyée à ${driver.name}, qui doit l’accepter.` : 'Visible par tous vos livreurs : le premier qui accepte la prend.'} {fcfa(created.price)} · {created.distanceKm} km</p>
+          <p className="muted">{driver ? `Envoyée à ${driver.name}, qui doit l’accepter.` : 'Visible par tous vos livreurs : le premier qui accepte la prend.'} {formatMoney(created.price, created.currency)} · {created.distanceKm} km</p>
           <div className="nd-section-title">Codes de livraison à envoyer aux destinataires</div>
           <div className="nd-codes">
             {created.stops.map((s) => (
               <div key={s.id} className="nd-code">
                 <span className="nd-num">{s.position + 1}</span>
-                <div className="grow"><strong>{s.recipientName}</strong><small className="muted">{s.recipientPhone} · {s.address}</small></div>
+                <div className="grow"><strong>{s.recipientName}</strong><small className="muted">{formatPhone(s.recipientPhone)} · {s.address}</small></div>
                 <span className="nd-code-value">{s.confirmationCode}</span>
                 <button className="btn secondary" onClick={() => copy(`Bonjour ${s.recipientName}, votre colis arrive avec LETO.\nCode de livraison à donner au livreur : ${s.confirmationCode}${url ? `\nSuivre la livraison : ${url}` : ''}`, 'Message')}>Copier le message</button>
               </div>
@@ -285,7 +289,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
               <button key={v} className={`nd-choice${vehicle === v ? ' on' : ''}`} disabled={off} onClick={() => setVehicle(v)}>
                 <span className="nd-choice-icon"><Icon name={VEHICLE_ICON[v]} size={26} /></span>
                 <strong>{VEHICLE_LABEL[v]}</strong>
-                <small>{off ? 'Non proposé' : o ? fcfa(o.prices[speed]) : '—'}</small>
+                <small>{off ? 'Non proposé' : o ? formatMoney(o.prices[speed]) : '—'}</small>
               </button>
             );
           })}
@@ -297,7 +301,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
           {SPEEDS.map((s) => (
             <button key={s} className={`nd-choice compact${speed === s ? ' on' : ''}`} onClick={() => setSpeed(s)}>
               <strong>{SPEED_LABEL[s]}</strong>
-              <span className="nd-price">{offer ? fcfa(offer.prices[s]) : '—'}</span>
+              <span className="nd-price">{offer ? formatMoney(offer.prices[s]) : '—'}</span>
               <small>{SPEED_HINT[s]}</small>
             </button>
           ))}
@@ -311,8 +315,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
             <input placeholder="Nom du client ou de la boutique" value={clientName} onChange={(e) => setClientName(e.target.value)} autoComplete="off" />
           </div>
           <div className="nd-field-row">
-            <span className="nd-prefix">+225</span>
-            <PhoneInput value={clientPhone} onChange={setClientPhone} placeholder="Téléphone (appelé par le livreur)" />
+            <PhoneInput plain value={clientPhone} onChange={setClientPhone} label="Téléphone du client (appelé par le livreur)" />
           </div>
           {tried && (errors.clientName || errors.clientPhone) && <small className="error" style={{ padding: '0 14px 10px' }}>{errors.clientName ?? errors.clientPhone}</small>}
         </section>
@@ -327,8 +330,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
               <input placeholder="Nom du destinataire" value={s.name} onChange={(e) => setStop(s.key, { name: e.target.value })} autoComplete="off" />
             </div>
             <div className="nd-field-row">
-              <span className="nd-prefix">+225</span>
-              <PhoneInput value={s.phone} onChange={(v) => setStop(s.key, { phone: v })} placeholder="Téléphone" />
+              <PhoneInput plain value={s.phone} onChange={(v) => setStop(s.key, { phone: v })} label={`Téléphone du destinataire ${i + 1}`} />
             </div>
           </section>
         ))}
@@ -347,7 +349,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
             return (
               <button key={u.id} className={`nd-driver${driverId === u.id ? ' on' : ''}`} onClick={() => setDriverId(u.id)}>
                 <span className="nd-avatar">{initial(u.name)}</span>
-                <span className="grow"><strong>{u.name}</strong><small className="muted">{u.phone}{km != null && isOnline(u) ? ` · à ${km.toFixed(1)} km du départ` : ''}</small></span>
+                <span className="grow"><strong>{u.name}</strong><small className="muted">{formatPhone(u.phone)}{km != null && isOnline(u) ? ` · à ${km.toFixed(1)} km du départ` : ''}</small></span>
                 <Badge color={state[1]}>{state[0]}</Badge>
                 {driverId === u.id && <Icon name="check" size={18} className="accent" />}
               </button>
@@ -361,11 +363,11 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
           <div className="nd-total">
             <small className="muted">Total · espèces{quote?.surcharges?.map((x) => ` · ${x.label} +${x.pct} %`).join('')}{quote?.stopDiscountPct ? ` · tournée −${quote.stopDiscountPct} %` : ''}</small>
             {manual !== null ? (
-              <div className="nd-manual"><input inputMode="numeric" autoFocus value={manual} onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))} placeholder={gridPrice ? String(gridPrice) : 'Prix'} /><span>F</span></div>
+              <div className="nd-manual"><input inputMode="numeric" autoFocus value={manual} onChange={(e) => setManual(e.target.value.replace(/\D/g, ''))} placeholder={gridPrice ? String(gridPrice) : 'Prix'} /><span>{currencySymbol()}</span></div>
             ) : (
-              <strong>{total !== undefined ? fcfa(total) : quoting ? '…' : '—'}</strong>
+              <strong>{total !== undefined ? formatMoney(total) : quoting ? '…' : '—'}</strong>
             )}
-            <button className="btn plain" onClick={() => setManual(manual === null ? '' : null)}>{manual === null ? 'Modifier le prix' : `Revenir à la grille${gridPrice ? ` (${fcfa(gridPrice)})` : ''}`}</button>
+            <button className="btn plain" onClick={() => setManual(manual === null ? '' : null)}>{manual === null ? 'Modifier le prix' : `Revenir à la grille${gridPrice ? ` (${formatMoney(gridPrice)})` : ''}`}</button>
           </div>
           <button className="btn lg nd-submit" onClick={submit} disabled={sending}>{sending ? 'Création…' : driverId ? 'Créer et envoyer au livreur' : 'Créer la course'}</button>
         </div>

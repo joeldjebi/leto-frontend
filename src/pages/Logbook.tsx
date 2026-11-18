@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, dateTime, fcfa, photoUrl, User } from '../api';
+import { api, dateTime, photoUrl, User } from '../api';
+import { formatMoney, formatPhone, telHref } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Modal, PageHeader, Search, Segmented, Stat } from '../ui';
 
@@ -8,7 +9,7 @@ export interface LogbookEvent { at: string; action: 'CREATED' | 'UPDATED' | 'STA
 export interface LogbookEntry {
   id: string; driverId: string; driver?: Pick<User, 'id' | 'name' | 'phone'>; companyId: string | null;
   address: string; lat: number | null; lng: number | null; recipientName: string | null; recipientPhone: string;
-  price: number; photoUrl: string; note: string | null; status: LogbookStatus; doneAt: string | null;
+  price: number; currency?: string; photoUrl: string; note: string | null; status: LogbookStatus; doneAt: string | null;
   history: LogbookEvent[]; createdAt: string; updatedAt: string;
 }
 
@@ -19,7 +20,7 @@ export const LOGBOOK_STATUS: Record<LogbookStatus, [string, string]> = {
   CANCELLED: ['Annulée', 'gray'],
 };
 const FIELD_LABEL: Record<string, string> = { address: 'Adresse', recipientName: 'Nom', recipientPhone: 'Téléphone', price: 'Prix', note: 'Note' };
-const show = (k: string, v: unknown) => (v == null || v === '' ? '—' : k === 'price' ? fcfa(Number(v)) : String(v));
+const show = (k: string, v: unknown, currency?: string) => (v == null || v === '' ? '—' : k === 'price' ? formatMoney(Number(v), currency) : k === 'recipientPhone' ? formatPhone(String(v)) : String(v));
 
 type Period = 'today' | '7d' | '30d' | '90d';
 const since = (p: Period) => {
@@ -91,7 +92,7 @@ export function LogbookView({ driverId, showDriver = true }: { driverId?: string
       <div className="grid grid-stats">
         <Stat icon="book" label="Livraisons saisies" value={k.total} foot={`${k.todo} à livrer · ${k.failed} non livrée(s)`} />
         <Stat icon="check" label="Livrées" value={k.delivered} foot={k.total ? `${Math.round((k.delivered / k.total) * 100)} % des saisies` : '—'} />
-        <Stat icon="wallet" label="Montant des livraisons" value={fcfa(k.amount)} foot="livraisons effectuées" />
+        <Stat icon="wallet" label="Montant des livraisons" value={formatMoney(k.amount)} foot="livraisons effectuées" />
       </div>
       <div className="toolbar">
         <Search value={q} onChange={setQ} placeholder="Adresse, destinataire, téléphone…" />
@@ -116,8 +117,8 @@ export function LogbookView({ driverId, showDriver = true }: { driverId?: string
                       <td style={{ whiteSpace: 'nowrap' }}>{dateTime(e.createdAt)}{edits > 0 && <span className="sub">modifiée {edits} fois</span>}</td>
                       {showDriver && <td>{e.driver?.name ?? '—'}</td>}
                       <td>{e.address}{e.note && <span className="sub">{e.note}</span>}</td>
-                      <td>{e.recipientName ?? <span className="muted">Sans nom</span>}<span className="sub">{e.recipientPhone}</span></td>
-                      <td className="num"><strong>{fcfa(e.price)}</strong></td>
+                      <td>{e.recipientName ?? <span className="muted">Sans nom</span>}<span className="sub">{formatPhone(e.recipientPhone)}</span></td>
+                      <td className="num"><strong>{formatMoney(e.price, e.currency)}</strong></td>
                       <td><Badge color={color}>{label}</Badge>{e.doneAt && <span className="sub">{dateTime(e.doneAt)}</span>}</td>
                     </tr>
                   );
@@ -148,8 +149,8 @@ function EntryDialog({ e, onClose }: { e: LogbookEntry; onClose: () => void }) {
         <img className="lb-photo" src={photoUrl(e.photoUrl)} alt="Photo du colis" />
         <div className="lb-facts">
           <div><small className="muted">Statut</small><Badge color={color}>{label}</Badge></div>
-          <div><small className="muted">Prix</small><strong>{fcfa(e.price)}</strong></div>
-          <div><small className="muted">Destinataire</small><span>{e.recipientName ?? 'Sans nom'} · <a href={`tel:${e.recipientPhone}`}>{e.recipientPhone}</a></span></div>
+          <div><small className="muted">Prix</small><strong>{formatMoney(e.price, e.currency)}</strong></div>
+          <div><small className="muted">Destinataire</small><span>{e.recipientName ?? 'Sans nom'} · <a href={telHref(e.recipientPhone)}>{formatPhone(e.recipientPhone)}</a></span></div>
           {e.driver && <div><small className="muted">Livreur</small><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Avatar name={e.driver.name} />{e.driver.name}</span></div>}
           {e.lat != null && e.lng != null && <div><small className="muted">Position à la saisie</small><a href={`https://www.google.com/maps?q=${e.lat},${e.lng}`} target="_blank" rel="noreferrer">Voir sur la carte</a></div>}
           {e.note && <div><small className="muted">Note</small><span>{e.note}</span></div>}
@@ -166,7 +167,7 @@ function EntryDialog({ e, onClose }: { e: LogbookEntry; onClose: () => void }) {
                 {h.note && <span className="muted"> · « {h.note} »</span>}
               </div>
               {h.changes && Object.entries(h.changes).map(([k, c]) => (
-                <small key={k} style={{ display: 'block' }}>{FIELD_LABEL[k] ?? k} : <s className="muted">{show(k, c.from)}</s> → <strong>{show(k, c.to)}</strong></small>
+                <small key={k} style={{ display: 'block' }}>{FIELD_LABEL[k] ?? k} : <s className="muted">{show(k, c.from, e.currency)}</s> → <strong>{show(k, c.to, e.currency)}</strong></small>
               ))}
               <small className="muted">{dateTime(h.at)}</small>
             </div>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { go } from '../App';
-import { api, dateTime, Delivery, fcfa, FAILURE_LABEL, photoUrl, Stop } from '../api';
+import { api, dateTime, Delivery, FAILURE_LABEL, photoUrl, Stop } from '../api';
+import { formatMoney, formatPhone } from '../countries';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Icon, Segmented, Stat, Switch, useToast } from '../ui';
@@ -128,7 +129,7 @@ export default function ClientDetail({ id }: { id: string }) {
               {!client.active && <Badge color="red">Bloqué</Badge>}
             </h1>
             <div className="meta-row">
-              <span><Icon name="phone" size={14} />{client.phone}</span>
+              <span><Icon name="phone" size={14} />{formatPhone(client.phone)}</span>
               <span><Icon name="clock" size={14} />Inscrit le {new Date(client.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               <span><Icon name="box" size={14} />{k.last ? `Dernière commande le ${dateTime(k.last)}` : 'Aucune commande'}</span>
             </div>
@@ -144,7 +145,7 @@ export default function ClientDetail({ id }: { id: string }) {
         <div className="banner warn">
           <Icon name="alert" size={18} />
           <span className="grow">
-            {k.feesDue > 0 && <>Frais de déplacement non réglés : <strong>{fcfa(k.feesDue)}</strong>. </>}
+            {k.feesDue > 0 && <>Frais de déplacement non réglés : <strong>{formatMoney(k.feesDue)}</strong>. </>}
             {k.disputes.some((x) => !x.s.disputeResolvedAt) && <>Litige(s) en attente de décision.</>}
           </span>
           <button className="btn secondary" onClick={() => setTab(k.feesDue > 0 ? 'cancellations' : 'failures')}>Voir</button>
@@ -153,11 +154,11 @@ export default function ClientDetail({ id }: { id: string }) {
 
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses" value={k.total} foot={`${k.done} terminée(s) · ${k.active} en cours · ${k.cancelled.length} annulée(s)`} />
-        <Stat icon="wallet" label="Dépensé" value={fcfa(k.spent)} foot={`${fcfa(k.spentMonth)} ce mois · panier moyen ${fcfa(k.avg)}`} />
+        <Stat icon="wallet" label="Dépensé" value={formatMoney(k.spent)} foot={`${formatMoney(k.spentMonth)} ce mois · panier moyen ${formatMoney(k.avg)}`} />
         <Stat icon="people" label="Colis envoyés" value={k.stops} foot={`${k.recipients.length} destinataire(s) · ${k.tours} tournée(s)`} onClick={() => setTab('recipients')} />
         <Stat icon="check" label="Taux de réussite" value={k.successRate == null ? '—' : `${k.successRate} %`} foot={`${k.delivered} livré(s) · ${k.failed.length} échec(s) · ${k.cancelledStops.length} annulé(s)`} onClick={() => setTab('failures')} />
-        <Stat icon="wallet" label="Encaissé pour lui" value={fcfa(k.cod.reduce((t, x) => t + x.s.codAmount, 0))} foot={k.codPending ? `${fcfa(k.codPending)} encore à lui reverser` : 'Tout lui a été reversé'} onClick={() => setTab('collections')} />
-        <Stat icon="alert" label="Annulations et litiges" value={k.cancelled.length + k.disputes.length} foot={`${fcfa(k.feesDue)} de frais non réglés · ${k.disputes.length} contestation(s)`} onClick={() => setTab('cancellations')} />
+        <Stat icon="wallet" label="Encaissé pour lui" value={formatMoney(k.cod.reduce((t, x) => t + x.s.codAmount, 0))} foot={k.codPending ? `${formatMoney(k.codPending)} encore à lui reverser` : 'Tout lui a été reversé'} onClick={() => setTab('collections')} />
+        <Stat icon="alert" label="Annulations et litiges" value={k.cancelled.length + k.disputes.length} foot={`${formatMoney(k.feesDue)} de frais non réglés · ${k.disputes.length} contestation(s)`} onClick={() => setTab('cancellations')} />
       </div>
 
       <div className="stack">
@@ -167,7 +168,7 @@ export default function ClientDetail({ id }: { id: string }) {
             actions={<Segmented<Metric> value={metric} onChange={setMetric} options={[['created', 'Commandes'], ['volume', 'Dépenses']]} />}
           >
             <div style={{ padding: '4px 20px 16px' }}>
-              <BarChart data={series} format={(n) => (metric === 'created' ? `${n} commande(s)` : fcfa(n))} label={`Activité de ${client.name} sur 30 jours`} />
+              <BarChart data={series} format={(n) => (metric === 'created' ? `${n} commande(s)` : formatMoney(n))} label={`Activité de ${client.name} sur 30 jours`} />
             </div>
           </Card>
           <Card title="Habitudes">
@@ -188,7 +189,7 @@ export default function ClientDetail({ id }: { id: string }) {
               <div>
                 <div className="grow">
                   <div className="title">Destinataire le plus fréquent</div>
-                  <small className="muted">{k.recipients[0] ? `${k.recipients[0].name} · ${k.recipients[0].phone} (${k.recipients[0].count} colis)` : '—'}</small>
+                  <small className="muted">{k.recipients[0] ? `${k.recipients[0].name} · ${formatPhone(k.recipients[0].phone)} (${k.recipients[0].count} colis)` : '—'}</small>
                 </div>
               </div>
             </div>
@@ -219,7 +220,7 @@ export default function ClientDetail({ id }: { id: string }) {
                   <tbody>
                     {k.recipients.map((r) => (
                       <tr key={r.phone}>
-                        <td>{r.name}<span className="sub">{r.phone}</span></td>
+                        <td>{r.name}<span className="sub">{formatPhone(r.phone)}</span></td>
                         <td>{[...r.communes].join(', ')}</td>
                         <td className="num">{r.count}</td>
                         <td className="num">{r.delivered}</td>
@@ -270,7 +271,7 @@ export default function ClientDetail({ id }: { id: string }) {
                         <td>{x.what}<span className="sub">{x.d.company?.name ?? 'Avant acceptation'}</span></td>
                         <td>{x.by ?? '—'}</td>
                         <td>{x.reason ?? <span className="muted">—</span>}</td>
-                        <td className="num">{x.fee ? fcfa(x.fee) : <span className="muted">—</span>}</td>
+                        <td className="num">{x.fee ? formatMoney(x.fee, x.d.currency) : <span className="muted">—</span>}</td>
                         <td>{x.fee ? (x.settled ? <Badge color="green">Réglés</Badge> : <Badge color="orange">À régler</Badge>) : null}</td>
                       </tr>
                     ))}

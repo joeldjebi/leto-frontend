@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { api, dateTime, fcfa } from '../api';
+import { api, dateTime } from '../api';
+import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Badge, Card, Empty, Modal, PageHeader, Segmented, Stat, useToast } from '../ui';
 
@@ -49,9 +50,9 @@ export default function Collections() {
     <>
       <PageHeader title="Encaissements" subtitle="Paiements à la livraison encaissés par les livreurs" />
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
-        <Stat icon="wallet" label="À reverser" value={fcfa(sum(pending))} foot={`${pending.length} colis`} />
-        <Stat icon="check" label="Déjà reversé" value={fcfa(sum(cod) - sum(pending))} foot={`${cod.length - pending.length} colis`} />
-        <Stat icon="box" label="Total encaissé" value={fcfa(sum(cod))} foot="toutes périodes" />
+        <Stat icon="wallet" label="À reverser" value={formatMoney(sum(pending))} foot={`${pending.length} colis`} />
+        <Stat icon="check" label="Déjà reversé" value={formatMoney(sum(cod) - sum(pending))} foot={`${cod.length - pending.length} colis`} />
+        <Stat icon="box" label="Total encaissé" value={formatMoney(sum(cod))} foot="toutes périodes" />
       </div>
       <div className="stack">
         <Card title={isSA ? 'À reverser, par entreprise' : 'À reverser, par boutique'}>
@@ -61,7 +62,7 @@ export default function Collections() {
                 <div key={g.name}>
                   <div className="grow"><div className="title">{g.name}</div><small className="muted">{g.sub}</small></div>
                   <span className="muted tabular">{g.count} colis</span>
-                  <strong className="tabular">{fcfa(g.total)}</strong>
+                  <strong className="tabular">{formatMoney(g.total)}</strong>
                 </div>
               ))}
             </div>
@@ -78,11 +79,11 @@ export default function Collections() {
                   {rows.map(({ d, s }) => (
                     <tr key={s.id}>
                       <td>{dateTime(s.deliveredAt)}</td>
-                      <td>{d.client.name}<span className="sub">{d.client.phone}</span></td>
+                      <td>{d.client.name}<span className="sub">{formatPhone(d.client.phone)}</span></td>
                       <td>{s.recipientName}<span className="sub">{s.commune}</span></td>
                       <td>{d.driver?.name ?? '—'}</td>
                       {isSA && <td>{d.company?.name ?? '—'}</td>}
-                      <td className="num">{fcfa(s.codAmount)}</td>
+                      <td className="num">{formatMoney(s.codAmount, d.currency)}</td>
                       <td>{s.codRemittedAt ? <Badge color="green">Reversé le {new Date(s.codRemittedAt).toLocaleDateString('fr-FR')}</Badge> : <Badge color="orange">À reverser</Badge>}</td>
                       {!isSA && <td>{!s.codRemittedAt && <button className="btn plain" onClick={() => setConfirmRemit({ deliveryId: d.id, stopId: s.id, amount: s.codAmount, name: d.client.name })}>Marquer reversé</button>}</td>}
                     </tr>
@@ -94,7 +95,7 @@ export default function Collections() {
         </Card>
       </div>
       {confirmRemit && (
-        <Modal title="Confirmer le reversement" subtitle={`${fcfa(confirmRemit.amount)} reversé à ${confirmRemit.name}.`} onClose={() => setConfirmRemit(null)}
+        <Modal title="Confirmer le reversement" subtitle={`${formatMoney(confirmRemit.amount)} reversé à ${confirmRemit.name}.`} onClose={() => setConfirmRemit(null)}
           footer={<><button className="btn secondary" onClick={() => setConfirmRemit(null)}>Annuler</button><button className="btn" onClick={remit}>Confirmer</button></>} />
       )}
     </>

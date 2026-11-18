@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, fcfa, isOnline, phoneError, VEHICLE_LABEL } from '../api';
+import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, isOnline, VEHICLE_LABEL } from '../api';
+import { formatMoney, phoneError, formatPhone, telHref } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import CompanyDetail, { EditCompany } from './CompanyDetail';
@@ -123,13 +124,13 @@ function CompanyList() {
                           <td>
                             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                               <Avatar name={c.name} />
-                              <div><span className="co-name">{c.name}<CompanyStatusBadge c={c} /></span><span className="sub">{c.phone}</span></div>
+                              <div><span className="co-name">{c.name}<CompanyStatusBadge c={c} /></span><span className="sub">{formatPhone(c.phone)}</span></div>
                             </div>
                           </td>
                           <td className="num">{s.drivers}<span className="sub">{s.online} en ligne</span></td>
                           <td className="num">{s.active}</td>
                           <td className="num">{s.delivered}</td>
-                          <td className="num">{fcfa(s.volume)}</td>
+                          <td className="num">{formatMoney(s.volume)}</td>
                           <td onClick={(e) => approvedC && e.stopPropagation()}>
                             {approvedC ? <Switch checked={c.active} onChange={(v) => toggle(c, v)} label={c.active ? 'Suspendre' : 'Réactiver'} />
                               : <small className="muted">{statusOf(c) === 'PENDING' ? 'À valider' : '—'}</small>}
@@ -189,7 +190,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
           <small className="muted">{a.appliedAt ? `Envoyée le ${dateTime(a.appliedAt)}` : `Créée le ${dateTime(c.createdAt)}`}</small>
         </div>
         <div className="meta-row">
-          <span><Icon name="phone" size={14} />{c.phone}</span>
+          <span><Icon name="phone" size={14} />{formatPhone(c.phone)}</span>
           {a.commune && <span><Icon name="pin" size={14} />{a.commune}</span>}
           {a.drivers != null && <span><Icon name="people" size={14} />{a.drivers} livreur{a.drivers > 1 ? 's' : ''}</span>}
           {a.vehicles && a.vehicles.length > 0 && (
@@ -197,7 +198,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
           )}
         </div>
         {(a.managerName || a.managerPhone) && (
-          <div className="meta-row"><span><Icon name="shield" size={14} />Gérant : {a.managerName ?? '—'}{a.managerPhone && <> · <a href={`tel:${a.managerPhone}`}>{a.managerPhone}</a></>}</span></div>
+          <div className="meta-row"><span><Icon name="shield" size={14} />Gérant : {a.managerName ?? '—'}{a.managerPhone && <> · <a href={telHref(a.managerPhone)}>{formatPhone(a.managerPhone)}</a></>}</span></div>
         )}
         {a.message && <p className="co-message">« {a.message} »</p>}
         {st === 'REJECTED' && c.reviewNote && (
@@ -217,7 +218,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
           footer={<><button className="btn secondary" onClick={() => setConfirm(null)}>Annuler</button><button className="btn" disabled={busy} onClick={() => act('approve')}>Accepter</button></>}
         >
           {(a.managerName || a.managerPhone) && (
-            <div className="alert info">Identifiant du gérant : <strong>{a.managerPhone ?? '—'}</strong>{a.managerName && <> ({a.managerName})</>}, avec le mot de passe choisi lors de la demande.</div>
+            <div className="alert info">Identifiant du gérant : <strong>{a.managerPhone ? formatPhone(a.managerPhone) : '—'}</strong>{a.managerName && <> ({a.managerName})</>}, avec le mot de passe choisi lors de la demande.</div>
           )}
           {error && <div className="alert error">{error}</div>}
         </Modal>
@@ -272,7 +273,7 @@ function CreateCompany({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await api('/companies', { method: 'POST', body: form });
-      toast(`${form.name} créée — le gérant peut se connecter avec ${form.managerPhone}`);
+      toast(`${form.name} créée — le gérant peut se connecter avec ${formatPhone(form.managerPhone)}`);
       await reload();
       onClose();
     } catch (err) {
@@ -286,14 +287,14 @@ function CreateCompany({ onClose }: { onClose: () => void }) {
         <input autoComplete="off" placeholder="Ex. : Rapid Express" value={form.name} onChange={(e) => set('name')(e.target.value)} />
       </Field>
       <Field label="Téléphone de l’entreprise" error={errors.phone}>
-        <PhoneInput value={form.phone} onChange={set('phone')} placeholder="0711111111" />
+        <PhoneInput value={form.phone} onChange={set('phone')} />
       </Field>
       <div className="section-title" style={{ marginTop: 6, marginBottom: 0 }}>Gérant</div>
       <Field label="Nom du gérant" error={errors.managerName}>
         <input autoComplete="off" data-lpignore="true" value={form.managerName} onChange={(e) => set('managerName')(e.target.value)} />
       </Field>
-      <Field label="Téléphone du gérant" error={errors.managerPhone} hint="Sert d’identifiant pour se connecter au back-office (10 chiffres)">
-        <PhoneInput value={form.managerPhone} onChange={set('managerPhone')} placeholder="0722222222" />
+      <Field label="Téléphone du gérant" error={errors.managerPhone} hint="Sert d’identifiant pour se connecter au back-office">
+        <PhoneInput value={form.managerPhone} onChange={set('managerPhone')} />
       </Field>
       <Field label="Mot de passe provisoire" error={errors.managerPassword} hint="À transmettre au gérant (6 caractères minimum)">
         <input type="password" autoComplete="new-password" value={form.managerPassword} onChange={(e) => set('managerPassword')(e.target.value)} />

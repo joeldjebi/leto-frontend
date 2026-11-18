@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, BillingConfig, CommissionType, fcfa, MobileMoneyAccount } from '../api';
+import { api, BillingConfig, CommissionType, MobileMoneyAccount } from '../api';
+import { formatMoney, currencySymbol } from '../countries';
 import { Card, Icon, Segmented, useToast } from '../ui';
 
 /** SA : abonnement annuel, commission par défaut, comptes Mobile Money de LETO */
@@ -46,12 +47,12 @@ export default function BillingSettings() {
         <div className="rows" style={{ margin: '0 -20px' }}>
           <div>
             <div className="grow"><div className="title">Abonnement annuel</div><small className="muted">Payé par chaque entreprise pour accéder à la plateforme</small></div>
-            <input type="number" min={0} step={1000} value={cfg.subscriptionFee} onChange={(e) => setCfg({ ...cfg, subscriptionFee: Number(e.target.value) })} style={{ width: 120, textAlign: 'right' }} /><span className="muted">F</span>
+            <input type="number" min={0} step={1000} value={cfg.subscriptionFee} onChange={(e) => setCfg({ ...cfg, subscriptionFee: Number(e.target.value) })} style={{ width: 120, textAlign: 'right' }} /><span className="muted">{currencySymbol()}</span>
           </div>
           <div>
             <div className="grow">
               <div className="title">Commission par défaut</div>
-              <small className="muted">Sur le prix de la tournée · ex. course à {fcfa(sample)} → {fcfa(example)} prélevé(s). Modifiable par entreprise depuis sa fiche.</small>
+              <small className="muted">Sur le prix de la tournée · ex. course à {formatMoney(sample)} → {formatMoney(example)} prélevé(s). Modifiable par entreprise depuis sa fiche.</small>
             </div>
             <Segmented<CommissionType> value={cfg.commissionType} onChange={(t) => setCfg({ ...cfg, commissionType: t })} options={[['PERCENT', '%'], ['FIXED', 'F fixe']]} labels={{ PERCENT: 'Pourcentage', FIXED: 'Montant fixe' }} />
             <input type="number" min={0} step={cfg.commissionType === 'PERCENT' ? 0.5 : 50} value={cfg.commissionValue} onChange={(e) => setCfg({ ...cfg, commissionValue: Number(e.target.value) })} style={{ width: 90, textAlign: 'right' }} aria-label="Valeur de la commission" />

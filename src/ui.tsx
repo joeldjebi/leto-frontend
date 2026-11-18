@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { initial, Status, STATUS_COLOR, STATUS_LABEL } from './api';
+import { parsePhone, toE164, useCountries } from './countries';
 
 // ============================================================================
 // Icônes (trait fin, façon SF Symbols)
@@ -44,6 +45,7 @@ export const ICON_PATHS: Record<string, string> = {
   play: 'M8 5.5v13l10.5-6.5L8 5.5z',
   stop: 'M7 7h10v10H7z',
   trash: 'M4.5 7h15 M9.5 7V4.5h5V7 M6.5 7l1 13h9l1-13 M10 11v5.5 M14 11v5.5',
+  flag: 'M5 21V4 M5 4.5c2.5-1.5 5-1.5 7 0s4.5 1.5 7 0v9c-2.5 1.5-5 1.5-7 0s-4.5-1.5-7 0',
   globe: 'M12 21a9 9 0 100-18 9 9 0 000 18z M3 12h18 M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z',
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
   up: 'M6 15l6-6 6 6',
@@ -147,13 +149,72 @@ export function Field({ label, error, hint, children }: { label: string; error?:
   );
 }
 
-/** Téléphone ivoirien : chiffres uniquement (10 au plus), sans remplissage automatique du navigateur */
-export function PhoneInput({ value, onChange, placeholder = '0701020304' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+/**
+ * Téléphone : indicatif du pays (pays actifs uniquement) + numéro local.
+ * Émet le format international (+2250701020304) dès que le numéro est complet ; en cours de saisie,
+ * « +indicatif » suivi des chiffres tapés (phoneError() indique ce qui manque). Un seul pays actif : indicatif fixe.
+ * `plain` : sans cadre (lignes de formulaire façon iOS de la nouvelle course).
+ */
+export function PhoneInput({ value, onChange, placeholder, label, plain = false, autoFocus, autoComplete }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; label?: string; plain?: boolean; autoFocus?: boolean;
+  /** Ex. « username » sur la page de connexion (sinon le navigateur ne propose rien) */
+  autoComplete?: string;
+}) {
+  const { countries, operating } = useCountries();
+  // Pays et texte saisi, déduits de la valeur reçue (sauf si elle vient de ce champ)
+  const derive = (v: string) => {
+    const p = parsePhone(v);
+    if (p) return { iso: p.country.iso, text: p.national };
+    return { iso: operating.iso, text: v };
+  };
+  const [st, setSt] = useState(() => derive(value));
+  const emitted = useRef(value);
+  useEffect(() => {
+    if (value !== emitted.current) { emitted.current = value; setSt(derive(value)); }
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  const country = countries.find((c) => c.iso === st.iso) ?? operating;
+
+  const emit = (iso: string, text: string) => {
+    const c = countries.find((x) => x.iso === iso) ?? operating;
+    const digits = text.replace(/\D/g, '');
+    const out = !digits ? '' : toE164(c, digits) ?? `+${c.dialCode}${digits}`;
+    setSt({ iso: c.iso, text: digits });
+    emitted.current = out;
+    onChange(out);
+  };
+  const onText = (raw: string) => {
+    // Numéro international collé (+225…, 00225…) : le pays suit l'indicatif
+    const intl = raw.trim().replace(/^00/, '+');
+    if (intl.startsWith('+')) {
+      const p = parsePhone(intl.replace(/[^\d+]/g, ''));
+      if (p) return emit(p.country.iso, p.national);
+    }
+    let digits = raw.replace(/\D/g, '');
+    // Indicatif tapé sans « + » (2250701020304)
+    if (digits.length === country.dialCode.length + country.phoneLength && digits.startsWith(country.dialCode)) digits = digits.slice(country.dialCode.length);
+    emit(country.iso, digits.slice(0, country.phoneLength + (country.trunkPrefix?.length ?? 0)));
+  };
+
+  const multi = countries.length > 1;
   return (
-    <input
-      type="tel" inputMode="numeric" maxLength={10} autoComplete="off" data-lpignore="true" data-1p-ignore
-      placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value.replace(/\D/g, '').slice(0, 10))}
-    />
+    <div className={`ph${plain ? ' ph-plain' : ''}`}>
+      <span className={`ph-cc${multi ? ' ph-cc-pick' : ''}`}>
+        <span className="ph-flag" aria-hidden="true">{country.flag}</span>
+        <span>+{country.dialCode}</span>
+        {multi && <Icon name="down" size={12} className="ph-caret" />}
+        {multi && (
+          <select value={country.iso} onChange={(e) => emit(e.target.value, st.text)} aria-label="Indicatif du pays">
+            {countries.map((c) => <option key={c.iso} value={c.iso}>{c.flag} {c.name} (+{c.dialCode})</option>)}
+          </select>
+        )}
+      </span>
+      <input
+        type="tel" inputMode="numeric" autoComplete={autoComplete ?? 'off'} data-lpignore={autoComplete ? undefined : 'true'} data-1p-ignore={autoComplete ? undefined : true} autoFocus={autoFocus}
+        aria-label={label ?? placeholder ?? 'Téléphone'}
+        placeholder={placeholder ?? (country.phoneExample || '0'.repeat(country.phoneLength))}
+        value={st.text} onChange={(e) => onText(e.target.value)}
+      />
+    </div>
   );
 }
 

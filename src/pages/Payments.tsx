@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, fcfa, Payment, PaymentStatus } from '../api';
+import { api, Payment, PaymentStatus } from '../api';
+import { formatMoney } from '../countries';
 import { PaymentsTable, ReviewDialog } from '../components/Billing';
 import { Card, PageHeader, Segmented, Stat } from '../ui';
 
@@ -32,8 +33,8 @@ export default function Payments() {
         {summary && (
           <div className="grid grid-stats">
             <Stat icon="receipt" label="À vérifier" value={summary.pending} foot="preuve(s) de paiement en attente" onClick={() => setStatus('PENDING')} />
-            <Stat icon="tag" label="Commissions ce mois" value={fcfa(summary.commissionsMonth)} foot={`${fcfa(summary.commissionsTotal)} depuis le début`} />
-            <Stat icon="calendar" label="Abonnements cette année" value={fcfa(summary.subscriptionsYear)} foot={`${fcfa(summary.topupsMonth)} de recharges ce mois`} />
+            <Stat icon="tag" label="Commissions ce mois" value={formatMoney(summary.commissionsMonth)} foot={`${formatMoney(summary.commissionsTotal)} depuis le début`} />
+            <Stat icon="calendar" label="Abonnements cette année" value={formatMoney(summary.subscriptionsYear)} foot={`${formatMoney(summary.topupsMonth)} de recharges ce mois`} />
           </div>
         )}
         <div className="toolbar">

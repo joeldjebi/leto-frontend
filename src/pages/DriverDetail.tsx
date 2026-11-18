@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { api, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, Stop, time, Vehicle } from '../api';
+import { api, dateTime, Delivery, FAILURE_LABEL, isOnline, Stop, time, Vehicle } from '../api';
+import { formatMoney, formatPhone } from '../countries';
 import { LogbookView } from './Logbook';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { EarningsTab } from '../components/Remittances';
@@ -110,7 +111,7 @@ export default function DriverDetail({ id }: { id: string }) {
               {!driver.active ? <Badge color="red">Bloqué</Badge> : online ? <Badge color={k.current ? 'purple' : 'green'}>{k.current ? 'En course' : 'En ligne'}</Badge> : <Badge>Hors ligne</Badge>}
             </h1>
             <div className="meta-row">
-              <span><Icon name="phone" size={14} />{driver.phone}</span>
+              <span><Icon name="phone" size={14} />{formatPhone(driver.phone)}</span>
               <span>
                 <Icon name={driver.vehicleType === 'CAR' ? 'car' : driver.vehicleType === 'CARGO' ? 'truck' : 'moto'} size={14} />
                 {isSA ? ({ MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' } as Record<Vehicle, string>)[driver.vehicleType ?? 'MOTO'] : (
@@ -155,9 +156,9 @@ export default function DriverDetail({ id }: { id: string }) {
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses" value={k.total} foot={`${k.done} terminée(s) · ${k.cancelled} annulée(s) · ${k.clients} client(s)`} />
         <Stat icon="check" label="Taux de réussite" value={k.successRate == null ? '—' : `${k.successRate} %`} foot={`${k.delivered} colis livré(s) · ${k.failed.length} échec(s)`} onClick={() => setTab('stops')} />
-        <Stat icon="wallet" label="Volume des courses" value={fcfa(k.volume)} foot={`${fcfa(k.volumeWeek)} sur 7 jours · ${fcfa(k.commissions)} de commission LETO`} />
+        <Stat icon="wallet" label="Volume des courses" value={formatMoney(k.volume)} foot={`${formatMoney(k.volumeWeek)} sur 7 jours · ${formatMoney(k.commissions)} de commission LETO`} />
         <Stat icon="map" label="Distance parcourue" value={`${k.km.toLocaleString('fr-FR')} km`} foot={k.avgMin != null ? `${k.avgMin} min en moyenne par tournée` : 'Aucune tournée terminée'} />
-        <Stat icon="wallet" label="Espèces à reverser" value={fcfa(k.codHeld)} foot={`${k.cod.length} paiement(s) à la livraison encaissé(s)`} onClick={() => setTab('collections')} />
+        <Stat icon="wallet" label="Espèces à reverser" value={formatMoney(k.codHeld)} foot={`${k.cod.length} paiement(s) à la livraison encaissé(s)`} onClick={() => setTab('collections')} />
         <Stat icon="alert" label="Litiges" value={k.disputes.length} foot={`${k.disputesLost} donné(s) au client · ${k.disputes.length - k.disputesLost} au livreur ou en attente`} onClick={() => setTab('disputes')} />
       </div>
 
@@ -167,7 +168,7 @@ export default function DriverDetail({ id }: { id: string }) {
           actions={<Segmented<Metric> value={metric} onChange={setMetric} options={[['created', 'Courses'], ['volume', 'Volume']]} />}
         >
           <div style={{ padding: '4px 20px 16px' }}>
-            <BarChart data={series} format={(n) => (metric === 'created' ? `${n} course(s)` : fcfa(n))} label={`Activité de ${driver.name} sur 30 jours`} />
+            <BarChart data={series} format={(n) => (metric === 'created' ? `${n} course(s)` : formatMoney(n))} label={`Activité de ${driver.name} sur 30 jours`} />
             <small className="muted">
               {k.first ? `Première course le ${new Date(k.first).toLocaleDateString('fr-FR')} · dernière le ${dateTime(k.last)}` : 'Aucune course pour l’instant'}
             </small>
@@ -204,10 +205,10 @@ export default function DriverDetail({ id }: { id: string }) {
                       return (
                         <tr key={s.id} className="clickable" onClick={() => setOpen(d)}>
                           <td style={{ whiteSpace: 'nowrap' }}>{dateTime(s.deliveredAt ?? s.failedAt ?? d.createdAt)}</td>
-                          <td>{s.recipientName}<span className="sub">{s.recipientPhone}</span></td>
+                          <td>{s.recipientName}<span className="sub">{formatPhone(s.recipientPhone)}</span></td>
                           <td>{s.address}<span className="sub">{s.commune}</span></td>
                           <td>{d.client.name}</td>
-                          <td className="num">{s.codAmount ? fcfa(s.codAmount) : <span className="muted">—</span>}</td>
+                          <td className="num">{s.codAmount ? formatMoney(s.codAmount, d.currency) : <span className="muted">—</span>}</td>
                           <td><Badge color={color}>{label}</Badge>{s.failureReason && <span className="sub">{FAILURE_LABEL[s.failureReason]}</span>}</td>
                         </tr>
                       );

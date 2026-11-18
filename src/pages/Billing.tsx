@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { PaymentKind } from '../api';
 import { AccountsList, BillingAlert, BillingStats, PayDialog, PaymentsTable, TransactionsCard, useBilling } from '../components/Billing';
 import { Card, Empty, Icon, PageHeader } from '../ui';
+import { formatMoney } from '../countries';
 
 /** Gérant : abonnement annuel, crédit, recharges (preuve Mobile Money) et journal */
 export default function Billing() {
@@ -34,7 +35,7 @@ export default function Billing() {
           </Card>
           <Card title="Bon à savoir" pad>
             <ul className="muted" style={{ margin: 0, paddingLeft: 18, lineHeight: 1.7 }}>
-              <li>Abonnement annuel : {b.config.subscriptionFee.toLocaleString('fr-FR')} F, sans lui vos livreurs ne peuvent pas travailler.</li>
+              <li>Abonnement annuel : {formatMoney(b.config.subscriptionFee)}, sans lui vos livreurs ne peuvent pas travailler.</li>
               <li>À l’acceptation d’une course, la commission est réservée sur votre crédit.</li>
               <li>Si le crédit disponible ne suffit pas, le livreur ne peut pas accepter.</li>
               <li>La commission est prélevée à la fin de la tournée, même si un destinataire était absent.</li>

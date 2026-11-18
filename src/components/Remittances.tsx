@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, dateTime, fcfa, User } from '../api';
+import { api, dateTime, User } from '../api';
+import { formatMoney, formatPhone, currencyLabel } from '../countries';
 import { Badge, Card, Empty, Field, Icon, Modal, Segmented, Stat, useToast } from '../ui';
 import { ProofThumb } from './Billing';
 
@@ -51,10 +52,10 @@ export function EarningsTab({ driver, canManage }: { driver: User; canManage: bo
         </div>
       )}
       <div className="grid grid-stats">
-        <Stat icon="wallet" label="Gagné (courses terminées)" value={fcfa(b.earned)} foot={`${b.deliveries} course(s) · aujourd’hui ${fcfa(b.today)} · semaine ${fcfa(b.week)} · mois ${fcfa(b.month)}`} />
-        <Stat icon="check" label={`Part du livreur (${b.sharePercent} %)`} value={fcfa(b.share)} foot={b.sharePercent ? 'Gardée par le livreur sur ses encaissements' : 'Le livreur verse la totalité (part à 0 %)'} />
-        <Stat icon="receipt" label="Reste à verser" value={fcfa(b.toRemit)}
-          foot={`Courses ${fcfa(b.earned)} + paiements à la livraison ${fcfa(b.cod)} − part − déjà versé ${fcfa(b.confirmed)}${b.pending ? ` · ${fcfa(b.pending)} en attente` : ''}`} />
+        <Stat icon="wallet" label="Gagné (courses terminées)" value={formatMoney(b.earned)} foot={`${b.deliveries} course(s) · aujourd’hui ${formatMoney(b.today)} · semaine ${formatMoney(b.week)} · mois ${formatMoney(b.month)}`} />
+        <Stat icon="check" label={`Part du livreur (${b.sharePercent} %)`} value={formatMoney(b.share)} foot={b.sharePercent ? 'Gardée par le livreur sur ses encaissements' : 'Le livreur verse la totalité (part à 0 %)'} />
+        <Stat icon="receipt" label="Reste à verser" value={formatMoney(b.toRemit)}
+          foot={`Courses ${formatMoney(b.earned)} + paiements à la livraison ${formatMoney(b.cod)} − part − déjà versé ${formatMoney(b.confirmed)}${b.pending ? ` · ${formatMoney(b.pending)} en attente` : ''}`} />
       </div>
       {pending.length > 0 && (
         <Card title={`Versements à confirmer (${pending.length})`}>
@@ -81,10 +82,10 @@ export function RemittanceTable({ rows, onReview, showDriver }: { rows: Remittan
             return (
               <tr key={r.id}>
                 <td style={{ whiteSpace: 'nowrap' }}>{dateTime(r.createdAt)}<span className="sub">{r.createdBy === 'DRIVER' ? 'Déclaré par le livreur' : `Enregistré par ${r.reviewedBy ?? 'l’entreprise'}`}</span></td>
-                {showDriver && <td>{r.driver?.name ?? '—'}<span className="sub">{r.driver?.phone}</span></td>}
+                {showDriver && <td>{r.driver?.name ?? '—'}<span className="sub">{formatPhone(r.driver?.phone)}</span></td>}
                 <td>{METHOD[r.method]}{(r.reference || r.note) && <span className="sub">{[r.reference && `réf. ${r.reference}`, r.note].filter(Boolean).join(' · ')}</span>}</td>
                 <td>{r.proofUrl ? <ProofThumb url={r.proofUrl} /> : <span className="muted">—</span>}</td>
-                <td className="num">{fcfa(r.amount)}</td>
+                <td className="num">{formatMoney(r.amount)}</td>
                 <td><Badge color={color}>{label}</Badge>{r.reviewNote && <span className="sub">{r.reviewNote}</span>}{r.status !== 'PENDING' && r.createdBy === 'DRIVER' && r.reviewedBy && <span className="sub">{r.reviewedBy} · {dateTime(r.reviewedAt)}</span>}</td>
                 {onReview && <td>{r.status === 'PENDING' && <button className="btn" onClick={() => onReview(r)}>Vérifier</button>}</td>}
               </tr>
@@ -110,7 +111,7 @@ export function ReviewRemittance({ r, onClose, onDone }: { r: Remittance; onClos
         const n = Number(amount);
         if (!Number.isInteger(n) || n < 1) return setError('Montant reçu invalide');
         await api(`/remittances/${r.id}/confirm`, { method: 'POST', body: { amount: n } });
-        toast(`Versement de ${fcfa(n)} confirmé`);
+        toast(`Versement de ${formatMoney(n)} confirmé`);
       } else {
         if (!note.trim()) return setError('Indiquez le motif');
         await api(`/remittances/${r.id}/reject`, { method: 'POST', body: { note: note.trim() } });
@@ -124,14 +125,14 @@ export function ReviewRemittance({ r, onClose, onDone }: { r: Remittance; onClos
   };
   return (
     <Modal title={`Versement de ${r.driver?.name ?? 'livreur'}`}
-      subtitle={`${fcfa(r.amount)} · ${METHOD[r.method]}${r.reference ? ` · réf. ${r.reference}` : ''} — vérifiez la réception avant de confirmer.`}
+      subtitle={`${formatMoney(r.amount)} · ${METHOD[r.method]}${r.reference ? ` · réf. ${r.reference}` : ''} — vérifiez la réception avant de confirmer.`}
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className={`btn${mode === 'reject' ? ' danger' : ''}`} onClick={submit}>{mode === 'confirm' ? 'Confirmer la réception' : 'Refuser'}</button></>}>
       {r.proofUrl && <ProofThumb url={r.proofUrl} />}
       {r.note && <div className="muted">« {r.note} »</div>}
       <Segmented value={mode} onChange={setMode} options={[['confirm', 'Confirmer'], ['reject', 'Refuser']]} />
       {mode === 'confirm'
-        ? <Field label="Montant réellement reçu (FCFA)"><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
+        ? <Field label={`Montant réellement reçu (${currencyLabel()})`}><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
         : <Field label="Motif du refus" hint="Visible par le livreur"><input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="Ex. montant non reçu" /></Field>}
       {error && <div className="alert error">{error}</div>}
     </Modal>
@@ -148,10 +149,10 @@ function RecordDialog({ driver, max, onClose, onDone }: { driver: User; max: num
   const [error, setError] = useState('');
   const submit = async () => {
     const n = Number(amount);
-    if (!Number.isInteger(n) || n < 100) return setError('Montant entier, 100 F minimum');
+    if (!Number.isInteger(n) || n < 100) return setError(`Montant entier, ${formatMoney(100)} minimum`);
     try {
       await api(`/remittances/drivers/${driver.id}`, { method: 'POST', body: { amount: n, method, reference: reference.trim() || undefined, note: note.trim() || undefined } });
-      toast(`Versement de ${fcfa(n)} enregistré pour ${driver.name}`);
+      toast(`Versement de ${formatMoney(n)} enregistré pour ${driver.name}`);
       onDone();
       onClose();
     } catch (e) {
@@ -159,10 +160,10 @@ function RecordDialog({ driver, max, onClose, onDone }: { driver: User; max: num
     }
   };
   return (
-    <Modal title={`Versement reçu de ${driver.name}`} subtitle={`Reste à verser : ${fcfa(max)}`} onClose={onClose}
+    <Modal title={`Versement reçu de ${driver.name}`} subtitle={`Reste à verser : ${formatMoney(max)}`} onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Enregistrer</button></>}>
       <Segmented value={method} onChange={setMethod} options={[['CASH', 'Espèces'], ['MOBILE_MONEY', 'Mobile Money']]} />
-      <Field label="Montant reçu (FCFA)"><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
+      <Field label={`Montant reçu (${currencyLabel()})`}><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
       {method === 'MOBILE_MONEY' && <Field label="Référence (facultatif)"><input value={reference} maxLength={80} onChange={(e) => setReference(e.target.value)} /></Field>}
       <Field label="Note (facultatif)"><input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} placeholder="Ex. remis au bureau" /></Field>
       {error && <div className="alert error">{error}</div>}

@@ -1,3 +1,5 @@
+import { formatMoney } from './countries';
+
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'SUPER_ADMIN';
@@ -52,6 +54,8 @@ export interface Stop {
 
 export interface Delivery {
   id: string; status: Status; price: number;
+  /** Devise de la course (code ISO, ex. XOF) */
+  currency?: string;
   pricingDetails?: { inAbidjan: boolean; surchargePct: number; surcharges: { key: string; label: string; pct: number }[]; stopDiscountPct: number } | null;
   vehicleType: Vehicle; speed: Speed;
   distanceKm: number | null; durationMin: number | null;
@@ -102,7 +106,7 @@ export const PAYMENT_STATUS: Record<PaymentStatus, [string, string]> = {
 export const CREDIT_LABEL: Record<CreditType, string> = {
   TOPUP: 'Recharge', COMMISSION: 'Commission', REFUND: 'Remboursement', ADJUSTMENT: 'Ajustement LETO',
 };
-export const ruleLabel = (type: CommissionType, value: number) => (type === 'PERCENT' ? `${value} %` : fcfa(value));
+export const ruleLabel = (type: CommissionType, value: number) => (type === 'PERCENT' ? `${value} %` : formatMoney(value));
 export const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
 /** Jours restants avant la fin de l'abonnement (négatif = expiré) */
 export const daysLeft = (iso: string | null) => (iso ? Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000) : null);
@@ -177,16 +181,12 @@ export const FAILURE_LABEL = { ABSENT: 'Destinataire absent', REFUSED: 'Colis re
 export const ROLE_LABEL: Record<Role, string> = { CLIENT: 'Client', DRIVER: 'Livreur', COMPANY: 'Gérant', SUPER_ADMIN: 'Super Admin' };
 
 // ---------- Formatage ----------
-export const fcfa = (n: number) => `${Math.round(n).toLocaleString('fr-FR')} F`;
 export const codTotal = (d: Delivery) => d.stops.reduce((s, x) => s + x.codAmount, 0);
 export const dateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
 export const time = (iso: string | null) => (iso ? new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '—');
 export const isOnline = (u: User) => !!u.lastLocationAt && Date.now() - new Date(u.lastLocationAt).getTime() < 120_000;
 export const photoUrl = (path: string) => API_URL + path;
-/** Numéro ivoirien à 10 chiffres (ex. 0701020304) : renvoie un message d'erreur ou null */
-export const phoneError = (v: string) =>
-  /^0\d{9}$/.test(v) ? null : v ? `${v.length} chiffre(s) sur 10 — format attendu : 0701020304` : 'Numéro obligatoire';
 export const initial = (name?: string | null) => (name?.trim()?.[0] ?? '?').toUpperCase();
 
 // ---------- Session ----------

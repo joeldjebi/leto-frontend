@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { api, setToken, User } from '../api';
-import { Icon } from '../ui';
+import { Icon, PhoneInput } from '../ui';
 
 export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
   const [phone, setPhone] = useState('');
@@ -33,7 +33,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
         <h1>LETO</h1>
         <p className="muted" style={{ margin: '4px 0 0' }}>Back-office des livraisons</p>
         <form onSubmit={submit}>
-          <input placeholder="Téléphone" inputMode="tel" autoComplete="username" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <PhoneInput value={phone} onChange={setPhone} label="Téléphone" autoComplete="username" />
           <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           {error && <div className="alert error">{error}</div>}
           <button className="btn lg" type="submit" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>

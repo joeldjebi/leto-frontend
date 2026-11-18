@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { phoneError, api, codTotal, Company, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
+import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
+import { formatMoney, phoneError, formatPhone } from '../countries';
 import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling } from '../components/Billing';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
@@ -99,7 +100,7 @@ export default function CompanyDetail({ id }: { id: string }) {
           <div>
             <h1>{company.name} {company.active ? <Badge color="green">Active</Badge> : <Badge color="red">Suspendue</Badge>}</h1>
             <div className="meta-row">
-              <span><Icon name="phone" size={14} />{company.phone}</span>
+              <span><Icon name="phone" size={14} />{formatPhone(company.phone)}</span>
               <span><Icon name="clock" size={14} />Partenaire depuis le {new Date(company.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
               <span><Icon name="people" size={14} />{k.clients} client(s) servi(s)</span>
             </div>
@@ -117,11 +118,11 @@ export default function CompanyDetail({ id }: { id: string }) {
       {/* ----- Chiffres clés ----- */}
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses" value={k.total} foot={`${k.delivered} terminée(s) · ${k.cancelled} annulée(s) · ${k.stops} colis`} />
-        <Stat icon="wallet" label="Volume des courses" value={fcfa(k.volume)} foot={`${fcfa(k.volumeWeek)} sur 7 jours · panier moyen ${fcfa(k.avgPrice)}`} />
+        <Stat icon="wallet" label="Volume des courses" value={formatMoney(k.volume)} foot={`${formatMoney(k.volumeWeek)} sur 7 jours · panier moyen ${formatMoney(k.avgPrice)}`} />
         <Stat icon="bike" label="Livreurs" value={`${drivers.filter(isOnline).length} / ${drivers.length}`} foot={`en ligne · ${k.active} course(s) en cours`} onClick={() => setTab('drivers')} />
         <Stat icon="alert" label="Taux d’échec" value={`${k.failureRate} %`} foot={`${k.failed.length} échec(s) · ${k.disputesOpen} litige(s) à trancher`} onClick={() => setTab('disputes')} />
-        <Stat icon="wallet" label="À reverser aux boutiques" value={fcfa(k.codPending.reduce((t, x) => t + x.s.codAmount, 0))} foot={`${k.codPending.length} colis encaissé(s) non reversé(s)`} onClick={() => setTab('collections')} />
-        <Stat icon="check" label="Déjà reversé" value={fcfa(k.cod.filter((x) => x.s.codRemittedAt).reduce((t, x) => t + x.s.codAmount, 0))} foot={`${k.cod.length} paiement(s) à la livraison au total`} />
+        <Stat icon="wallet" label="À reverser aux boutiques" value={formatMoney(k.codPending.reduce((t, x) => t + x.s.codAmount, 0))} foot={`${k.codPending.length} colis encaissé(s) non reversé(s)`} onClick={() => setTab('collections')} />
+        <Stat icon="check" label="Déjà reversé" value={formatMoney(k.cod.filter((x) => x.s.codRemittedAt).reduce((t, x) => t + x.s.codAmount, 0))} foot={`${k.cod.length} paiement(s) à la livraison au total`} />
       </div>
 
       <div className="stack">
@@ -131,7 +132,7 @@ export default function CompanyDetail({ id }: { id: string }) {
             actions={<Segmented<Metric> value={metric} onChange={setMetric} options={[['created', 'Courses'], ['volume', 'Volume']]} />}
           >
             <div style={{ padding: '4px 20px 16px' }}>
-              <BarChart data={series} format={(n) => (metric === 'created' ? `${n} course(s)` : fcfa(n))} label={`Activité de ${company.name} sur 30 jours`} />
+              <BarChart data={series} format={(n) => (metric === 'created' ? `${n} course(s)` : formatMoney(n))} label={`Activité de ${company.name} sur 30 jours`} />
             </div>
           </Card>
           <Card title="Gérant(s)">
@@ -140,7 +141,7 @@ export default function CompanyDetail({ id }: { id: string }) {
                 {managers.map((u) => (
                   <div key={u.id}>
                     <Avatar name={u.name} />
-                    <div className="grow"><div className="title">{u.name}</div><small className="muted">{u.phone} · depuis le {new Date(u.createdAt).toLocaleDateString('fr-FR')}</small></div>
+                    <div className="grow"><div className="title">{u.name}</div><small className="muted">{formatPhone(u.phone)} · depuis le {new Date(u.createdAt).toLocaleDateString('fr-FR')}</small></div>
                     {u.active ? <Badge color="green">Actif</Badge> : <Badge color="red">Bloqué</Badge>}
                   </div>
                 ))}
@@ -226,11 +227,11 @@ export function DeliveriesTab({ deliveries, q, setQ, status, setStatus, onOpen }
                 {rows.map((d) => (
                   <tr key={d.id} className="clickable" onClick={() => onOpen(d)}>
                     <td style={{ whiteSpace: 'nowrap' }}>{dateTime(d.createdAt)}</td>
-                    <td>{d.client.name}<span className="sub">{d.client.phone}</span></td>
+                    <td>{d.client.name}<span className="sub">{formatPhone(d.client.phone)}</span></td>
                     <td>{d.pickupCommune} → {d.stops.length > 1 ? `${d.stops.length} arrêts` : d.stops[0]?.commune}<span className="sub">{VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span></td>
                     <td>{d.driver?.name ?? <span className="muted">—</span>}</td>
-                    <td className="num">{fcfa(d.price)}</td>
-                    <td className="num">{codTotal(d) ? fcfa(codTotal(d)) : <span className="muted">—</span>}</td>
+                    <td className="num">{formatMoney(d.price, d.currency)}</td>
+                    <td className="num">{codTotal(d) ? formatMoney(codTotal(d), d.currency) : <span className="muted">—</span>}</td>
                     <td><StatusBadge status={d.status} /></td>
                   </tr>
                 ))}
@@ -274,13 +275,13 @@ function DriversTab({ drivers, deliveries }: { drivers: User[]; deliveries: Deli
                 const s = stats(u);
                 return (
                   <tr key={u.id} className="clickable" onClick={() => goTo('drivers', u.id)}>
-                    <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{u.phone}</span></div></div></td>
+                    <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{formatPhone(u.phone)}</span></div></div></td>
                     <td>
                       {!u.active ? <Badge color="red">Bloqué</Badge> : isOnline(u) ? <Badge color={s.busy ? 'purple' : 'green'}>{s.busy ? 'En course' : 'En ligne'}</Badge> : <Badge>Hors ligne</Badge>}
                       {u.lastLocationAt && !isOnline(u) && <span className="sub">vu à {time(u.lastLocationAt)}</span>}
                     </td>
                     <td className="num">{s.delivered}</td>
-                    <td className="num">{fcfa(s.volume)}</td>
+                    <td className="num">{formatMoney(s.volume)}</td>
                     <td className="num">{s.failed}</td>
                     <td>{s.last ? dateTime(s.last) : <span className="muted">—</span>}</td>
                     <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
@@ -340,9 +341,9 @@ export function CollectionsTab({ cod }: { cod: { d: Delivery; s: Stop }[] }) {
           <div className="rows">
             {byClient.map((g) => (
               <div key={g.phone}>
-                <div className="grow"><div className="title">{g.name}</div><small className="muted">{g.phone}</small></div>
+                <div className="grow"><div className="title">{g.name}</div><small className="muted">{formatPhone(g.phone)}</small></div>
                 <span className="muted tabular">{g.count} colis</span>
-                <strong className="tabular">{fcfa(g.total)}</strong>
+                <strong className="tabular">{formatMoney(g.total)}</strong>
               </div>
             ))}
           </div>
@@ -360,7 +361,7 @@ export function CollectionsTab({ cod }: { cod: { d: Delivery; s: Stop }[] }) {
                     <td>{d.client.name}</td>
                     <td>{s.recipientName}<span className="sub">{s.commune}</span></td>
                     <td>{d.driver?.name ?? '—'}</td>
-                    <td className="num">{fcfa(s.codAmount)}</td>
+                    <td className="num">{formatMoney(s.codAmount, d.currency)}</td>
                     <td>{s.codRemittedAt ? <Badge color="green">Reversé le {new Date(s.codRemittedAt).toLocaleDateString('fr-FR')}</Badge> : <Badge color="orange">À reverser</Badge>}</td>
                   </tr>
                 ))}

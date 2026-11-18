@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 import { API_URL, getToken, time } from '../api';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, PageHeader, Search } from '../ui';
+import { formatPhone } from '../countries';
 
 interface Pos { lat: number; lng: number; at: string }
 const ABIDJAN: [number, number] = [5.3364, -4.0267];
@@ -71,7 +72,7 @@ export default function LiveMapPage() {
                   <Avatar name={d.name} />
                   <div className="grow">
                     <div className="title">{d.name}</div>
-                    <small className="muted">{d.company?.name ?? d.phone}</small>
+                    <small className="muted">{d.company?.name ?? formatPhone(d.phone)}</small>
                   </div>
                   {live(d.id) ? <Badge color={busy.has(d.id) ? 'purple' : 'green'}>{busy.has(d.id) ? 'En course' : 'Disponible'}</Badge> : <Badge>Hors ligne</Badge>}
                 </div>

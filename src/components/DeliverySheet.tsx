@@ -4,8 +4,9 @@ import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-lea
 import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
-  api, codTotal, dateTime, Delivery, fcfa, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
+  api, codTotal, dateTime, Delivery, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
 } from '../api';
+import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
@@ -42,7 +43,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
 
   const remit = async (s: Stop) => {
     await api(`/deliveries/${d.id}/stops/${s.id}/cod-remitted`, { method: 'POST' });
-    toast(`${fcfa(s.codAmount)} marqué comme reversé`);
+    toast(`${formatMoney(s.codAmount, d.currency)} marqué comme reversé`);
     reload();
   };
 
@@ -82,7 +83,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
 
   const settleFee = async () => {
     await api(`/deliveries/${d.id}/cancellation-fee/settled`, { method: 'POST' });
-    toast(`Frais de déplacement de ${fcfa(d.cancellationFee ?? 0)} marqués réglés`);
+    toast(`Frais de déplacement de ${formatMoney(d.cancellationFee ?? 0, d.currency)} marqués réglés`);
     reload();
   };
 
@@ -132,7 +133,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       </div>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{fcfa(d.price)}</span>
+        <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{formatMoney(d.price, d.currency)}</span>
         <span className="muted">Espèces · {VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
       </div>
       {d.pricingDetails && (d.pricingDetails.surcharges.length > 0 || d.pricingDetails.stopDiscountPct > 0 || d.pricingDetails.inAbidjan) && (
@@ -144,9 +145,9 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       )}
       {d.commissionAmount != null && (
         <div className="muted" style={{ marginTop: -8 }}>
-          Commission LETO {d.commissionRule} : {fcfa(d.commissionAmount)}
+          Commission LETO {d.commissionRule} : {formatMoney(d.commissionAmount)}
           {d.commissionChargedAt ? ' · prélevée' : d.status === 'CANCELLED' ? ' · non prélevée (annulée)' : ' · réservée, prélevée à la fin'}
-          {d.commissionRefunded > 0 && ` · ${fcfa(d.commissionRefunded)} remboursé(s) (litige)`}
+          {d.commissionRefunded > 0 && ` · ${formatMoney(d.commissionRefunded)} remboursé(s) (litige)`}
         </div>
       )}
       {(d.source === 'COMPANY' || d.targetCompanyId) && d.status === 'PENDING' && (
@@ -174,7 +175,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       {d.cancellationFee != null && d.cancellationFee > 0 && (
         <div className="alert info" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ flex: 1 }}>
-            <strong>Frais de déplacement : {fcfa(d.cancellationFee)}</strong> — course annulée alors que le livreur était en route, à récupérer auprès de l’expéditeur.
+            <strong>Frais de déplacement : {formatMoney(d.cancellationFee, d.currency)}</strong> — course annulée alors que le livreur était en route, à récupérer auprès de l’expéditeur.
           </span>
           {d.cancellationFeeSettledAt ? <Badge color="green">Réglés le {new Date(d.cancellationFeeSettledAt).toLocaleDateString('fr-FR')}</Badge>
             : !isSA ? <button className="btn" onClick={settleFee}>Marquer réglés</button> : <Badge color="orange">À récupérer</Badge>}
@@ -191,9 +192,9 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       <div>
         <div className="section-title">Intervenants</div>
         <div className="group">
-          <div><Avatar name={d.client.name} /><div style={{ flex: 1 }}><strong>{d.client.name}</strong><small className="muted" style={{ display: 'block' }}>Expéditeur · {d.client.phone}</small></div></div>
+          <div><Avatar name={d.client.name} /><div style={{ flex: 1 }}><strong>{d.client.name}</strong><small className="muted" style={{ display: 'block' }}>Expéditeur · {formatPhone(d.client.phone)}</small></div></div>
           {d.driver ? (
-            <div><Avatar name={d.driver.name} /><div style={{ flex: 1 }}><strong>{d.driver.name}</strong><small className="muted" style={{ display: 'block' }}>Livreur · {d.driver.phone} · {d.company?.name}</small></div></div>
+            <div><Avatar name={d.driver.name} /><div style={{ flex: 1 }}><strong>{d.driver.name}</strong><small className="muted" style={{ display: 'block' }}>Livreur · {formatPhone(d.driver.phone)} · {d.company?.name}</small></div></div>
           ) : (
             <div><span className="muted">Aucun livreur pour le moment</span></div>
           )}
@@ -208,7 +209,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
             <div style={{ flex: 1 }}>
               <strong>{d.pickupAddress}</strong> <span className="muted">({d.pickupCommune})</span>
               {d.pickupDetails && <small className="muted" style={{ display: 'block' }}>{d.pickupDetails}</small>}
-              <small className="muted" style={{ display: 'block' }}>{d.pickupContactName ?? d.client.name} · {d.pickupPhone}</small>
+              <small className="muted" style={{ display: 'block' }}>{d.pickupContactName ?? d.client.name} · {formatPhone(d.pickupPhone)}</small>
             </div>
           </div>
           {d.courierComment && <div><Icon name="edit" className="muted" /><span>« {d.courierComment} »</span></div>}
@@ -248,7 +249,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <span className="stop-num" style={{ background: stopColor(s) }}>{s.position + 1}</span>
                 <div style={{ flex: 1 }}>
-                  <strong>{s.recipientName}</strong> <span className="muted">· {s.recipientPhone}</span>
+                  <strong>{s.recipientName}</strong> <span className="muted">· {formatPhone(s.recipientPhone)}</span>
                   <small className="muted" style={{ display: 'block' }}>{s.address} ({s.commune}){s.details ? ` · ${s.details}` : ''}</small>
                   {s.packageDescription && <small className="muted" style={{ display: 'block' }}>Colis : {s.packageDescription}</small>}
                 </div>
@@ -261,7 +262,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
               {s.codAmount > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, marginLeft: 34 }}>
                   <Badge color={s.codRemittedAt ? 'green' : 'orange'}>
-                    {s.codRemittedAt ? `${fcfa(s.codAmount)} reversé` : s.status === 'DELIVERED' ? `${fcfa(s.codAmount)} encaissé, à reverser` : `À encaisser : ${fcfa(s.codAmount)}`}
+                    {s.codRemittedAt ? `${formatMoney(s.codAmount, d.currency)} reversé` : s.status === 'DELIVERED' ? `${formatMoney(s.codAmount, d.currency)} encaissé, à reverser` : `À encaisser : ${formatMoney(s.codAmount, d.currency)}`}
                   </Badge>
                   {!isSA && s.status === 'DELIVERED' && !s.codRemittedAt && <button className="btn plain" onClick={() => remit(s)}>Marquer reversé</button>}
                 </div>
@@ -403,7 +404,7 @@ function CancelDialog({ delivery, onClose }: { delivery: Delivery; onClose: () =
   return (
     <Modal
       title="Annuler la course ?"
-      subtitle={`${delivery.client.name} · ${fcfa(delivery.price)}${codTotal(delivery) ? ` · ${fcfa(codTotal(delivery))} à encaisser` : ''}`}
+      subtitle={`${delivery.client.name} · ${formatMoney(delivery.price, delivery.currency)}${codTotal(delivery) ? ` · ${formatMoney(codTotal(delivery), delivery.currency)} à encaisser` : ''}`}
       onClose={onClose}
       footer={
         <>

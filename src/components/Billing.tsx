@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  api, BillingConfig, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, daysLeft, fcfa,
-  PAYMENT_KIND_LABEL, PAYMENT_STATUS, Payment, PaymentKind, phoneError, photoUrl, ruleLabel, upload,
+  api, BillingConfig, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, daysLeft, PAYMENT_KIND_LABEL, PAYMENT_STATUS, Payment, PaymentKind, photoUrl, ruleLabel, upload,
 } from '../api';
+import { formatMoney, phoneError, formatPhone, currencyLabel } from '../countries';
 import { Badge, Card, Empty, Field, Icon, Modal, PhoneInput, Segmented, Stat, useToast } from '../ui';
 
 /** Charge la facturation d'une entreprise (gérant : /billing/me ; SA : /billing/companies/:id) */
@@ -57,14 +57,14 @@ export function BillingStats({ b, onTopup }: { b: BillingOverview; onTopup?: () 
   const left = daysLeft(b.subscriptionEndsAt);
   return (
     <div className="grid grid-stats grid-4">
-      <Stat icon="wallet" label="Crédit" value={fcfa(b.credit)}
-        foot={b.reserved ? `${fcfa(b.reserved)} réservé(s) par les courses en cours` : 'Aucune course en cours'} onClick={onTopup} />
-      <Stat icon="check" label="Disponible pour de nouvelles courses" value={fcfa(Math.max(0, b.available))}
-        foot={`${fcfa(b.month.topups)} rechargé(s) ce mois-ci`} />
+      <Stat icon="wallet" label="Crédit" value={formatMoney(b.credit)}
+        foot={b.reserved ? `${formatMoney(b.reserved)} réservé(s) par les courses en cours` : 'Aucune course en cours'} onClick={onTopup} />
+      <Stat icon="check" label="Disponible pour de nouvelles courses" value={formatMoney(Math.max(0, b.available))}
+        foot={`${formatMoney(b.month.topups)} rechargé(s) ce mois-ci`} />
       <Stat icon="calendar" label="Abonnement annuel" value={b.subscribed ? <Badge color="green">Actif</Badge> : <Badge color="red">Inactif</Badge>}
-        foot={b.subscriptionEndsAt ? `${b.subscribed ? 'Jusqu’au' : 'Expiré le'} ${date(b.subscriptionEndsAt)}${b.subscribed && left != null ? ` · ${left} j` : ''}` : `${fcfa(b.config.subscriptionFee)} par an`} />
+        foot={b.subscriptionEndsAt ? `${b.subscribed ? 'Jusqu’au' : 'Expiré le'} ${date(b.subscriptionEndsAt)}${b.subscribed && left != null ? ` · ${left} j` : ''}` : `${formatMoney(b.config.subscriptionFee)} par an`} />
       <Stat icon="tag" label="Commission par course" value={b.rule.label}
-        foot={`${b.rule.custom ? 'Tarif propre à l’entreprise' : 'Tarif standard'} · ${fcfa(b.month.commissions)} prélevé(s) ce mois`} />
+        foot={`${b.rule.custom ? 'Tarif propre à l’entreprise' : 'Tarif standard'} · ${formatMoney(b.month.commissions)} prélevé(s) ce mois`} />
     </div>
   );
 }
@@ -83,8 +83,8 @@ export function TransactionsCard({ b }: { b: BillingOverview }) {
                   <td style={{ whiteSpace: 'nowrap' }}>{dateTime(t.createdAt)}</td>
                   <td>{CREDIT_LABEL[t.type]}</td>
                   <td>{t.note ?? '—'}{t.deliveryId && <span className="sub">Course {t.deliveryId.slice(0, 8)}</span>}{t.createdBy && <span className="sub">par {t.createdBy}</span>}</td>
-                  <td className={`num ${t.amount > 0 ? 'amount-pos' : 'amount-neg'}`}>{t.amount > 0 ? '+' : '−'}{fcfa(Math.abs(t.amount))}</td>
-                  <td className="num">{fcfa(t.balanceAfter)}</td>
+                  <td className={`num ${t.amount > 0 ? 'amount-pos' : 'amount-neg'}`}>{t.amount > 0 ? '+' : '−'}{formatMoney(Math.abs(t.amount))}</td>
+                  <td className="num">{formatMoney(t.balanceAfter)}</td>
                 </tr>
               ))}
             </tbody>
@@ -128,9 +128,9 @@ export function PaymentsTable({ payments, showCompany, onReview }: { payments: P
                 <td style={{ whiteSpace: 'nowrap' }}>{dateTime(p.createdAt)}{p.submittedBy && <span className="sub">par {p.submittedBy}</span>}</td>
                 {showCompany && <td>{p.company?.name ?? '—'}</td>}
                 <td>{PAYMENT_KIND_LABEL[p.kind]}</td>
-                <td>{p.operator}<span className="sub">{p.senderPhone}{p.reference ? ` · réf. ${p.reference}` : ''}</span></td>
+                <td>{p.operator}<span className="sub">{formatPhone(p.senderPhone)}{p.reference ? ` · réf. ${p.reference}` : ''}</span></td>
                 <td><ProofThumb url={p.proofUrl} /></td>
-                <td className="num">{fcfa(p.amount)}</td>
+                <td className="num">{formatMoney(p.amount)}</td>
                 <td>
                   <Badge color={color}>{label}</Badge>
                   {p.reviewNote && <span className="sub">{p.reviewNote}</span>}
@@ -180,8 +180,8 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
 
   const n = Number(amount);
   const errors = {
-    amount: !Number.isInteger(n) || n < 500 ? 'Montant entier, 500 F minimum'
-      : kind === 'SUBSCRIPTION' && n < config.subscriptionFee ? `L’abonnement annuel est de ${fcfa(config.subscriptionFee)}` : null,
+    amount: !Number.isInteger(n) || n < 500 ? `Montant entier, ${formatMoney(500)} minimum`
+      : kind === 'SUBSCRIPTION' && n < config.subscriptionFee ? `L’abonnement annuel est de ${formatMoney(config.subscriptionFee)}` : null,
     phone: phoneError(senderPhone),
     proof: proof ? null : 'Ajoutez la capture du paiement',
   };
@@ -223,9 +223,9 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit} disabled={sending || uploading}>{sending ? 'Envoi…' : 'Envoyer la preuve'}</button></>}
     >
       <Segmented<PaymentKind> value={kind} onChange={(k) => { setKind(k); if (k === 'SUBSCRIPTION') setAmount(String(config.subscriptionFee)); }}
-        options={[['TOPUP', 'Recharge de crédit'], ['SUBSCRIPTION', `Abonnement · ${fcfa(config.subscriptionFee)}/an`]]} />
+        options={[['TOPUP', 'Recharge de crédit'], ['SUBSCRIPTION', `Abonnement · ${formatMoney(config.subscriptionFee)}/an`]]} />
       <AccountsList config={config} />
-      <Field label="Montant envoyé (FCFA)" error={tried ? errors.amount : null}>
+      <Field label={`Montant envoyé (${currencyLabel()})`} error={tried ? errors.amount : null}>
         <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} placeholder="Ex. 50000" />
       </Field>
       <div className="grid grid-2" style={{ gap: 12 }}>
@@ -268,7 +268,7 @@ export function ReviewDialog({ payment: p, onClose, onDone }: { payment: Payment
         const n = Number(amount);
         if (!Number.isInteger(n) || n < 1) return setError('Montant reçu invalide');
         await api(`/billing/payments/${p.id}/approve`, { method: 'POST', body: { amount: n } });
-        toast(p.kind === 'TOPUP' ? `${fcfa(n)} crédité(s) à ${p.company?.name}` : `Abonnement de ${p.company?.name} prolongé d’un an`);
+        toast(p.kind === 'TOPUP' ? `${formatMoney(n)} crédité(s) à ${p.company?.name}` : `Abonnement de ${p.company?.name} prolongé d’un an`);
       } else {
         if (!note.trim()) return setError('Indiquez le motif du refus');
         await api(`/billing/payments/${p.id}/reject`, { method: 'POST', body: { note: note.trim() } });
@@ -283,7 +283,7 @@ export function ReviewDialog({ payment: p, onClose, onDone }: { payment: Payment
   return (
     <Modal
       title={`${PAYMENT_KIND_LABEL[p.kind]} · ${p.company?.name ?? ''}`}
-      subtitle={`${fcfa(p.amount)} déclaré(s) via ${p.operator} depuis le ${p.senderPhone}${p.reference ? ` · réf. ${p.reference}` : ''} — vérifiez la réception sur le compte LETO avant de valider.`}
+      subtitle={`${formatMoney(p.amount)} déclaré(s) via ${p.operator} depuis le ${formatPhone(p.senderPhone)}${p.reference ? ` · réf. ${p.reference}` : ''} — vérifiez la réception sur le compte LETO avant de valider.`}
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button>
         <button className={`btn${mode === 'reject' ? ' danger' : ''}`} onClick={submit}>{mode === 'approve' ? 'Valider le paiement' : 'Refuser'}</button></>}
@@ -291,7 +291,7 @@ export function ReviewDialog({ payment: p, onClose, onDone }: { payment: Payment
       <img className="proof-full" src={photoUrl(p.proofUrl)} alt="Preuve de paiement" />
       <Segmented value={mode} onChange={setMode} options={[['approve', 'Valider'], ['reject', 'Refuser']]} />
       {mode === 'approve' ? (
-        <Field label="Montant réellement reçu (FCFA)" hint={p.kind === 'TOPUP' ? 'Ce montant sera ajouté au crédit' : 'L’abonnement sera prolongé d’un an'}>
+        <Field label={`Montant réellement reçu (${currencyLabel()})`} hint={p.kind === 'TOPUP' ? 'Ce montant sera ajouté au crédit' : 'L’abonnement sera prolongé d’un an'}>
           <input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} />
         </Field>
       ) : (
@@ -327,7 +327,7 @@ export function AdjustDialog({ companyId, onClose, onDone }: { companyId: string
     <Modal title="Ajuster le crédit" subtitle="Geste commercial, correction d’erreur… Chaque ajustement est inscrit au journal." onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Enregistrer</button></>}>
       <Segmented value={sign} onChange={setSign} options={[['+', 'Ajouter'], ['-', 'Retirer']]} />
-      <Field label="Montant (FCFA)"><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
+      <Field label={`Montant (${currencyLabel()})`}><input inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} /></Field>
       <Field label="Motif"><input value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} /></Field>
       {error && <div className="alert error">{error}</div>}
     </Modal>
@@ -387,7 +387,7 @@ export function CommissionDialog({ companyId, b, onClose, onDone }: { companyId:
       {custom === 'custom' && (
         <>
           <Segmented<CommissionType> value={type} onChange={setType} options={[['PERCENT', 'Pourcentage'], ['FIXED', 'Montant fixe']]} />
-          <Field label={type === 'PERCENT' ? 'Pourcentage du prix de la tournée' : 'Montant par tournée (FCFA)'}>
+          <Field label={type === 'PERCENT' ? 'Pourcentage du prix de la tournée' : `Montant par tournée (${currencyLabel()})`}>
             <input inputMode="decimal" value={value} onChange={(e) => setValue(e.target.value)} />
           </Field>
         </>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, dateTime, fcfa, User } from '../api';
+import { api, dateTime, User } from '../api';
+import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, PageHeader, Search, Segmented, Switch, useToast } from '../ui';
 import ClientDetail from './ClientDetail';
@@ -70,13 +71,13 @@ function ClientList() {
                       <td>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                           <Avatar name={u.name} />
-                          <div>{u.name} {u.accountType && <Badge color={u.accountType === 'SHOP' ? 'purple' : 'gray'}>{u.accountType === 'SHOP' ? 'Boutique' : 'Particulier'}</Badge>} {(a?.stops ?? 0) > (a?.count ?? 0) && <Badge color="blue">Tournées</Badge>}<span className="sub">{u.phone}</span></div>
+                          <div>{u.name} {u.accountType && <Badge color={u.accountType === 'SHOP' ? 'purple' : 'gray'}>{u.accountType === 'SHOP' ? 'Boutique' : 'Particulier'}</Badge>} {(a?.stops ?? 0) > (a?.count ?? 0) && <Badge color="blue">Tournées</Badge>}<span className="sub">{formatPhone(u.phone)}</span></div>
                         </div>
                       </td>
                       <td className="num">{a?.count ?? 0}</td>
                       <td className="num">{a?.stops ?? 0}</td>
-                      <td className="num">{fcfa(a?.volume ?? 0)}</td>
-                      <td className="num">{a?.cod ? fcfa(a.cod) : <span className="muted">—</span>}</td>
+                      <td className="num">{formatMoney(a?.volume ?? 0)}</td>
+                      <td className="num">{a?.cod ? formatMoney(a.cod) : <span className="muted">—</span>}</td>
                       <td>{a?.last ? dateTime(a.last) : <span className="muted">—</span>}</td>
                       <td>{new Date(u.createdAt).toLocaleDateString('fr-FR')}</td>
                       <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>

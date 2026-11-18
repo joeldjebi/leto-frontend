@@ -21,16 +21,18 @@ import CancelReasons from './pages/CancelReasons';
 import Landing from './pages/Landing';
 import PublicTracking from './pages/PublicTracking';
 import { connectRealtime } from './realtime';
+import { loadCountries, useCountries } from './countries';
+import Countries from './pages/Countries';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -57,6 +59,9 @@ const trackingToken = () => location.hash.match(/^#\/suivi\/([0-9a-f]{32})/)?.[1
 
 export default function App() {
   const [token] = useState(trackingToken);
+  // Pays actifs (indicatifs, devises) : chargés une fois, rechargés sur `countries:changed` ; tout se redessine au changement
+  useCountries();
+  useEffect(() => { loadCountries(); }, []);
   return token ? <PublicTracking token={token} /> : <BackOffice />;
 }
 
@@ -141,6 +146,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     if (isSA) items.push({ section: 'Réglages', links: [
       { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
       { r: 'cancelReasons', icon: 'close', label: 'Motifs d’annulation' },
+      { r: 'countries', icon: 'flag', label: 'Pays' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
       { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
@@ -211,6 +217,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'independents' && <Independents />}
           {current === 'sounds' && <Sounds />}
           {current === 'cancelReasons' && <CancelReasons />}
+          {current === 'countries' && <Countries />}
           {current === 'landing' && <Landing />}
         </div>
       </main>

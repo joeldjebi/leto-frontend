@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, fcfa, PricingGrid, Speed, Vehicle, VEHICLE_LABEL } from '../api';
+import { api, capFromKm, computePrice, PricingGrid, Speed, Vehicle, VEHICLE_LABEL } from '../api';
+import { formatMoney, currencySymbol } from '../countries';
 import { Badge, Icon, Modal, Switch, useToast } from '../ui';
 
 interface CompanyPricingData { custom: Partial<PricingGrid> | null; effective: PricingGrid; platform: PricingGrid; vehicles: Vehicle[] }
@@ -11,17 +12,17 @@ const VEHICLE_HINT: Record<Vehicle, string> = { MOTO: 'Petits colis, documents',
 const SPEED_SHORT: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: '2 h' };
 
 /** Montant éditable, avec la valeur LETO en repère */
-function Amount({ label, value, platform, step, onChange, suffix = 'F' }: { label: string; value: number; platform: number; step: number; onChange: (n: number) => void; suffix?: string }) {
+function Amount({ label, value, platform, step, onChange, suffix }: { label: string; value: number; platform: number; step: number; onChange: (n: number) => void; suffix?: string }) {
   const diff = value - platform;
   return (
     <label className="cp-amount">
       <span className="cp-amount-label">{label}</span>
       <span className="cp-amount-input">
         <input type="number" min={0} step={step} value={value} onChange={(e) => onChange(e.target.value === '' ? 0 : Number(e.target.value))} />
-        <span>{suffix}</span>
+        <span>{suffix ?? currencySymbol()}</span>
       </span>
       <small className={diff === 0 ? 'muted' : diff > 0 ? 'up' : 'down'}>
-        LETO : {suffix === 'F' ? fcfa(platform) : platform}{diff !== 0 && ` · ${diff > 0 ? '+' : '−'}${suffix === 'F' ? fcfa(Math.abs(diff)) : Math.abs(Math.round(diff * 100) / 100)}`}
+        LETO : {!suffix ? formatMoney(platform) : platform}{diff !== 0 && ` · ${diff > 0 ? '+' : '−'}${!suffix ? formatMoney(Math.abs(diff)) : Math.abs(Math.round(diff * 100) / 100)}`}
       </small>
     </label>
   );
@@ -136,7 +137,7 @@ export default function CompanyPricing() {
                           <label key={s} className="cp-cap">
                             <small>{SPEED_SHORT[s]}</small>
                             <input type="number" min={0} step={50} value={cap} onChange={(e) => setCap(v, s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Prix maximum ${VEHICLE_LABEL[v]} ${SPEED_SHORT[s]}`} />
-                            <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`LETO : ${leto ? fcfa(leto) : 'aucun plafond'}`}>{cap === leto ? '= LETO' : leto ? `LETO ${leto}` : 'LETO : —'}</small>
+                            <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`LETO : ${leto ? formatMoney(leto) : 'aucun plafond'}`}>{cap === leto ? '= LETO' : leto ? `LETO ${leto}` : 'LETO : —'}</small>
                           </label>
                         );
                       })}
@@ -144,7 +145,7 @@ export default function CompanyPricing() {
                     <small className="muted">{(() => { const f = capFromKm(grid, v, 'STANDARD'); return c.maxAbidjan?.STANDARD ? (f !== null ? `Standard plafonné dès ${f} km` : 'Plafonné') : '0 = pas de plafond'; })()}</small>
                   </div>
                   <div className="cp-vehicle-foot">
-                    {c.enabled ? <>Course de {km} km : <strong>{fcfa(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">{letoOff ? 'Désactivé par LETO' : 'Non proposé : vous n’en disposez pas'}</span>}
+                    {c.enabled ? <>Course de {km} km : <strong>{formatMoney(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">{letoOff ? 'Désactivé par LETO' : 'Non proposé : vous n’en disposez pas'}</span>}
                   </div>
                 </section>
               );
@@ -168,8 +169,8 @@ export default function CompanyPricing() {
             })}
             <section className="cp-speed">
               <strong>Arrêt supplémentaire</strong>
-              <div className="cp-factor"><input type="number" min={0} step={50} value={grid.extraStopFee} onChange={(e) => setGrid({ ...grid, extraStopFee: e.target.value === '' ? 0 : Number(e.target.value) })} aria-label="Supplément par arrêt" /><span>F</span></div>
-              <small className="muted">Par adresse en plus dans une tournée · LETO {fcfa(P.extraStopFee)}</small>
+              <div className="cp-factor"><input type="number" min={0} step={50} value={grid.extraStopFee} onChange={(e) => setGrid({ ...grid, extraStopFee: e.target.value === '' ? 0 : Number(e.target.value) })} aria-label="Supplément par arrêt" /><span>{currencySymbol()}</span></div>
+              <small className="muted">Par adresse en plus dans une tournée · LETO {formatMoney(P.extraStopFee)}</small>
             </section>
           </div>
         </div>
@@ -203,7 +204,7 @@ export default function CompanyPricing() {
                   <span className="cp-sim-v"><Icon name={VEHICLE_ICON[v]} size={18} />{VEHICLE_LABEL[v]}</span>
                   {SPEEDS.map((s) => {
                     const mine = price(grid, km, v, s, stops), leto = price(P, km, v, s, stops);
-                    return <span key={s}><strong>{fcfa(mine)}</strong><small className={mine === leto ? 'muted' : mine > leto ? 'up' : 'down'}>LETO {fcfa(leto)}</small></span>;
+                    return <span key={s}><strong>{formatMoney(mine)}</strong><small className={mine === leto ? 'muted' : mine > leto ? 'up' : 'down'}>LETO {formatMoney(leto)}</small></span>;
                   })}
                 </div>
               ))}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, dateTime, fcfa, PricingGrid, Speed, Vehicle } from '../api';
+import { api, capFromKm, computePrice, dateTime, PricingGrid, Speed, Vehicle } from '../api';
+import { formatMoney, currencySymbol } from '../countries';
 import BillingSettings from '../components/BillingSettings';
 import MapSettings from '../components/MapSettings';
 import SurchargeSettings from '../components/SurchargeSettings';
@@ -75,10 +76,10 @@ export default function Pricing() {
 
       <div className="stack">
         <Card title="Offres" pad>
-          <p className="muted" style={{ marginTop: 0 }}>Prix = max(minimum, base + prix par km × distance) × coefficient du délai, arrondi aux 50 F supérieurs, sans dépasser le prix maximum dans le Grand Abidjan. Un engin désactivé n’est proposé par aucune entreprise ; chaque entreprise indique aussi les engins dont elle dispose.</p>
+          <p className="muted" style={{ marginTop: 0 }}>Prix = max(minimum, base + prix par km × distance) × coefficient du délai, arrondi aux 50 {currencySymbol()} supérieurs, sans dépasser le prix maximum dans le Grand Abidjan. Un engin désactivé n’est proposé par aucune entreprise ; chaque entreprise indique aussi les engins dont elle dispose.</p>
           <div className="table-scroll">
             <table className="list">
-              <thead><tr><th>Offre</th><th>Nom affiché</th><th>Description</th><th className="num">Base (F)</th><th className="num">Par km (F)</th><th className="num">Minimum (F)</th><th>Active</th></tr></thead>
+              <thead><tr><th>Offre</th><th>Nom affiché</th><th>Description</th><th className="num">Base ({currencySymbol()})</th><th className="num">Par km ({currencySymbol()})</th><th className="num">Minimum ({currencySymbol()})</th><th>Active</th></tr></thead>
               <tbody>
                 {VEHICLES.map((v) => {
                   const c = grid.vehicles[v];
@@ -148,11 +149,11 @@ export default function Pricing() {
               </div>
               <div style={{ opacity: grid.codEnabled ? 1 : 0.5 }}>
                 <div className="grow"><div className="title">Frais de paiement à la livraison</div><small className="muted">Par arrêt où le livreur encaisse la marchandise</small></div>
-                <input type="number" min={0} step={50} value={grid.codFee} onChange={(e) => setGrid({ ...grid, codFee: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">F</span>
+                <input type="number" min={0} step={50} value={grid.codFee} onChange={(e) => setGrid({ ...grid, codFee: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">{currencySymbol()}</span>
               </div>
               <div>
                 <div className="grow"><div className="title">Supplément par arrêt</div><small className="muted">Tournées : par adresse au-delà de la première</small></div>
-                <input type="number" min={0} step={50} value={grid.extraStopFee} onChange={(e) => setGrid({ ...grid, extraStopFee: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">F</span>
+                <input type="number" min={0} step={50} value={grid.extraStopFee} onChange={(e) => setGrid({ ...grid, extraStopFee: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /><span className="muted">{currencySymbol()}</span>
               </div>
               <div>
                 <div className="grow"><div className="title">Adresses maximum par tournée</div><small className="muted">De 1 à 10</small></div>
@@ -182,7 +183,7 @@ export default function Pricing() {
               </select>
               <input type="number" min={0} step={grid.cancelFeeType === 'PERCENT' ? 5 : 50} value={grid.cancelFeeValue} disabled={!grid.cancelFeeEnabled}
                 onChange={(e) => setGrid({ ...grid, cancelFeeValue: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Valeur des frais" />
-              <span className="muted">{grid.cancelFeeType === 'PERCENT' ? '%' : 'F'}</span>
+              <span className="muted">{grid.cancelFeeType === 'PERCENT' ? '%' : currencySymbol()}</span>
             </div>
             <div style={{ opacity: grid.cancelFeeEnabled ? 1 : 0.5 }}>
               <div className="grow"><div className="title">Annulation gratuite</div><small className="muted">Pendant ces minutes après l’acceptation par le livreur</small></div>
@@ -228,8 +229,8 @@ export default function Pricing() {
                     const before = price(saved, sim.km, v, s, sim.stops, sim.cod, sim.abidjan, sim.up);
                     return (
                       <td key={s} className="num">
-                        <strong>{fcfa(now)}</strong>
-                        {now !== before && <span className="sub">avant : {fcfa(before)}</span>}
+                        <strong>{formatMoney(now)}</strong>
+                        {now !== before && <span className="sub">avant : {formatMoney(before)}</span>}
                       </td>
                     );
                   })}

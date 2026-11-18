@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, fcfa, IndependentCounts, IndependentDoc, IndependentDossier,
-  IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,
+  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, IndependentCounts, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,
 } from '../api';
+import { formatMoney, formatPhone, currencySymbol } from '../countries';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, Search, Segmented, Sheet, Switch, useToast } from '../ui';
 
 type Filter = IndependentStatus | 'ALL';
@@ -86,14 +86,14 @@ export default function Independents() {
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.id} className="clickable" onClick={() => setOpen(r)}>
-                        <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={r.name} /><div>{r.name}<span className="sub">{r.phone}</span></div></div></td>
+                        <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={r.name} /><div>{r.name}<span className="sub">{formatPhone(r.phone)}</span></div></div></td>
                         <td>
                           {r.vehicleType ? <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name={vehicleIcon(r.vehicleType)} size={15} />{VEHICLE_LABEL[r.vehicleType]}</span> : <span className="muted">—</span>}
                           {r.vehiclePlate && <span className="sub">{r.vehiclePlate}</span>}
                         </td>
                         <td>{r.commune ?? <span className="muted">—</span>}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{r.submittedAt ? dateTime(r.submittedAt) : <span className="muted">Pas encore envoyé</span>}<span className="sub">inscrit le {date(r.createdAt)}</span></td>
-                        <td className="num">{fcfa(Number(r.credit) || 0)}</td>
+                        <td className="num">{formatMoney(Number(r.credit) || 0)}</td>
                         <td className="num">{r.completed}</td>
                         <td><StatusBadgeLI status={r.status} />{r.reviewNote && (r.status === 'REJECTED' || r.status === 'SUSPENDED') && <span className="sub">{r.reviewNote}</span>}</td>
                       </tr>
@@ -160,7 +160,7 @@ function RulesCard() {
           <div className="grow" style={{ minWidth: 220 }}>
             <div className="title">Commission LETO par course</div>
             <small className="muted">
-              Prélevée sur le solde du livreur · ex. course à {fcfa(sample)} → {fcfa(type === 'PERCENT' ? Math.round((sample * (n || 0)) / 100) : n || 0)}.
+              Prélevée sur le solde du livreur · ex. course à {formatMoney(sample)} → {formatMoney(type === 'PERCENT' ? Math.round((sample * (n || 0)) / 100) : n || 0)}.
               Actuellement : {ruleLabel(cfg.commissionType, cfg.commissionValue)}.
             </small>
           </div>
@@ -226,7 +226,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 20, fontWeight: 700 }}>{name}</div>
           <div className="meta-row" style={{ marginTop: 2 }}>
-            <span><Icon name="phone" size={14} />{d?.user?.phone ?? row.phone}</span>
+            <span><Icon name="phone" size={14} />{formatPhone(d?.user?.phone ?? row.phone)}</span>
             <span><Icon name="clock" size={14} />{row.submittedAt ? `Envoyé le ${dateTime(row.submittedAt)}` : `Inscrit le ${date(row.createdAt)}`}</span>
           </div>
         </div>
@@ -308,7 +308,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
                 <dt>Commune</dt><dd>{d.commune ?? '—'}</dd>
                 <dt>Quartier, adresse</dt><dd>{d.address ?? '—'}</dd>
                 <dt>Pièce d’identité</dt><dd>{d.idType ? ID_LABEL[d.idType] : '—'}{d.idNumber ? ` · n° ${d.idNumber}` : ''}</dd>
-                <dt>Contact d’urgence</dt><dd>{d.emergencyName || d.emergencyPhone ? `${d.emergencyName ?? ''}${d.emergencyPhone ? ` · ${d.emergencyPhone}` : ''}` : '—'}</dd>
+                <dt>Contact d’urgence</dt><dd>{d.emergencyName || d.emergencyPhone ? `${d.emergencyName ?? ''}${d.emergencyPhone ? ` · ${formatPhone(d.emergencyPhone)}` : ''}` : '—'}</dd>
                 <dt>Accord données</dt><dd>{d.consentAt ? `Donné le ${dateTime(d.consentAt)}` : <span className="muted">Pas encore donné</span>}</dd>
               </dl>
             </div>
@@ -422,14 +422,14 @@ function BalanceSection({ companyId, onChanged }: { companyId: string; onChanged
         <div className="group">
           <div style={{ alignItems: 'center' }}>
             <div className="balance" style={{ flex: 1 }}>
-              <span className="big" style={{ fontSize: 28 }}>{fcfa(b.credit)}</span>
+              <span className="big" style={{ fontSize: 28 }}>{formatMoney(b.credit)}</span>
               <small className="muted">
-                {fcfa(Math.max(0, b.available))} disponible(s){b.reserved ? ` · ${fcfa(b.reserved)} réservé(s) par la course en cours` : ''}
+                {formatMoney(Math.max(0, b.available))} disponible(s){b.reserved ? ` · ${formatMoney(b.reserved)} réservé(s) par la course en cours` : ''}
               </small>
             </div>
             <div style={{ textAlign: 'right' }}>
               <Badge color="accent">Commission {b.rule.label}</Badge>
-              <small className="muted" style={{ display: 'block', marginTop: 4 }}>{fcfa(b.month.commissions)} prélevé(s) ce mois</small>
+              <small className="muted" style={{ display: 'block', marginTop: 4 }}>{formatMoney(b.month.commissions)} prélevé(s) ce mois</small>
             </div>
           </div>
           {b.available <= 0 && <div><Icon name="alert" size={16} className="muted" /><small className="muted">Solde insuffisant : il ne peut pas accepter de course tant qu’il n’a pas rechargé (Mobile Money, validé dans Paiements).</small></div>}
@@ -439,7 +439,7 @@ function BalanceSection({ companyId, onChanged }: { companyId: string; onChanged
                 <div>{CREDIT_LABEL[t.type]}{t.note && <span className="muted"> · {t.note}</span>}</div>
                 <small className="muted">{dateTime(t.createdAt)}{t.createdBy ? ` · ${t.createdBy}` : ''}</small>
               </div>
-              <span className={t.amount > 0 ? 'amount-pos' : 'amount-neg'}>{t.amount > 0 ? '+' : '−'}{fcfa(Math.abs(t.amount))}</span>
+              <span className={t.amount > 0 ? 'amount-pos' : 'amount-neg'}>{t.amount > 0 ? '+' : '−'}{formatMoney(Math.abs(t.amount))}</span>
             </div>
           ))}
           {b.transactions.length === 0 && <div><small className="muted">Aucun mouvement pour l’instant</small></div>}
@@ -447,7 +447,7 @@ function BalanceSection({ companyId, onChanged }: { companyId: string; onChanged
             <strong style={{ fontSize: 13 }}>Ajuster le solde</strong>
             <div className="li-adjust">
               <Segmented value={sign} onChange={setSign} options={[['+', 'Ajouter'], ['-', 'Retirer']]} />
-              <input inputMode="numeric" placeholder="Montant (F)" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} aria-label="Montant" style={{ width: 120 }} />
+              <input inputMode="numeric" placeholder={`Montant (${currencySymbol()})`} value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} aria-label="Montant" style={{ width: 120 }} />
               <input placeholder="Motif (journal)" maxLength={300} value={note} onChange={(e) => setNote(e.target.value)} aria-label="Motif" style={{ flex: 1, minWidth: 140 }} />
               <button className="btn secondary" onClick={adjust} disabled={!amount}>Enregistrer</button>
             </div>

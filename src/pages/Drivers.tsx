@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, fcfa, isOnline, phoneError, time, User, Vehicle } from '../api';
+import { api, isOnline, time, User, Vehicle } from '../api';
+import { formatMoney, phoneError, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import DriverDetail from './DriverDetail';
@@ -88,16 +89,16 @@ function DriverList() {
                   const a = activity.get(u.id);
                   return (
                     <tr key={u.id} className="clickable" onClick={() => goTo('drivers', u.id)}>
-                      <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{u.phone}</span></div></div></td>
+                      <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={u.name} /><div>{u.name}<span className="sub">{formatPhone(u.phone)}</span></div></div></td>
                       {isSA && <td>{u.company?.name ?? '—'}</td>}
                       <td>
                         {!u.active ? <Badge color="red">Bloqué</Badge> : isOnline(u) ? <Badge color={a?.busy ? 'purple' : 'green'}>{a?.busy ? 'En course' : 'En ligne'}</Badge> : <Badge>Hors ligne</Badge>}
                         {u.lastLocationAt && !isOnline(u) && <span className="sub">vu à {time(u.lastLocationAt)}</span>}
                       </td>
                       <td className="num">{a?.delivered ?? 0}</td>
-                      <td className="num">{fcfa(a?.volume ?? 0)}</td>
+                      <td className="num">{formatMoney(a?.volume ?? 0)}</td>
                       <td className="num">{a?.failed ?? 0}</td>
-                      {!isSA && <td className="num">{cashOf(u.id)?.toRemit ? <strong>{fcfa(cashOf(u.id)!.toRemit)}</strong> : <span className="muted">—</span>}{cashOf(u.id)?.pending ? <span className="sub">{fcfa(cashOf(u.id)!.pending)} en attente</span> : null}</td>}
+                      {!isSA && <td className="num">{cashOf(u.id)?.toRemit ? <strong>{formatMoney(cashOf(u.id)!.toRemit)}</strong> : <span className="muted">—</span>}{cashOf(u.id)?.pending ? <span className="sub">{formatMoney(cashOf(u.id)!.pending)} en attente</span> : null}</td>}
                       <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                     </tr>
                   );
@@ -131,7 +132,7 @@ function AddDriver({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await api('/companies/me/drivers', { method: 'POST', body: form });
-      toast(`${form.name} ajouté — il se connecte à l’app LETO avec ${form.phone}`);
+      toast(`${form.name} ajouté — il se connecte à l’app LETO avec ${formatPhone(form.phone)}`);
       await reload();
       onClose();
     } catch (err) {
@@ -144,7 +145,7 @@ function AddDriver({ onClose }: { onClose: () => void }) {
       <Field label="Nom du livreur" error={errors.name}>
         <input autoComplete="off" data-lpignore="true" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
       </Field>
-      <Field label="Téléphone du livreur" error={errors.phone} hint="Sert d’identifiant dans l’app (10 chiffres)">
+      <Field label="Téléphone du livreur" error={errors.phone} hint="Sert d’identifiant dans l’app">
         <PhoneInput value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
       </Field>
       <Field label="Engin" hint="Affiché sur la carte des clients">

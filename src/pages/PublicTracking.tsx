@@ -6,6 +6,7 @@ import { CircleMarker, MapContainer, Marker, Polyline, Tooltip, useMap } from 'r
 import { API_URL, time, VEHICLE_LABEL, Vehicle } from '../api';
 import MapTiles from '../components/MapTiles';
 import { Icon, ICON_PATHS } from '../ui';
+import { formatPhone, telHref } from '../countries';
 
 /** Marqueur du livreur : l'icône de son engin (moto, voiture, cargo) dans une pastille */
 function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
@@ -162,7 +163,7 @@ export default function PublicTracking({ token }: { token: string }) {
               <strong>{t.driver.name}</strong>
               <small className="muted" style={{ display: 'block' }}>{VEHICLE_LABEL[t.vehicleType]}{t.company ? ` · ${t.company.name}` : ''}{pos ? ` · position à ${time(pos.at)}` : ''}</small>
             </div>
-            {t.driver.phone && <a className="btn secondary" href={`tel:${t.driver.phone}`}><Icon name="phone" size={15} />{t.driver.phone}</a>}
+            {t.driver.phone && <a className="btn secondary" href={telHref(t.driver.phone)}><Icon name="phone" size={15} />{formatPhone(t.driver.phone)}</a>}
           </div>
         )}
         <div className="track-list">

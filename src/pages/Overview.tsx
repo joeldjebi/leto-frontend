@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { go } from '../App';
-import { fcfa } from '../api';
+import { formatMoney } from '../countries';
 import { useData } from '../data';
 import { BarChart, Card, Empty, Icon, PageHeader, Segmented, Stat } from '../ui';
 
@@ -33,11 +33,11 @@ export default function Overview() {
 
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses aujourd’hui" value={t.createdToday} foot={`${t.deliveredToday} terminée(s)`} onClick={() => go('deliveries')} />
-        <Stat icon="wallet" label="Volume du jour" value={fcfa(t.volumeToday)} foot={`${fcfa(t.volumeWeek)} sur 7 jours`} />
+        <Stat icon="wallet" label="Volume du jour" value={formatMoney(t.volumeToday)} foot={`${formatMoney(t.volumeWeek)} sur 7 jours`} />
         <Stat icon="clock" label="En cours" value={t.inProgress + t.pending} foot={`${t.pending} en attente d’un livreur`} onClick={() => go('deliveries')} />
         <Stat icon="bike" label="Livreurs en ligne" value={`${t.driversOnline} / ${t.drivers}`} foot="position reçue il y a moins de 2 min" onClick={() => go('map')} />
         <Stat icon="alert" label="Litiges ouverts" value={t.disputesOpen} foot={`Taux d’échec 7 j : ${t.failureRateWeek} %`} onClick={() => go('disputes')} />
-        <Stat icon="wallet" label="À reverser aux boutiques" value={fcfa(t.codToRemit)} foot="paiements à la livraison encaissés" onClick={() => go('collections')} />
+        <Stat icon="wallet" label="À reverser aux boutiques" value={formatMoney(t.codToRemit)} foot="paiements à la livraison encaissés" onClick={() => go('collections')} />
       </div>
 
       <div className="stack">
@@ -47,12 +47,12 @@ export default function Overview() {
         >
           <div style={{ padding: '4px 20px 16px' }}>
             <p className="muted" style={{ margin: '0 0 8px' }}>
-              Total : <strong style={{ color: 'var(--label)' }}>{metric === 'created' ? `${total} course(s)` : fcfa(total)}</strong>
+              Total : <strong style={{ color: 'var(--label)' }}>{metric === 'created' ? `${total} course(s)` : formatMoney(total)}</strong>
               {isSA && ` · ${t.companies} entreprise(s), ${t.clients} client(s)`}
             </p>
             <BarChart
               data={series}
-              format={(n) => (metric === 'created' ? `${n} course(s)` : fcfa(n))}
+              format={(n) => (metric === 'created' ? `${n} course(s)` : formatMoney(n))}
               label={metric === 'created' ? 'Courses créées par jour, 14 derniers jours' : 'Volume des courses terminées par jour'}
             />
           </div>
@@ -68,7 +68,7 @@ export default function Overview() {
                       <span className="muted tabular" style={{ width: 18 }}>{i + 1}</span>
                       <span className="grow title">{c.name}</span>
                       <span className="muted tabular">{c.delivered} course(s)</span>
-                      <strong className="tabular">{fcfa(c.volume)}</strong>
+                      <strong className="tabular">{formatMoney(c.volume)}</strong>
                     </div>
                   ))}
                 </div>
@@ -83,7 +83,7 @@ export default function Overview() {
                     <span className="muted tabular" style={{ width: 18 }}>{i + 1}</span>
                     <span className="grow title">{c.name}</span>
                     <span className="muted tabular">{c.deliveries} course(s)</span>
-                    <strong className="tabular">{fcfa(c.volume)}</strong>
+                    <strong className="tabular">{formatMoney(c.volume)}</strong>
                   </div>
                 ))}
               </div>
@@ -106,7 +106,7 @@ export default function Overview() {
               <div>
                 <Icon name="wallet" className="muted" />
                 <span className="grow">Montants à reverser</span>
-                <strong className="tabular">{fcfa(t.codToRemit)}</strong>
+                <strong className="tabular">{formatMoney(t.codToRemit)}</strong>
                 <button className="btn plain" onClick={() => go('collections')}>Voir</button>
               </div>
               <div>
