@@ -2,6 +2,9 @@ import { FormEvent, useState } from 'react';
 import { api, setToken, User } from '../api';
 import { Icon, PhoneInput } from '../ui';
 
+/** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
+const PRO_SPACE = location.pathname.startsWith('/pro');
+
 export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -31,7 +34,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
       <div className="card">
         <div className="app-icon"><Icon name="bike" size={38} /></div>
         <h1>LETO</h1>
-        <p className="muted" style={{ margin: '4px 0 0' }}>Back-office des livraisons</p>
+        <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : 'Back-office des livraisons'}</p>
         <form onSubmit={submit}>
           <PhoneInput value={phone} onChange={setPhone} label="Téléphone" autoComplete="username" />
           <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
