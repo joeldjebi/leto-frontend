@@ -26,7 +26,7 @@ import { attachOffice, initOfficeStore, OfficeNotification, registerOfficeWorker
 import { loadCountries, useCountries } from './countries';
 import Countries from './pages/Countries';
 import { useTheme } from './theme';
-import { Avatar, Icon, Segmented, ToastProvider } from './ui';
+import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
 export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries';
 
@@ -167,7 +167,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
     <div className="shell">
       <nav className="sidebar" aria-label="Navigation">
         <div className="brand">
-          <div className="app-icon"><Icon name="bike" size={20} /></div>
+          <div className="app-icon"><LetoMark size={22} /></div>
           <div>
             <strong>LETO</strong>
             <small className="muted">{isSA ? 'Super Admin' : me.company?.name}</small>

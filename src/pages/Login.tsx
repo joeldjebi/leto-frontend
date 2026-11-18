@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { api, setToken, User } from '../api';
-import { Icon, PhoneInput } from '../ui';
+import { Icon, PhoneInput, LetoMark } from '../ui';
 
 /** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
 const PRO_SPACE = location.pathname.startsWith('/pro');
@@ -32,7 +32,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
   return (
     <div className="login">
       <div className="card">
-        <div className="app-icon"><Icon name="bike" size={38} /></div>
+        <div className="app-icon"><LetoMark size={40} /></div>
         <h1>LETO</h1>
         <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : 'Back-office des livraisons'}</p>
         <form onSubmit={submit}>
