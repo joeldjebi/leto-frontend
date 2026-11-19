@@ -12,7 +12,9 @@ interface Place { label: string; sublabel?: string; lat: number; lng: number }
 interface StopForm { key: number; place: Place | null; name: string; phone: string }
 interface Quote { distanceKm: number; durationMin: number; points: [number, number][]; order: number[]; offers: { vehicle: Vehicle; label: string; prices: Record<Speed, number> }[]; surcharges?: { key: string; label: string; pct: number }[]; stopDiscountPct?: number; inAbidjan?: boolean }
 
-export const trackingUrl = (d: Pick<Delivery, 'trackingToken'>) => (d.trackingToken ? `${location.origin}${location.pathname}#/suivi/${d.trackingToken}` : null);
+/** Lien de suivi à partager : toujours sur le site public (sa.leto… est réservé à l'administration) */
+const TRACKING_BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? `${location.origin}${location.pathname}` : 'https://leto.performx.online/';
+export const trackingUrl = (d: Pick<Delivery, 'trackingToken'>) => (d.trackingToken ? `${TRACKING_BASE}#/suivi/${d.trackingToken}` : null);
 
 const ABIDJAN: [number, number] = [5.3364, -4.0267];
 const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];

@@ -4,6 +4,8 @@ import { Icon, PhoneInput, LetoMark } from '../ui';
 
 /** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
 const PRO_SPACE = location.pathname.startsWith('/pro');
+/** Ouvert depuis sa.leto… : espace réservé à l'administration LETO */
+const ADMIN_SPACE = location.hostname.startsWith('sa.');
 
 export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
   const [phone, setPhone] = useState('');
@@ -34,13 +36,18 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
       <div className="card">
         <div className="app-icon"><LetoMark size={40} /></div>
         <h1>LETO</h1>
-        <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : 'Back-office des livraisons'}</p>
+        <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : ADMIN_SPACE ? 'Administration LETO' : 'Back-office des livraisons'}</p>
         <form onSubmit={submit}>
           <PhoneInput value={phone} onChange={setPhone} label="Téléphone" autoComplete="username" />
           <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
           {error && <div className="alert error">{error}</div>}
           <button className="btn lg" type="submit" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
         </form>
+        {ADMIN_SPACE && (
+          <p className="muted" style={{ margin: '16px 0 0', fontSize: 13, textAlign: 'center' }}>
+            Entreprise de livraison ? <a href="https://leto.performx.online/pro/">Connectez-vous ici</a>
+          </p>
+        )}
       </div>
     </div>
   );
