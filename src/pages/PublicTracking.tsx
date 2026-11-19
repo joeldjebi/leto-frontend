@@ -2,7 +2,8 @@ import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import { connectRealtime } from '../realtime';
 import L from 'leaflet';
-import { CircleMarker, MapContainer, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import { CircleMarker, MapContainer, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import SmoothDriverMarker from '../components/SmoothDriverMarker';
 import { API_URL, time, VEHICLE_LABEL, Vehicle } from '../api';
 import MapTiles from '../components/MapTiles';
 import { Icon, ICON_PATHS } from '../ui';
@@ -15,9 +16,10 @@ function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
   const bg = live ? '#6D28D9' : '#8e8e93';
   return L.divIcon({
     className: 'track-vehicle',
-    iconSize: [46, 46],
-    iconAnchor: [23, 23],
-    html: `<div style="width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
+    iconSize: [64, 64],
+    iconAnchor: [32, 32],
+    // Pointe violette = sens de marche (orientée par SmoothDriverMarker)
+    html: `<div class="trk-heading" style="position:absolute;inset:0;opacity:0;transition:transform .6s ease-out,opacity .3s"><svg width="64" height="64" viewBox="0 0 64 64"><path d="M32 1 L41 13 L23 13 Z" fill="#6D28D9" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg></div><div style="position:absolute;left:9px;top:9px;width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
   });
 }
 
@@ -31,7 +33,7 @@ interface Track {
   pickup: { address: string; commune: string; lat: number; lng: number };
   stops: { position: number; recipient: string; address: string; commune: string; lat: number; lng: number; status: string; deliveredAt: string | null }[];
   company: { name: string; phone: string } | null;
-  driver: { name: string; phone: string | null; vehicle?: Vehicle; position: { lat: number; lng: number; at: string; live?: boolean } | null } | null;
+  driver: { name: string; phone: string | null; vehicle?: Vehicle; position: { lat: number; lng: number; at: string; live?: boolean; heading?: number | null } | null } | null;
   etaMin: number | null; nextStop: number | null;
 }
 
@@ -60,11 +62,18 @@ function Fit({ points, fitKey }: { points: [number, number][]; fitKey: string })
   return null;
 }
 
+/** L'utilisateur déplace la carte : on arrête de suivre le livreur */
+function StopFollowOnDrag({ onDrag }: { onDrag: () => void }) {
+  useMapEvents({ dragstart: onDrag });
+  return null;
+}
+
 /** Page publique de suivi (lien partagé au client ou aux destinataires), en temps réel */
 export default function PublicTracking({ token }: { token: string }) {
   const [t, setT] = useState<Track | null>(null);
   const [error, setError] = useState('');
   const [live, setLive] = useState(false);
+  const [follow, setFollow] = useState(false);
   useEffect(() => {
     let stop = false;
     let reloadTimer = 0;
@@ -83,8 +92,8 @@ export default function PublicTracking({ token }: { token: string }) {
     const socket = connectRealtime({ trackToken: token });
     socket.on('connect', () => setLive(true));
     socket.on('disconnect', () => setLive(false));
-    socket.on('driver:location', (e: { lat: number; lng: number; at: string }) => {
-      setT((cur) => (cur?.driver ? { ...cur, driver: { ...cur.driver, position: { lat: e.lat, lng: e.lng, at: e.at, live: true } } } : cur));
+    socket.on('driver:location', (e: { lat: number; lng: number; at: string; heading?: number | null }) => {
+      setT((cur) => (cur?.driver ? { ...cur, driver: { ...cur.driver, position: { lat: e.lat, lng: e.lng, at: e.at, live: true, heading: e.heading } } } : cur));
       // L'itinéraire d'approche et l'heure d'arrivée suivent le livreur (au plus toutes les 8 s)
       if (!reloadTimer) reloadTimer = window.setTimeout(() => { reloadTimer = 0; load(); }, 8000);
     });
@@ -138,11 +147,20 @@ export default function PublicTracking({ token }: { token: string }) {
             </CircleMarker>
           ))}
           {pos && (
-            <Marker position={[pos.lat, pos.lng]} icon={vehicleIcon(t.driver?.vehicle ?? t.vehicleType, pos.live !== false)} zIndexOffset={1000}>
-              <Tooltip permanent direction="top" offset={[0, -24]}>{t.driver?.name}{pos.live === false ? ` · vu à ${time(pos.at)}` : ''}</Tooltip>
-            </Marker>
+            <SmoothDriverMarker lat={pos.lat} lng={pos.lng} heading={pos.heading} follow={follow}
+              icon={vehicleIcon(t.driver?.vehicle ?? t.vehicleType, pos.live !== false)}>
+              <Tooltip permanent direction="top" offset={[0, -30]}>{t.driver?.name}{pos.live === false ? ` · vu à ${time(pos.at)}` : ''}</Tooltip>
+            </SmoothDriverMarker>
           )}
+          <StopFollowOnDrag onDrag={() => setFollow(false)} />
         </MapContainer>
+        {pos && (t.status === 'ACCEPTED' || t.status === 'PICKED_UP') && (
+          <button type="button" className={`track-follow${follow ? ' on' : ''}`} onClick={() => setFollow((f) => !f)}
+            aria-pressed={follow} aria-label={follow ? 'Arrêter de suivre le livreur' : 'Suivre le livreur'}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill={follow ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinejoin="round"><path d="M3 11l18-8-8 18-2-8-8-2z" /></svg>
+            {follow ? 'Suivi activé' : 'Suivre le livreur'}
+          </button>
+        )}
       </div>
 
       <div className="track-card">
