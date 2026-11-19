@@ -83,7 +83,7 @@ function DriverList() {
         {rows.length === 0 ? <Empty icon="bike">Aucun livreur</Empty> : (
           <div className="table-scroll">
             <table className="list">
-              <thead><tr><th>Livreur</th>{isSA && <th>Entreprise</th>}<th>Statut</th><th className="num">Courses terminées</th><th className="num">Volume</th><th className="num">Échecs</th>{!isSA && <th className="num">À verser</th>}<th>Accès</th></tr></thead>
+              <thead><tr><th>Livreur</th>{isSA && <th>Entreprise</th>}<th>Statut</th><th className="num">Courses terminées</th><th className="num">Volume</th><th className="num">Échecs</th><th className="num">Note</th>{!isSA && <th className="num">À verser</th>}<th>Accès</th></tr></thead>
               <tbody>
                 {rows.map((u) => {
                   const a = activity.get(u.id);
@@ -98,6 +98,7 @@ function DriverList() {
                       <td className="num">{a?.delivered ?? 0}</td>
                       <td className="num">{formatMoney(a?.volume ?? 0)}</td>
                       <td className="num">{a?.failed ?? 0}</td>
+                      <td className="num">{u.ratingAvg != null && (u.ratingCount ?? 0) > 0 ? <>★ {u.ratingAvg.toFixed(1)}<span className="sub">{u.ratingCount} avis</span></> : <span className="muted">—</span>}</td>
                       {!isSA && <td className="num">{cashOf(u.id)?.toRemit ? <strong>{formatMoney(cashOf(u.id)!.toRemit)}</strong> : <span className="muted">—</span>}{cashOf(u.id)?.pending ? <span className="sub">{formatMoney(cashOf(u.id)!.pending)} en attente</span> : null}</td>}
                       <td onClick={(e) => e.stopPropagation()}><Switch checked={u.active} onChange={(v) => toggle(u, v)} label={u.active ? 'Bloquer' : 'Débloquer'} /></td>
                     </tr>

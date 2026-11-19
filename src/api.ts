@@ -34,7 +34,19 @@ export interface User {
   accountType?: 'INDIVIDUAL' | 'SHOP' | null;
   avatarUrl?: string | null;
   vehicleType?: Vehicle;
+  /** Immatriculation de l'engin (livreurs) */
+  plate?: string | null;
+  /** Note moyenne donnée par les clients (1 à 5) et nombre d'avis */
+  ratingAvg?: number | null;
+  ratingCount?: number;
 }
+
+/** Compliments et reproches proposés au client quand il note le livreur */
+export const RATING_TAG_LABEL: Record<string, string> = {
+  FAST: 'Très rapide', POLITE: 'Livreur poli', CAREFUL: 'Colis soigné', COMMUNICATION: 'Bonne communication', ABOVE: 'Au-delà des attentes',
+  LATE: 'En retard', RUDE: 'Peu aimable', DAMAGED: 'Colis abîmé', UNREACHABLE: 'Injoignable', ROUTE: 'Mauvais itinéraire',
+};
+export const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 
 /** Un arrêt d'une course (tournée = plusieurs arrêts) */
 export interface Stop {
@@ -72,6 +84,8 @@ export interface Delivery {
   returnRequired: boolean; returnedAt: string | null;
   targetCompanyId: string | null; source: 'CLIENT' | 'COMPANY'; assignedDriverId: string | null;
   assignmentNote: string | null; trackingToken: string | null;
+  /** Avis du client après la livraison */
+  rating?: number | null; ratingTags?: string[] | null; ratingComment?: string | null; ratedAt?: string | null;
 }
 
 // ---------- Facturation ----------

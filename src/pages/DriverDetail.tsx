@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { api, dateTime, Delivery, FAILURE_LABEL, isOnline, Stop, time, Vehicle } from '../api';
+import { api, dateTime, Delivery, FAILURE_LABEL, isOnline, RATING_TAG_LABEL, stars, Stop, time, Vehicle } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { LogbookView } from './Logbook';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
@@ -9,7 +9,7 @@ import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Icon, Segmented, Stat, Switch, useToast } from '../ui';
 import { CollectionsTab, DeliveriesTab } from './CompanyDetail';
 
-type Tab = 'deliveries' | 'earnings' | 'logbook' | 'stops' | 'collections' | 'disputes';
+type Tab = 'deliveries' | 'earnings' | 'logbook' | 'stops' | 'collections' | 'disputes' | 'reviews';
 type Metric = 'created' | 'volume';
 type StatusFilter = 'all' | 'active' | 'done' | 'cancelled';
 const DAY = 86_400_000;
@@ -28,6 +28,7 @@ export default function DriverDetail({ id }: { id: string }) {
 
   const driver = drivers.find((u) => u.id === id);
   const mine = useMemo(() => deliveries.filter((d) => d.driver?.id === id), [deliveries, id]);
+  const reviews = useMemo(() => mine.filter((d) => d.rating).sort((a, b) => (b.ratedAt ?? '').localeCompare(a.ratedAt ?? '')), [mine]);
 
   const k = useMemo(() => {
     const done = mine.filter((d) => d.status === 'DELIVERED');
@@ -121,6 +122,23 @@ export default function DriverDetail({ id }: { id: string }) {
                   </select>
                 )}
               </span>
+              <span>
+                <Icon name="tag" size={14} />
+                {isSA ? (driver.plate ?? 'Immatriculation non renseignée') : (
+                  <input className="inline-select" style={{ width: 130, paddingRight: 6, textTransform: 'uppercase' }} defaultValue={driver.plate ?? ''} key={driver.plate ?? ''}
+                    placeholder="Immatriculation" aria-label="Immatriculation de l’engin" maxLength={20}
+                    onBlur={async (e) => {
+                      const plate = e.target.value.trim();
+                      if (plate.toUpperCase() === (driver.plate ?? '')) return;
+                      await api(`/companies/me/drivers/${driver.id}/vehicle`, { method: 'PATCH', body: { vehicleType: driver.vehicleType ?? 'MOTO', plate } });
+                      toast(plate ? 'Immatriculation enregistrée' : 'Immatriculation effacée'); reload();
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }} />
+                )}
+              </span>
+              {(driver.ratingCount ?? 0) > 0 && driver.ratingAvg != null && (
+                <span><button className="btn plain" style={{ padding: 0 }} onClick={() => setTab('reviews')}>★ {driver.ratingAvg.toFixed(1)} · {driver.ratingCount} avis</button></span>
+              )}
               {isSA && driver.company && (
                 <span><Icon name="building" size={14} /><button className="btn plain" style={{ padding: 0 }} onClick={() => goTo('companies', driver.company!.id)}>{driver.company.name}</button></span>
               )}
@@ -186,6 +204,7 @@ export default function DriverDetail({ id }: { id: string }) {
               ['stops', `Colis (${k.stops.length})`],
               ['collections', `Encaissements (${k.cod.length})`],
               ['disputes', `Échecs et litiges (${k.failed.length})`],
+              ['reviews', `Avis (${reviews.length})`],
             ]}
           />
         </div>
@@ -220,6 +239,27 @@ export default function DriverDetail({ id }: { id: string }) {
           </Card>
         )}
         {tab === 'collections' && <CollectionsTab cod={k.cod} />}
+        {tab === 'reviews' && (
+          <Card>
+            {reviews.length === 0 ? <Empty icon="check">Aucun avis pour l’instant</Empty> : (
+              <div className="table-scroll">
+                <table className="list">
+                  <thead><tr><th>Date</th><th>Note</th><th>Avis</th><th>Client</th></tr></thead>
+                  <tbody>
+                    {reviews.map((d) => (
+                      <tr key={d.id} className="clickable" onClick={() => setOpen(d)}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{dateTime(d.ratedAt!)}</td>
+                        <td style={{ whiteSpace: 'nowrap', color: (d.rating ?? 0) >= 4 ? 'var(--green)' : 'var(--orange)' }} aria-label={`${d.rating} sur 5`}>{stars(d.rating ?? 0)}</td>
+                        <td>{d.ratingTags?.map((t) => RATING_TAG_LABEL[t] ?? t).join(', ') || <span className="muted">—</span>}{d.ratingComment && <span className="sub">« {d.ratingComment} »</span>}</td>
+                        <td>{d.client.name}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+        )}
         {tab === 'disputes' && (
           k.failed.length === 0 ? <Card><Empty icon="shield">Aucun échec de livraison</Empty></Card> : (
             <div className="stack">

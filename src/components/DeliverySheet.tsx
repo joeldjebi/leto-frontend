@@ -5,6 +5,7 @@ import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
   api, codTotal, dateTime, Delivery, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
+  RATING_TAG_LABEL, stars,
 } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
@@ -106,6 +107,11 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       label: `Le livreur signale que ${s.recipientName} annule — en attente de l’expéditeur`,
       color: '#ff9f0a',
     })),
+    {
+      at: d.ratedAt ?? null,
+      label: `Avis du client : ${stars(d.rating ?? 0)}${d.ratingTags?.length ? ` · ${d.ratingTags.map((t) => RATING_TAG_LABEL[t] ?? t).join(', ')}` : ''}${d.ratingComment ? ` · « ${d.ratingComment} »` : ''}`,
+      color: (d.rating ?? 0) >= 4 ? '#34c759' : '#ff9f0a',
+    },
     { at: d.returnedAt, label: 'Colis non livrés rendus à l’expéditeur (code de retour)', color: '#34c759' },
     { at: d.cancelledAt, label: `Annulée${d.cancelledBy ? ` par ${d.cancelledBy}` : ''}${d.cancelReason ? ` · « ${d.cancelReason} »` : ''}`, color: '#8e8e93' },
   ].filter((e) => e.at).sort((a, b) => a.at!.localeCompare(b.at!));
