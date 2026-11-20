@@ -10,7 +10,7 @@ import { API_URL } from './api';
 
 export type OfficeKind =
   | 'NEW_ORDER' | 'ACCEPTED' | 'DECLINED' | 'FINISHED' | 'FAILED' | 'CANCELLED' | 'CANCEL_REQUEST'
-  | 'DISPUTE' | 'CREDIT_LOW' | 'PAYMENT' | 'REMITTANCE' | 'COMPANY_APPLY' | 'INDEPENDENT';
+  | 'DISPUTE' | 'CREDIT_LOW' | 'PAYMENT' | 'REMITTANCE' | 'COMPANY_APPLY' | 'INDEPENDENT' | 'VIDEO_VISIT';
 
 export interface OfficeNotification {
   id: string;
@@ -39,10 +39,11 @@ export const KIND_LABEL: Record<OfficeKind, string> = {
   REMITTANCE: 'Versements des livreurs',
   COMPANY_APPLY: 'Demandes des entreprises',
   INDEPENDENT: 'Dossiers des livreurs indépendants',
+  VIDEO_VISIT: 'Visites de la vidéo de présentation',
 };
 export const KINDS_FOR = (isSA: boolean): OfficeKind[] =>
   isSA
-    ? ['NEW_ORDER', 'DISPUTE', 'PAYMENT', 'COMPANY_APPLY', 'INDEPENDENT']
+    ? ['NEW_ORDER', 'DISPUTE', 'PAYMENT', 'COMPANY_APPLY', 'INDEPENDENT', 'VIDEO_VISIT']
     : ['NEW_ORDER', 'ACCEPTED', 'DECLINED', 'CANCEL_REQUEST', 'FAILED', 'FINISHED', 'CANCELLED', 'DISPUTE', 'CREDIT_LOW', 'PAYMENT', 'REMITTANCE'];
 
 export interface OfficePrefs {

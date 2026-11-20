@@ -8,7 +8,7 @@ import { Icon, Switch } from '../ui';
 const KIND_ICON: Record<string, string> = {
   NEW_ORDER: 'box', ACCEPTED: 'check', DECLINED: 'alert', FINISHED: 'check', FAILED: 'alert', CANCELLED: 'close',
   CANCEL_REQUEST: 'alert', DISPUTE: 'alert', CREDIT_LOW: 'wallet', PAYMENT: 'receipt', REMITTANCE: 'wallet',
-  COMPANY_APPLY: 'building', INDEPENDENT: 'shield',
+  COMPANY_APPLY: 'building', INDEPENDENT: 'shield', VIDEO_VISIT: 'play',
 };
 const KIND_TONE: Record<string, string> = {
   DECLINED: 'warn', FAILED: 'warn', CANCEL_REQUEST: 'warn', CANCELLED: 'danger', DISPUTE: 'danger', CREDIT_LOW: 'danger',

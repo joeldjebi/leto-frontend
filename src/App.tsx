@@ -25,16 +25,17 @@ import { OfficeBell, OfficeInvite, OfficeToast } from './components/OfficeBell';
 import { attachOffice, initOfficeStore, OfficeNotification, registerOfficeWorker } from './officeNotify';
 import { loadCountries, useCountries } from './countries';
 import Countries from './pages/Countries';
+import VideoVisits from './pages/VideoVisits';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -156,6 +157,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       { r: 'countries', icon: 'flag', label: 'Pays' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
       { r: 'landing', icon: 'globe', label: 'Landing page' },
+      { r: 'videoVisits', icon: 'play', label: 'Visites vidéo' },
     ] });
     return items;
   }, [isSA, active, stats, billingAlert, subscriptions, liPending, coPending]);
@@ -229,6 +231,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'cancelReasons' && <CancelReasons />}
           {current === 'countries' && <Countries />}
           {current === 'landing' && <Landing />}
+          {current === 'videoVisits' && <VideoVisits />}
         </div>
       </main>
     </div>
