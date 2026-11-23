@@ -10,7 +10,7 @@ export interface Prospect {
   website: string | null; phone: string | null; whatsapp: string | null; email: string | null;
   facebook: string | null; instagram: string | null; linkedin: string | null; contactName: string | null;
   status: Status; lastContactAt: string | null; nextActionAt: string | null; nextAction: string | null;
-  notes: string | null; history: Event[]; createdAt: string; updatedAt: string;
+  notes: string | null; waMessage: string | null; emailSubject: string | null; emailBody: string | null; history: Event[]; createdAt: string; updatedAt: string;
 }
 
 const STATUSES: [Status, string, string][] = [
@@ -32,6 +32,12 @@ const VIDEO = 'leto.performx.online/video';
 const firstMessage = (company: string, sender: string) =>
   `Bonjour ${company} 👋\nJe suis ${sender}, fondateur de LETO, une plateforme de livraison conçue à Abidjan :\n• une app pour vos boutiques, qui commandent une livraison en quelques secondes ;\n• une app pour vos livreurs, qui acceptent la course directement et l’exécutent ;\n• le suivi en temps réel, pour vous comme pour vos clients ;\n• un tableau de bord où vous voyez vos livreurs bouger sur la carte pendant leurs livraisons.\nAuriez-vous 15 minutes pour une présentation ?\nVidéo : ${VIDEO}`;
 
+/** Messages de la fiche (personnalisés) ou message standard, signés au nom de l'expéditeur */
+const sign = (t: string, sender: string) => t.replace(/\{prenom\}/g, sender);
+const waText = (p: Partial<Prospect>, sender: string) => sign(p.waMessage?.trim() || firstMessage(p.name || 'votre entreprise', sender), sender);
+const mailSubject = (p: Partial<Prospect>) => p.emailSubject?.trim() || `LETO · présentation de 15 minutes pour ${p.name || 'votre entreprise'}`;
+const mailBody = (p: Partial<Prospect>, sender: string) => sign(p.emailBody?.trim() || firstMessage(p.name || 'votre entreprise', sender), sender);
+
 const digits = (p: string) => p.replace(/[^\d]/g, '');
 const url = (u: string) => (/^https?:\/\//.test(u) ? u : `https://${u}`);
 const dayStart = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
@@ -40,11 +46,10 @@ const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-
 
 /** Boutons de contact : WhatsApp (message prêt), appel, e-mail, site, réseaux */
 function Contacts({ p, sender, onContact }: { p: Prospect; sender: string; onContact: (how: string) => void }) {
-  const msg = encodeURIComponent(firstMessage(p.name, sender));
   const links: { key: string; icon: string; label: string; href: string; how?: string }[] = [
-    ...(p.whatsapp ? [{ key: 'wa', icon: 'whatsapp', label: `WhatsApp ${p.whatsapp}`, href: `https://wa.me/${digits(p.whatsapp)}?text=${msg}`, how: 'Message WhatsApp envoyé' }] : []),
+    ...(p.whatsapp ? [{ key: 'wa', icon: 'whatsapp', label: `WhatsApp ${p.whatsapp}`, href: `https://wa.me/${digits(p.whatsapp)}?text=${encodeURIComponent(waText(p, sender))}`, how: 'Message WhatsApp envoyé' }] : []),
     ...(p.phone ? [{ key: 'tel', icon: 'phone', label: `Appeler ${p.phone}`, href: `tel:${p.phone.replace(/\s/g, '')}`, how: 'Appel' }] : []),
-    ...(p.email ? [{ key: 'mail', icon: 'mail', label: `E-mail ${p.email}`, href: `mailto:${p.email}?subject=${encodeURIComponent(`LETO · présentation de 15 minutes pour ${p.name}`)}&body=${msg}`, how: 'E-mail envoyé' }] : []),
+    ...(p.email ? [{ key: 'mail', icon: 'mail', label: `E-mail ${p.email}`, href: `mailto:${p.email}?subject=${encodeURIComponent(mailSubject(p))}&body=${encodeURIComponent(mailBody(p, sender))}`, how: 'E-mail envoyé' }] : []),
     ...(p.website ? [{ key: 'web', icon: 'globe', label: 'Site web', href: url(p.website) }] : []),
     ...(p.facebook ? [{ key: 'fb', icon: 'facebook', label: 'Page Facebook', href: url(p.facebook), how: 'Message Facebook envoyé' }] : []),
     ...(p.instagram ? [{ key: 'ig', icon: 'instagram', label: 'Instagram', href: url(p.instagram), how: 'Message Instagram envoyé' }] : []),
@@ -81,6 +86,7 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
         website: f.website ?? null, phone: f.phone ?? null, whatsapp: f.whatsapp ?? null, email: f.email ?? null,
         facebook: f.facebook ?? null, instagram: f.instagram ?? null, linkedin: f.linkedin ?? null, contactName: f.contactName ?? null,
         status: f.status, nextAction: f.nextAction ?? null, notes: f.notes ?? null,
+        waMessage: f.waMessage ?? null, emailSubject: f.emailSubject ?? null, emailBody: f.emailBody ?? null,
         nextActionAt: f.nextActionAt ? new Date(f.nextActionAt).toISOString() : null,
       };
       const saved = await api<Prospect>(isNew ? '/admin/prospects' : `/admin/prospects/${p!.id}`, { method: isNew ? 'POST' : 'PATCH', body });
@@ -118,10 +124,10 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
     }
   };
 
-  const copyMessage = async () => {
+  const copy = async (text: string, what: string) => {
     try {
-      await navigator.clipboard.writeText(firstMessage(f.name || 'votre entreprise', sender));
-      toast('Message copié : collez-le sur WhatsApp, Facebook ou LinkedIn');
+      await navigator.clipboard.writeText(text);
+      toast(what);
     } catch {
       toast('Copie impossible dans ce navigateur');
     }
@@ -133,7 +139,7 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
       {!isNew && p && (
         <div className="pr-sheet-contacts">
           <Contacts p={{ ...p, ...f } as Prospect} sender={sender} onContact={(how) => addLog('CONTACT', how)} />
-          <button className="btn secondary" onClick={copyMessage}>Copier le message</button>
+          <button className="btn secondary" onClick={() => copy(waText(f, sender), 'Message copié : collez-le sur WhatsApp, Facebook ou LinkedIn')}>Copier le message</button>
         </div>
       )}
 
@@ -169,6 +175,20 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
         </Field>
         <Field label="Prochaine action"><input value={f.nextAction ?? ''} onChange={set('nextAction')} placeholder="Relancer sur WhatsApp, démo à leurs bureaux…" maxLength={200} /></Field>
       </div>
+      <Card title="Messages de premier contact">
+        <div style={{ padding: '4px 16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <p className="muted" style={{ margin: 0, fontSize: 13 }}>« {'{prenom}'} » est remplacé par votre nom à l’envoi. Laissez vide pour le message standard.</p>
+          <Field label="WhatsApp, Facebook, LinkedIn">
+            <textarea rows={7} value={f.waMessage ?? ''} onChange={set('waMessage')} placeholder={firstMessage(f.name || 'votre entreprise', '{prenom}')} maxLength={3000} />
+          </Field>
+          <div><button className="btn secondary" onClick={() => copy(waText(f, sender), 'Message WhatsApp copié')}>Copier le message WhatsApp</button></div>
+          <Field label="Objet de l’e-mail"><input value={f.emailSubject ?? ''} onChange={set('emailSubject')} placeholder={mailSubject(f)} maxLength={200} /></Field>
+          <Field label="E-mail">
+            <textarea rows={12} value={f.emailBody ?? ''} onChange={set('emailBody')} maxLength={5000} />
+          </Field>
+          <div><button className="btn secondary" onClick={() => copy(`${mailSubject(f)}\n\n${mailBody(f, sender)}`, 'E-mail copié (objet + message)')}>Copier l’e-mail</button></div>
+        </div>
+      </Card>
       <Field label="Notes"><textarea rows={4} value={f.notes ?? ''} onChange={set('notes')} maxLength={5000} /></Field>
 
       <div style={{ display: 'flex', gap: 8 }}>
