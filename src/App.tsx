@@ -26,16 +26,17 @@ import { attachOffice, initOfficeStore, OfficeNotification, registerOfficeWorker
 import { loadCountries, useCountries } from './countries';
 import Countries from './pages/Countries';
 import VideoVisits from './pages/VideoVisits';
+import Prospects from './pages/Prospects';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -151,13 +152,16 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             { r: 'billing', icon: 'card', label: subscriptions ? 'Crédit et abonnement' : 'Crédit', count: billingAlert || undefined, alert: true },
           ] },
     ];
+    if (isSA) items.push({ section: 'Commercial', links: [
+      { r: 'prospects', icon: 'target', label: 'Prospection' },
+      { r: 'videoVisits', icon: 'play', label: 'Visites vidéo' },
+    ] });
     if (isSA) items.push({ section: 'Réglages', links: [
       { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
       { r: 'cancelReasons', icon: 'close', label: 'Motifs d’annulation' },
       { r: 'countries', icon: 'flag', label: 'Pays' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
       { r: 'landing', icon: 'globe', label: 'Landing page' },
-      { r: 'videoVisits', icon: 'play', label: 'Visites vidéo' },
     ] });
     return items;
   }, [isSA, active, stats, billingAlert, subscriptions, liPending, coPending]);
@@ -232,6 +236,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'countries' && <Countries />}
           {current === 'landing' && <Landing />}
           {current === 'videoVisits' && <VideoVisits />}
+          {current === 'prospects' && <Prospects />}
         </div>
       </main>
     </div>
