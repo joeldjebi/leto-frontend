@@ -39,7 +39,8 @@ export default function Pricing() {
     try {
       const g = await api<PricingGrid>('/admin/settings', {
         method: 'PUT',
-        body: { vehicles: grid.vehicles, speeds: grid.speeds, codFee: grid.codFee, extraStopFee: grid.extraStopFee, maxStops: grid.maxStops, absenceWaitMin: grid.absenceWaitMin },
+        // Toute la page (offres, règles, annulations, répartition), sans les infos de dernière modification
+        body: (({ updatedAt: _a, updatedBy: _b, ...rest }) => rest)(grid),
       });
       setSaved(g);
       setGrid(g);
@@ -204,6 +205,31 @@ export default function Pricing() {
             <div>
               <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés (absence, refus, annulation après récupération) sont rapportés à l’expéditeur, qui confirme avec un code</small></div>
               <Switch checked={grid.returnCodeEnabled} onChange={(on) => setGrid({ ...grid, returnCodeEnabled: on })} label={grid.returnCodeEnabled ? 'Désactiver' : 'Activer'} />
+            </div>
+          </div>
+        </Card>
+
+        <Card title="Répartition des commandes" pad>
+          <div className="rows" style={{ margin: '0 -20px' }}>
+            <div>
+              <div className="grow"><div className="title">Rayon des nouvelles commandes</div><small className="muted">Les livreurs libres à moins de cette distance du départ sont prévenus</small></div>
+              <input type="number" min={1} max={50} step={1} value={grid.dispatchRadiusKm} onChange={(e) => setGrid({ ...grid, dispatchRadiusKm: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Rayon des nouvelles commandes" /><span className="muted">km</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Livreur en course : autour de lui</div><small className="muted">Il reçoit aussi les commandes dont le départ est à moins de cette distance de lui</small></div>
+              <input type="number" min={0} max={20} step={0.5} value={grid.busyRadiusKm} onChange={(e) => setGrid({ ...grid, busyRadiusKm: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Livreur en course : autour de lui" /><span className="muted">km</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Livreur en course : sur son trajet</div><small className="muted">… ou dont le départ est à moins de cette distance de son trajet restant</small></div>
+              <input type="number" min={0} max={5000} step={100} value={grid.routeCorridorM} onChange={(e) => setGrid({ ...grid, routeCorridorM: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Livreur en course : sur son trajet" /><span className="muted">m</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Courses en même temps</div><small className="muted">Maximum par livreur (les courses affectées par son entreprise passent toujours)</small></div>
+              <input type="number" min={1} max={10} step={1} value={grid.maxActiveCourses} onChange={(e) => setGrid({ ...grid, maxActiveCourses: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Courses en même temps" /><span className="muted">courses</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Alerte nouvelle commande</div><small className="muted">Durée d’affichage de l’alerte plein écran chez le livreur, avec son</small></div>
+              <input type="number" min={10} max={120} step={5} value={grid.orderPopupSec} onChange={(e) => setGrid({ ...grid, orderPopupSec: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Alerte nouvelle commande" /><span className="muted">s</span>
             </div>
           </div>
         </Card>
