@@ -216,7 +216,7 @@ export default function Pricing() {
               <input type="number" min={1} max={50} step={1} value={grid.dispatchRadiusKm} onChange={(e) => setGrid({ ...grid, dispatchRadiusKm: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Rayon des nouvelles commandes" /><span className="muted">km</span>
             </div>
             <div>
-              <div className="grow"><div className="title">Livreur en course : autour de lui</div><small className="muted">Il reçoit aussi les commandes dont le départ est à moins de cette distance de lui</small></div>
+              <div className="grow"><div className="title">Livreur en course : autour de lui</div><small className="muted">Livraisons « Dans 2 heures » seulement : il reçoit aussi les commandes dont le départ est à moins de cette distance de lui</small></div>
               <input type="number" min={0} max={20} step={0.5} value={grid.busyRadiusKm} onChange={(e) => setGrid({ ...grid, busyRadiusKm: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Livreur en course : autour de lui" /><span className="muted">km</span>
             </div>
             <div>
@@ -224,8 +224,20 @@ export default function Pricing() {
               <input type="number" min={0} max={5000} step={100} value={grid.routeCorridorM} onChange={(e) => setGrid({ ...grid, routeCorridorM: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Livreur en course : sur son trajet" /><span className="muted">m</span>
             </div>
             <div>
-              <div className="grow"><div className="title">Courses en même temps</div><small className="muted">Maximum par livreur (les courses affectées par son entreprise passent toujours)</small></div>
-              <input type="number" min={1} max={10} step={1} value={grid.maxActiveCourses} onChange={(e) => setGrid({ ...grid, maxActiveCourses: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Courses en même temps" /><span className="muted">courses</span>
+              <div className="grow"><div className="title">Courses en même temps · Dans 2 heures</div><small className="muted">Maximum par livreur quand toutes ses courses sont « Dans 2 heures » (les courses affectées par son entreprise passent toujours)</small></div>
+              <input type="number" min={1} max={10} step={1} value={grid.maxActiveCourses} onChange={(e) => setGrid({ ...grid, maxActiveCourses: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Courses en même temps, Dans 2 heures" /><span className="muted">courses</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Courses en même temps · Standard</div><small className="muted">Maximum quand le livreur a une livraison Standard ; seulement les commandes sur son trajet</small></div>
+              <input type="number" min={1} max={10} step={1} value={grid.standardMaxActiveCourses} onChange={(e) => setGrid({ ...grid, standardMaxActiveCourses: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Courses en même temps, Standard" /><span className="muted">courses</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Standard : retard maximum</div><small className="muted">Une course ajoutée ne doit pas retarder la livraison Standard en cours de plus de ce temps</small></div>
+              <input type="number" min={0} max={60} step={1} value={grid.standardMaxDetourMin} onChange={(e) => setGrid({ ...grid, standardMaxDetourMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Standard : retard maximum" /><span className="muted">min</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Express : course exclusive</div><small className="muted">Le livreur ne fait que cette course : il ne reçoit aucune autre commande pendant une livraison Express, et une Express n’est proposée qu’aux livreurs libres</small></div>
+              <span className="badge">Toujours</span>
             </div>
             <div>
               <div className="grow"><div className="title">Alerte nouvelle commande</div><small className="muted">Durée d’affichage de l’alerte plein écran chez le livreur, avec son</small></div>
