@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, isOnline, time, User, Vehicle } from '../api';
+import { api, isOnline, time, User, Vehicle, errText } from '../api';
 import { formatMoney, phoneError, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
@@ -137,7 +137,7 @@ function AddDriver({ onClose }: { onClose: () => void }) {
       await reload();
       onClose();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errText(err));
     }
   };
   return (

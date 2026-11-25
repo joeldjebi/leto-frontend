@@ -4,7 +4,7 @@ import { connectRealtime } from '../realtime';
 import L from 'leaflet';
 import { CircleMarker, MapContainer, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import SmoothDriverMarker from '../components/SmoothDriverMarker';
-import { API_URL, time, VEHICLE_LABEL, Vehicle } from '../api';
+import { API_URL, time, VEHICLE_LABEL, Vehicle, errText, UserError } from '../api';
 import MapTiles from '../components/MapTiles';
 import { Icon, ICON_PATHS } from '../ui';
 import { formatPhone, telHref } from '../countries';
@@ -13,13 +13,13 @@ import { formatPhone, telHref } from '../countries';
 function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
   const name = vehicle === 'CAR' ? 'car' : vehicle === 'CARGO' ? 'truck' : 'bike';
   const d = ICON_PATHS[name] ?? ICON_PATHS.bike;
-  const bg = live ? '#6D28D9' : '#8e8e93';
+  const bg = live ? '#E86A17' : '#8e8e93';
   return L.divIcon({
     className: 'track-vehicle',
     iconSize: [64, 64],
     iconAnchor: [32, 32],
     // Pointe colorée = sens de marche (orientée par SmoothDriverMarker)
-    html: `<div class="trk-heading" style="position:absolute;inset:0;opacity:0;transition:transform .6s ease-out,opacity .3s"><svg width="64" height="64" viewBox="0 0 64 64"><path d="M32 1 L41 13 L23 13 Z" fill="#6D28D9" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg></div><div style="position:absolute;left:9px;top:9px;width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
+    html: `<div class="trk-heading" style="position:absolute;inset:0;opacity:0;transition:transform .6s ease-out,opacity .3s"><svg width="64" height="64" viewBox="0 0 64 64"><path d="M32 1 L41 13 L23 13 Z" fill="#E86A17" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg></div><div style="position:absolute;left:9px;top:9px;width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
   });
 }
 
@@ -81,10 +81,10 @@ export default function PublicTracking({ token }: { token: string }) {
       try {
         const res = await fetch(`${API_URL}/track/${encodeURIComponent(token)}`);
         const data = await res.json();
-        if (!res.ok) throw new Error(data?.message ?? 'Lien de suivi invalide');
+        if (!res.ok) throw new UserError(res.status < 500 && typeof data?.message === 'string' ? data.message : 'Lien de suivi invalide ou expiré');
         if (!stop) { setT(data); setError(''); }
       } catch (e) {
-        if (!stop) setError((e as Error).message);
+        if (!stop) setError(errText(e));
       }
     };
     load();
@@ -126,15 +126,15 @@ export default function PublicTracking({ token }: { token: string }) {
           {t.route && t.route.length > 1 ? (
             <>
               <Polyline positions={t.route} pathOptions={{ color: '#ffffff', weight: 9, opacity: 0.9 }} />
-              <Polyline positions={t.route} pathOptions={{ color: '#6D28D9', weight: 5, opacity: 0.95 }} />
+              <Polyline positions={t.route} pathOptions={{ color: '#E86A17', weight: 5, opacity: 0.95 }} />
             </>
           ) : (
-            <Polyline positions={[[t.pickup.lat, t.pickup.lng], ...t.stops.map((s) => [s.lat, s.lng] as [number, number])]} pathOptions={{ color: '#6D28D9', weight: 3, opacity: 0.5, dashArray: '6 8' }} />
+            <Polyline positions={[[t.pickup.lat, t.pickup.lng], ...t.stops.map((s) => [s.lat, s.lng] as [number, number])]} pathOptions={{ color: '#E86A17', weight: 3, opacity: 0.5, dashArray: '6 8' }} />
           )}
           {t.approach && t.approach.length > 1 && (
             <>
               <Polyline positions={t.approach} pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.9 }} />
-              <Polyline positions={t.approach} pathOptions={{ color: '#2563EB', weight: 4, opacity: 1, dashArray: '1 9', lineCap: 'round' }} />
+              <Polyline positions={t.approach} pathOptions={{ color: '#C2410C', weight: 4, opacity: 1, dashArray: '1 9', lineCap: 'round' }} />
             </>
           )}
           <CircleMarker center={[t.pickup.lat, t.pickup.lng]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#121214', fillOpacity: 1 }}>
@@ -142,7 +142,7 @@ export default function PublicTracking({ token }: { token: string }) {
           </CircleMarker>
           {t.stops.map((s) => (
             <CircleMarker key={s.position} center={[s.lat, s.lng]} radius={9}
-              pathOptions={{ color: '#fff', weight: 3, fillColor: s.status === 'DELIVERED' ? '#16A34A' : s.status === 'FAILED' ? '#E11D48' : s.status === 'CANCELLED' ? '#8e8e93' : '#6D28D9', fillOpacity: 1 }}>
+              pathOptions={{ color: '#fff', weight: 3, fillColor: s.status === 'DELIVERED' ? '#16A34A' : s.status === 'FAILED' ? '#E11D48' : s.status === 'CANCELLED' ? '#8e8e93' : '#E86A17', fillOpacity: 1 }}>
               <Tooltip>{s.position + 1}. {s.recipient} · {s.address}</Tooltip>
             </CircleMarker>
           ))}
@@ -188,7 +188,7 @@ export default function PublicTracking({ token }: { token: string }) {
           <div className="track-row"><span className="dot" style={{ background: '#121214' }}>A</span><div><strong>Départ</strong><small className="muted" style={{ display: 'block' }}>{t.pickup.address}{t.sender ? ` · ${t.sender}` : ''}</small></div></div>
           {t.stops.map((s) => (
             <div key={s.position} className="track-row">
-              <span className="dot" style={{ background: s.status === 'DELIVERED' ? '#16A34A' : s.status === 'FAILED' ? '#E11D48' : s.status === 'CANCELLED' ? '#8e8e93' : '#6D28D9' }}>{s.position + 1}</span>
+              <span className="dot" style={{ background: s.status === 'DELIVERED' ? '#16A34A' : s.status === 'FAILED' ? '#E11D48' : s.status === 'CANCELLED' ? '#8e8e93' : '#E86A17' }}>{s.position + 1}</span>
               <div style={{ flex: 1 }}>
                 <strong>{s.recipient}</strong>
                 <small className="muted" style={{ display: 'block' }}>{s.address} ({s.commune})</small>

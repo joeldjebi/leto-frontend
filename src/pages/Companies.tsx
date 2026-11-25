@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, isOnline, VEHICLE_LABEL } from '../api';
+import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, isOnline, VEHICLE_LABEL, errText } from '../api';
 import { formatMoney, phoneError, formatPhone, telHref } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
@@ -178,7 +178,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
       window.dispatchEvent(new Event('companies:changed'));
       onDone();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusy(false);
     }
@@ -281,7 +281,7 @@ function CreateCompany({ onClose }: { onClose: () => void }) {
       await reload();
       onClose();
     } catch (err) {
-      setError((err as Error).message);
+      setError(errText(err));
     }
   };
   return (

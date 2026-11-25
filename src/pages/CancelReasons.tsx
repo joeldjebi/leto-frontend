@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, errText } from '../api';
 import { Card, Icon, PageHeader, useToast } from '../ui';
 
 export interface CancelReasonsConfig { client: string[]; driver: string[] }
@@ -59,7 +59,7 @@ export default function CancelReasons() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api<CancelReasonsConfig>('/cancel-reasons').then((c) => { setSaved(c); setDraft(c); }).catch((e) => setError((e as Error).message));
+    api<CancelReasonsConfig>('/cancel-reasons').then((c) => { setSaved(c); setDraft(c); }).catch((e) => setError(errText(e)));
   }, []);
 
   const dirty = !!saved && !!draft && JSON.stringify(saved) !== JSON.stringify(draft);
@@ -76,7 +76,7 @@ export default function CancelReasons() {
       setDraft(next);
       toast('Motifs enregistrés — visibles tout de suite dans l’app');
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusy(false);
     }

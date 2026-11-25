@@ -54,7 +54,7 @@ export default function LiveMapPage() {
               const on = live(d.id);
               return (
                 <CircleMarker key={d.id} center={[p.lat, p.lng]} radius={9}
-                  pathOptions={{ color: '#fff', weight: 3, fillColor: on ? (busy.has(d.id) ? '#af52de' : '#34c759') : '#8e8e93', fillOpacity: 1 }}>
+                  pathOptions={{ color: '#fff', weight: 3, fillColor: on ? (busy.has(d.id) ? '#1A1A1A' : '#34c759') : '#8e8e93', fillOpacity: 1 }}>
                   <Tooltip direction="top" offset={[0, -8]} permanent={on}>
                     {d.name}{!on && ` · vu à ${time(p.at)}`}
                   </Tooltip>
@@ -82,7 +82,7 @@ export default function LiveMapPage() {
         </Card>
       </div>
       <p className="muted" style={{ marginTop: 12 }}>
-        <span className="dot" style={{ background: '#34c759' }} /> Disponible · <span className="dot" style={{ background: '#af52de' }} /> En course · <span className="dot" style={{ background: '#8e8e93' }} /> Dernière position connue
+        <span className="dot" style={{ background: '#34c759' }} /> Disponible · <span className="dot" style={{ background: '#1A1A1A' }} /> En course · <span className="dot" style={{ background: '#8e8e93' }} /> Dernière position connue
       </p>
     </>
   );

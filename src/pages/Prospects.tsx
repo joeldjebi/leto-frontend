@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, dateTime } from '../api';
+import { api, dateTime, errText } from '../api';
 import { useData } from '../data';
 import { Badge, Card, Empty, Field, Icon, PageHeader, Search, Sheet, useToast } from '../ui';
 
@@ -94,7 +94,7 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
       onSaved(saved);
       if (isNew) onClose();
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     } finally {
       setBusy(false);
     }
@@ -108,7 +108,7 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
       setF((x) => ({ ...x, status: saved.status, lastContactAt: saved.lastContactAt }));
       setNote('');
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
 
@@ -120,7 +120,7 @@ function ProspectSheet({ p, onClose, onSaved, onDeleted, sender }: { p: Prospect
       onDeleted(p.id);
       onClose();
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
 
@@ -230,7 +230,7 @@ export default function Prospects() {
   const [country, setCountry] = useState('ALL');
   const [open, setOpen] = useState<Prospect | 'new' | null>(null);
 
-  const load = () => api<Prospect[]>('/admin/prospects').then(setList).catch((e) => toast((e as Error).message));
+  const load = () => api<Prospect[]>('/admin/prospects').then(setList).catch((e) => toast(errText(e)));
   useEffect(() => { load(); }, []);
 
   const upsert = (p: Prospect) => {
@@ -244,7 +244,7 @@ export default function Prospects() {
       toast(r.added ? `${r.added} entreprises importées` : 'La liste de départ est déjà importée');
       load();
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
 
@@ -252,7 +252,7 @@ export default function Prospects() {
     try {
       upsert(await api<Prospect>(`/admin/prospects/${p.id}`, { method: 'PATCH', body: { status: s } }));
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
 

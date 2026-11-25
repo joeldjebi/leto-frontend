@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  api, BillingConfig, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, daysLeft, PAYMENT_KIND_LABEL, PAYMENT_STATUS, Payment, PaymentKind, photoUrl, ruleLabel, upload,
-} from '../api';
+  api, BillingConfig, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, daysLeft, PAYMENT_KIND_LABEL, PAYMENT_STATUS, Payment, PaymentKind, photoUrl, ruleLabel, upload,errText } from '../api';
 import { formatMoney, phoneError, formatPhone, currencyLabel } from '../countries';
 import { Badge, Card, Empty, Field, Icon, Modal, PhoneInput, Segmented, Stat, useToast } from '../ui';
 
@@ -10,7 +9,7 @@ export function useBilling(companyId: string | null) {
   const [data, setData] = useState<BillingOverview | null>(null);
   const [error, setError] = useState('');
   const path = companyId ? `/billing/companies/${companyId}` : '/billing/me';
-  const reload = () => api<BillingOverview>(path).then(setData).catch((e) => setError((e as Error).message));
+  const reload = () => api<BillingOverview>(path).then(setData).catch((e) => setError(errText(e)));
   useEffect(() => {
     reload();
     const t = window.setInterval(reload, 30_000);
@@ -214,7 +213,7 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
     try {
       setProof(await upload(file));
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setUploading(false);
     }
@@ -230,7 +229,7 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
       onDone();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setSending(false);
     }
@@ -298,7 +297,7 @@ export function ReviewDialog({ payment: p, onClose, onDone }: { payment: Payment
       onDone();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (
@@ -341,7 +340,7 @@ export function AdjustDialog({ companyId, onClose, onDone }: { companyId: string
       toast('Crédit ajusté');
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (
@@ -365,7 +364,7 @@ export function SubscriptionDialog({ companyId, current, onClose, onDone }: { co
       toast(endsAt ? `Abonnement actif jusqu’au ${date(endsAt)}` : 'Abonnement désactivé');
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   const inOneYear = () => { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return d.toISOString().slice(0, 10); };
@@ -396,7 +395,7 @@ export function TrialDialog({ companyId, b, onClose, onDone }: { companyId: stri
       toast(endsAt && next.inTrial ? `Essai gratuit jusqu’au ${date(endsAt)}` : 'Essai gratuit arrêté');
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   // Les raccourcis partent de la fin d'essai en cours (prolongation), sinon d'aujourd'hui
@@ -444,7 +443,7 @@ export function CommissionDialog({ companyId, b, onClose, onDone }: { companyId:
       toast('Commission enregistrée — appliquée aux prochaines courses');
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (

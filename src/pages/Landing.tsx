@@ -1,5 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { api, API_URL, dateTime, LANDING_URL, LandingContent, uploadApk } from '../api';
+import { api, API_URL, dateTime, LANDING_URL, LandingContent, uploadApk, errText } from '../api';
 import { Badge, Card, Empty, Field, Icon, Modal, PageHeader, useToast } from '../ui';
 
 type Texts = Omit<LandingContent, 'apk'>;
@@ -58,7 +58,7 @@ export default function Landing() {
   useEffect(() => {
     api<{ content: LandingContent; defaults: LandingContent }>('/admin/landing')
       .then((r) => apply(r.content))
-      .catch((e) => setError((e as Error).message));
+      .catch((e) => setError(errText(e)));
   }, []);
 
   const dirty = !!saved && !!draft && !same(textsOf(saved), draft);
@@ -82,8 +82,8 @@ export default function Landing() {
       apply(await api<LandingContent>('/admin/landing', { method: 'PUT', body: draft }));
       toast(emptyFaq ? `Landing page enregistrée — ${emptyFaq} question(s) incomplète(s) retirée(s)` : 'Landing page enregistrée — en ligne immédiatement');
     } catch (e) {
-      setError((e as Error).message);
-      toast((e as Error).message);
+      setError(errText(e));
+      toast(errText(e));
     } finally {
       setSaving(false);
     }
@@ -95,7 +95,7 @@ export default function Landing() {
       apply(await api<LandingContent>('/admin/landing/reset', { method: 'POST' }));
       toast('Textes d’origine rétablis');
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
     setConfirmReset(false);
   };
@@ -298,7 +298,7 @@ function ApkCard({ apk, onUploaded }: { apk: LandingContent['apk']; onUploaded: 
       setFile(null);
       if (input.current) input.current.value = '';
     } catch (err) {
-      setError((err as Error).message);
+      setError(errText(err));
     } finally {
       setProgress(null);
     }

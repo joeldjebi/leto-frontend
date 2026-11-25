@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, dateTime } from '../api';
+import { api, dateTime, errText } from '../api';
 import { Badge, Card, Empty, PageHeader, Stat } from '../ui';
 
 interface Visit {
@@ -21,7 +21,7 @@ export default function VideoVisits() {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState('');
   useEffect(() => {
-    const load = () => api<Data>('/admin/video-visits').then((d) => { setData(d); setError(''); }).catch((e) => setError((e as Error).message));
+    const load = () => api<Data>('/admin/video-visits').then((d) => { setData(d); setError(''); }).catch((e) => setError(errText(e)));
     load();
     const t = window.setInterval(load, 20_000);
     return () => window.clearInterval(t);

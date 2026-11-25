@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, dateTime } from '../api';
+import { api, dateTime, errText } from '../api';
 import { Badge, Card, Field, Icon, useToast } from '../ui';
 import { MapStyle, refreshMapStyle } from './MapTiles';
 
@@ -59,7 +59,7 @@ export default function MapSettings() {
       if (m.style) refreshMapStyle(m.style);
       toast(`Carte : ${m.style?.label ?? form.provider} — appliquée à l’app et au back-office`);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusy(false);
     }

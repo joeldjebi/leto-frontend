@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, BillingConfig, CommissionType, MobileMoneyAccount } from '../api';
+import { api, BillingConfig, CommissionType, MobileMoneyAccount, errText } from '../api';
 import { formatMoney, currencySymbol } from '../countries';
 import { Card, Icon, Segmented, Switch, useToast } from '../ui';
 
@@ -29,7 +29,7 @@ export default function BillingSettings() {
       setCfg(c);
       toast('Facturation enregistrée');
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
 

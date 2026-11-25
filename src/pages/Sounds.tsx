@@ -1,5 +1,5 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
-import { api, NotificationSound, SoundEvent, soundSrc, SoundsConfig, uploadSound } from '../api';
+import { api, NotificationSound, SoundEvent, soundSrc, SoundsConfig, uploadSound, errText } from '../api';
 import { Badge, Card, Empty, Field, Icon, Modal, PageHeader, useToast } from '../ui';
 
 const EVENTS: SoundEvent[] = ['NEW_ORDER', 'ASSIGNED', 'CANCELLED', 'UPDATED', 'CLIENT_UPDATE'];
@@ -48,7 +48,7 @@ export default function Sounds() {
   const { playing, toggle } = usePlayer();
   const play = (s?: NotificationSound) => toggle(s, toast);
 
-  useEffect(() => { api<SoundsConfig>('/notifications/sounds').then(setCfg).catch((e) => setError((e as Error).message)); }, []);
+  useEffect(() => { api<SoundsConfig>('/notifications/sounds').then(setCfg).catch((e) => setError(errText(e))); }, []);
 
   const byId = (id: string) => cfg?.sounds.find((s) => s.id === id);
 
@@ -60,7 +60,7 @@ export default function Sounds() {
       setCfg(next);
       toast(`${next.labels[ev]} : « ${next.sounds.find((s) => s.id === id)?.name ?? id} »`);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusy(null);
     }
@@ -72,7 +72,7 @@ export default function Sounds() {
       setCfg(await api<SoundsConfig>(`/notifications/sounds/${encodeURIComponent(remove.id)}`, { method: 'DELETE' }));
       toast(`Son « ${remove.name} » supprimé`);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
     setRemove(null);
   };
@@ -190,7 +190,7 @@ function AddSound({ onAdded }: { onAdded: (cfg: SoundsConfig, name: string) => v
       setFile(null);
       if (input.current) input.current.value = '';
     } catch (err) {
-      setError((err as Error).message);
+      setError(errText(err));
     } finally {
       setBusy(false);
     }

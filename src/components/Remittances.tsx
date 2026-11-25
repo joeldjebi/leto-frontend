@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, dateTime, User } from '../api';
+import { api, dateTime, User, errText } from '../api';
 import { formatMoney, formatPhone, currencyLabel } from '../countries';
 import { Badge, Card, Empty, Field, Icon, Modal, Segmented, Stat, useToast } from '../ui';
 import { ProofThumb } from './Billing';
@@ -37,7 +37,7 @@ export function EarningsTab({ driver, canManage }: { driver: User; canManage: bo
   const [data, setData] = useState<{ balance: DriverCash; history: Remittance[] } | null>(null);
   const [error, setError] = useState('');
   const [dialog, setDialog] = useState<'record' | Remittance | null>(null);
-  const reload = () => api<{ balance: DriverCash; history: Remittance[] }>(`/remittances/drivers/${driver.id}`).then(setData).catch((e) => setError((e as Error).message));
+  const reload = () => api<{ balance: DriverCash; history: Remittance[] }>(`/remittances/drivers/${driver.id}`).then(setData).catch((e) => setError(errText(e)));
   useEffect(() => { reload(); }, [driver.id]);
   if (!data) return error ? <div className="alert error">{error}</div> : <Card><Empty icon="wallet">Chargement…</Empty></Card>;
   const b = data.balance;
@@ -120,7 +120,7 @@ export function ReviewRemittance({ r, onClose, onDone }: { r: Remittance; onClos
       onDone();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (
@@ -156,7 +156,7 @@ function RecordDialog({ driver, max, onClose, onDone }: { driver: User; max: num
       onDone();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (
@@ -185,7 +185,7 @@ export function ShareDialog({ current, onClose, onDone }: { current: number; onC
       onDone();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (

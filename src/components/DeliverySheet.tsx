@@ -5,8 +5,7 @@ import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
   api, codTotal, dateTime, Delivery, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
-  RATING_TAG_LABEL, stars,
-} from '../api';
+  RATING_TAG_LABEL, stars,errText } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
@@ -76,7 +75,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       setOrder(null);
       reload();
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
   const link = trackingUrl(d);
@@ -90,8 +89,8 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
 
   const events = [
     { at: d.createdAt, label: `Commandée par ${d.client.name}`, color: '#8e8e93' },
-    { at: d.acceptedAt, label: `Acceptée par ${d.driver?.name ?? 'un livreur'}`, color: '#0071e3' },
-    { at: d.pickedUpAt, label: d.stops.length > 1 ? 'Colis récupérés' : 'Colis récupéré', color: '#af52de' },
+    { at: d.acceptedAt, label: `Acceptée par ${d.driver?.name ?? 'un livreur'}`, color: '#C2410C' },
+    { at: d.pickedUpAt, label: d.stops.length > 1 ? 'Colis récupérés' : 'Colis récupéré', color: '#1A1A1A' },
     ...d.stops.filter((s) => s.deliveredAt || s.failedAt).map((s) => ({
       at: s.deliveredAt ?? s.failedAt,
       label: s.deliveredAt ? `Livré à ${s.recipientName}` : `${FAILURE_LABEL[s.failureReason!]} · ${s.recipientName}`,
@@ -105,12 +104,12 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
     ...d.stops.filter((s) => s.cancelRequestedAt && s.status === 'PENDING').map((s) => ({
       at: s.cancelRequestedAt,
       label: `Le livreur signale que ${s.recipientName} annule — en attente de l’expéditeur`,
-      color: '#ff9f0a',
+      color: '#F28C1A',
     })),
     {
       at: d.ratedAt ?? null,
       label: `Avis du client : ${stars(d.rating ?? 0)}${d.ratingTags?.length ? ` · ${d.ratingTags.map((t) => RATING_TAG_LABEL[t] ?? t).join(', ')}` : ''}${d.ratingComment ? ` · « ${d.ratingComment} »` : ''}`,
-      color: (d.rating ?? 0) >= 4 ? '#34c759' : '#ff9f0a',
+      color: (d.rating ?? 0) >= 4 ? '#34c759' : '#F28C1A',
     },
     { at: d.returnedAt, label: 'Colis non livrés rendus à l’expéditeur (code de retour)', color: '#34c759' },
     { at: d.cancelledAt, label: `Annulée${d.cancelledBy ? ` par ${d.cancelledBy}` : ''}${d.cancelReason ? ` · « ${d.cancelReason} »` : ''}`, color: '#8e8e93' },
@@ -126,8 +125,8 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
         <MapContainer bounds={points.length > 1 ? points : undefined} center={points[0]} zoom={13} boundsOptions={{ padding: [30, 30] }} style={{ height: '100%' }} scrollWheelZoom={false}>
           <MapTiles />
           <FitPoints points={points} />
-          <Polyline positions={points} pathOptions={{ color: '#0071e3', weight: 3, opacity: 0.6, dashArray: '6 6' }} />
-          <CircleMarker center={points[0]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#34c759', fillOpacity: 1 }}>
+          <Polyline positions={points} pathOptions={{ color: '#C2410C', weight: 3, opacity: 0.6, dashArray: '6 6' }} />
+          <CircleMarker center={points[0]} radius={9} pathOptions={{ color: '#fff', weight: 3, fillColor: '#1A1A1A', fillOpacity: 1 }}>
             <Tooltip direction="top" permanent>A</Tooltip>
           </CircleMarker>
           {d.stops.map((s) => (
@@ -211,7 +210,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
         <div className="section-title">Départ</div>
         <div className="group">
           <div>
-            <span className="stop-num" style={{ background: '#34c759' }}>A</span>
+            <span className="stop-num" style={{ background: '#1A1A1A' }}>A</span>
             <div style={{ flex: 1 }}>
               <strong>{d.pickupAddress}</strong> <span className="muted">({d.pickupCommune})</span>
               {d.pickupDetails && <small className="muted" style={{ display: 'block' }}>{d.pickupDetails}</small>}
@@ -361,7 +360,7 @@ export function ResolveDialog({ delivery, stop, onClose }: { delivery: Delivery;
       await reload();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (
@@ -404,7 +403,7 @@ function CancelDialog({ delivery, onClose }: { delivery: Delivery; onClose: () =
       await reload();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (

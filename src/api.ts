@@ -219,8 +219,35 @@ export function setToken(t: string | null) {
   else localStorage.removeItem('leto_token');
 }
 
+/** Erreur prévue pour l'utilisateur (message clair en français) */
+export class UserError extends Error {}
+export const GENERIC_ERROR = 'Une erreur est survenue. Réessayez dans un instant.';
+const OFFLINE_ERROR = 'Impossible de joindre le serveur. Vérifiez votre connexion.';
+
+/** Texte à afficher pour une erreur : jamais de message technique (« Failed to fetch », exceptions JavaScript…) */
+export function errText(e: unknown): string {
+  return e instanceof UserError && e.message ? e.message : GENERIC_ERROR;
+}
+
+/** Message renvoyé par l'API ; erreur interne ou réponse illisible → message générique */
+function apiMessage(status: number, data: { message?: unknown } | null, fallback: string) {
+  if (status >= 500) return GENERIC_ERROR;
+  const m = data?.message;
+  const text = Array.isArray(m) ? m.join(', ') : typeof m === 'string' ? m : '';
+  return text.trim() || fallback;
+}
+
+/** fetch sans message technique en cas de coupure réseau */
+async function send(input: string, init: RequestInit) {
+  try {
+    return await fetch(input, init);
+  } catch {
+    throw new UserError(OFFLINE_ERROR);
+  }
+}
+
 export async function api<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(API_URL + path, {
+  const res = await send(API_URL + path, {
     method: options.method ?? 'GET',
     headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: options.body ? JSON.stringify(options.body) : undefined,
@@ -230,10 +257,7 @@ export async function api<T>(path: string, options: { method?: string; body?: un
     setToken(null);
     location.reload();
   }
-  if (!res.ok) {
-    const msg = Array.isArray(data?.message) ? data.message.join(', ') : data?.message;
-    throw new Error(msg ?? 'Erreur réseau');
-  }
+  if (!res.ok) throw new UserError(apiMessage(res.status, data, GENERIC_ERROR));
   return data as T;
 }
 
@@ -241,9 +265,9 @@ export async function api<T>(path: string, options: { method?: string; body?: un
 export async function upload(file: File): Promise<string> {
   const body = new FormData();
   body.append('file', file);
-  const res = await fetch(API_URL + '/uploads', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
+  const res = await send(API_URL + '/uploads', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.message ?? 'Envoi de l’image impossible');
+  if (!res.ok || !data?.url) throw new UserError(apiMessage(res.status, data, 'Envoi de l’image impossible. Réessayez.'));
   return data.url as string;
 }
 
@@ -301,12 +325,9 @@ export async function uploadSound(name: string, file: File): Promise<SoundsConfi
   const body = new FormData();
   body.append('name', name);
   body.append('file', file);
-  const res = await fetch(API_URL + '/notifications/sounds', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
+  const res = await send(API_URL + '/notifications/sounds', { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body });
   const data = await res.json().catch(() => null);
-  if (!res.ok) {
-    const msg = Array.isArray(data?.message) ? data.message.join(', ') : data?.message;
-    throw new Error(msg ?? 'Envoi du son impossible');
-  }
+  if (!res.ok) throw new UserError(apiMessage(res.status, data, 'Envoi du son impossible. Réessayez.'));
   return data as SoundsConfig;
 }
 
@@ -340,11 +361,10 @@ export function uploadApk(file: File, version: string, onProgress: (pct: number)
       let data: { message?: string | string[] } | null = null;
       try { data = JSON.parse(xhr.responseText); } catch { /* réponse vide */ }
       if (xhr.status >= 200 && xhr.status < 300) return resolve(data as unknown as LandingContent);
-      if (xhr.status === 413) return reject(new Error('Fichier trop lourd (200 Mo maximum)'));
-      const msg = Array.isArray(data?.message) ? data!.message.join(', ') : data?.message;
-      reject(new Error(msg ?? 'Envoi de l’APK impossible'));
+      if (xhr.status === 413) return reject(new UserError('Fichier trop lourd (200 Mo maximum)'));
+      reject(new UserError(apiMessage(xhr.status, data, 'Envoi de l’APK impossible. Réessayez.')));
     };
-    xhr.onerror = () => reject(new Error('Envoi interrompu : vérifiez la connexion'));
+    xhr.onerror = () => reject(new UserError('Envoi interrompu : vérifiez la connexion'));
     xhr.send(body);
   });
 }

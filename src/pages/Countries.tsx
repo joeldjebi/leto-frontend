@@ -1,5 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, errText } from '../api';
 import { Country, flagOf, groupDigits, loadCountries, nationalDigits } from '../countries';
 import { Badge, Card, Empty, Field, Icon, Modal, PageHeader, Switch, useToast } from '../ui';
 
@@ -53,7 +53,7 @@ export default function Countries() {
   const [operate, setOperate] = useState<Country | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(() => api<{ countries: Country[] }>('/admin/countries').then((r) => setList(r.countries)).catch((e) => setError((e as Error).message)), []);
+  const load = useCallback(() => api<{ countries: Country[] }>('/admin/countries').then((r) => setList(r.countries)).catch((e) => setError(errText(e))), []);
   useEffect(() => {
     load();
     window.addEventListener('countries:changed', load);
@@ -67,7 +67,7 @@ export default function Countries() {
       await api(`/admin/countries/${c.id}`, { method: 'PATCH', body });
       toast(done);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
     await refresh();
   };
@@ -176,7 +176,7 @@ export default function Countries() {
                 await api(`/admin/countries/${remove.id}`, { method: 'DELETE' });
                 toast(`${remove.name} supprimé`);
               } catch (e) {
-                setError((e as Error).message);
+                setError(errText(e));
               }
               setBusy(false);
               setRemove(null);
@@ -217,7 +217,7 @@ function CountryForm({ country, onClose, onSaved }: { country: Country | null; o
       else await api('/admin/countries', { method: 'POST', body });
       onSaved(body.name, !country);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
       setBusy(false);
     }
   };

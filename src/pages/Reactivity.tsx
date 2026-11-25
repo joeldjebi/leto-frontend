@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api';
+import { api, errText } from '../api';
 import { Badge, Card, Empty, PageHeader, Stat } from '../ui';
 
 interface Row {
@@ -20,7 +20,7 @@ export default function Reactivity({ superAdmin }: { superAdmin: boolean }) {
   const [error, setError] = useState('');
   useEffect(() => {
     setData(null);
-    api<Data>(`/deliveries/driver-stats?days=${days}`).then((d) => { setData(d); setError(''); }).catch((e) => setError((e as Error).message));
+    api<Data>(`/deliveries/driver-stats?days=${days}`).then((d) => { setData(d); setError(''); }).catch((e) => setError(errText(e)));
   }, [days]);
 
   const t = data?.totals;

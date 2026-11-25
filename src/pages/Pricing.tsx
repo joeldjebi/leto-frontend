@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, dateTime, PricingGrid, Speed, Vehicle } from '../api';
+import { api, capFromKm, computePrice, dateTime, PricingGrid, Speed, Vehicle, errText } from '../api';
 import { formatMoney, currencySymbol } from '../countries';
 import BillingSettings from '../components/BillingSettings';
 import MapSettings from '../components/MapSettings';
@@ -46,7 +46,7 @@ export default function Pricing() {
       setGrid(g);
       toast('Tarifs enregistrés — appliqués aux nouvelles commandes');
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setBusy(false);
     }

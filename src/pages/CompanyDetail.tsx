@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL } from '../api';
+import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL, errText } from '../api';
 import { formatMoney, phoneError, formatPhone } from '../countries';
 import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling, TrialDialog } from '../components/Billing';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
@@ -390,7 +390,7 @@ export function EditCompany({ company, onClose }: { company: Company; onClose: (
       await reload();
       onClose();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   return (

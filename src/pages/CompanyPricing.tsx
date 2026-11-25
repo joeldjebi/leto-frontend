@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, PricingGrid, Speed, Vehicle, VEHICLE_LABEL } from '../api';
+import { api, capFromKm, computePrice, PricingGrid, Speed, Vehicle, VEHICLE_LABEL, errText } from '../api';
 import { formatMoney, currencySymbol } from '../countries';
 import { Badge, Icon, Modal, Switch, useToast } from '../ui';
 
@@ -58,7 +58,7 @@ export default function CompanyPricing() {
       setGrid({ ...grid, vehicles: Object.fromEntries(VEHICLES.map((x) => [x, { ...grid.vehicles[x], enabled: d.effective.vehicles[x].enabled }])) as PricingGrid['vehicles'] });
       toast(on ? `${VEHICLE_LABEL[v]} : proposé à vos clients` : `${VEHICLE_LABEL[v]} : retiré de vos offres`);
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
     }
   };
   const setFactor = (s: Speed, factor: number) => setGrid({ ...grid, speeds: { ...grid.speeds, [s]: { ...grid.speeds[s], factor } } });
@@ -76,7 +76,7 @@ export default function CompanyPricing() {
       }));
       toast('Tarifs enregistrés — appliqués aux prochaines commandes');
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setSaving(false);
     }

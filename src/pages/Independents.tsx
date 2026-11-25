@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, IndependentCounts, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,
-} from '../api';
+  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, IndependentCounts, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,errText } from '../api';
 import { formatMoney, formatPhone, currencySymbol } from '../countries';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, Search, Segmented, Sheet, Switch, useToast } from '../ui';
 
@@ -127,7 +126,7 @@ function RulesCard() {
       apply(await api<IndependentsConfig>('/independents/config', { method: 'PUT', body }));
       toast(msg);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
   const n = Number(value);
@@ -194,7 +193,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
   useEffect(() => {
     setD(null);
     setBroken({});
-    api<IndependentDossier>(`/independents/${row.id}`).then(setD).catch((e) => setError((e as Error).message));
+    api<IndependentDossier>(`/independents/${row.id}`).then(setD).catch((e) => setError(errText(e)));
   }, [row.id]);
 
   const act = async (path: string, msg: string, body?: unknown) => {
@@ -206,7 +205,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
       window.dispatchEvent(new Event('independents:changed'));
       return true;
     } catch (e) {
-      toast((e as Error).message);
+      toast(errText(e));
       return false;
     } finally {
       setBusy(false);
@@ -411,7 +410,7 @@ function BalanceSection({ companyId, onChanged }: { companyId: string; onChanged
       toast('Solde ajusté');
       onChanged();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     }
   };
 

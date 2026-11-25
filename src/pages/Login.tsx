@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react';
-import { api, setToken, User } from '../api';
+import { api, setToken, User, errText, UserError } from '../api';
 import { Icon, PhoneInput, LetoMark } from '../ui';
 
 /** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
@@ -20,12 +20,12 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
     try {
       const res = await api<{ token: string; user: User }>('/auth/login', { method: 'POST', body: { phone, password } });
       if (res.user.role !== 'COMPANY' && res.user.role !== 'SUPER_ADMIN') {
-        throw new Error('Espace réservé au Super Admin et aux entreprises de livraison.');
+        throw new UserError('Espace réservé au Super Admin et aux entreprises de livraison.');
       }
       setToken(res.token);
       onLogin(res.user);
     } catch (err) {
-      setError((err as Error).message);
+      setError(errText(err));
     } finally {
       setBusy(false);
     }

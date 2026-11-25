@@ -2,7 +2,7 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import { api, Delivery, initial, isOnline, Speed, SPEED_LABEL, User, Vehicle, VEHICLE_LABEL } from '../api';
+import { api, Delivery, initial, isOnline, Speed, SPEED_LABEL, User, Vehicle, VEHICLE_LABEL, errText } from '../api';
 import { formatMoney, phoneError, formatPhone, currencySymbol } from '../countries';
 import { useData } from '../data';
 import { Badge, Icon, PhoneInput, useToast } from '../ui';
@@ -111,7 +111,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
     setQuoting(true);
     api<Quote>('/pricing/quote', { method: 'POST', body: { companyId: me.companyId, pickupLat: pickup!.lat, pickupLng: pickup!.lng, stops: stops.map((s) => ({ lat: s.place!.lat, lng: s.place!.lng })), keepOrder: true } })
       .then((q) => { setQuote(q); setError(''); if (!q.offers.some((o) => o.vehicle === vehicle) && q.offers[0]) setVehicle(q.offers[0].vehicle); })
-      .catch((e) => setError((e as Error).message))
+      .catch((e) => setError(errText(e)))
       .finally(() => setQuoting(false));
   }, [key]);
 
@@ -142,7 +142,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
       setStops(q.order.map((i) => stops[i]));
       toast(same ? 'Votre ordre est déjà le plus court' : `Ordre optimisé · ≈ ${q.durationMin} min · ${q.distanceKm} km`);
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setOptimizing(false);
     }
@@ -192,7 +192,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
       setCreated(d);
       reload();
     } catch (e) {
-      setError((e as Error).message);
+      setError(errText(e));
     } finally {
       setSending(false);
     }
