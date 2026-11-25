@@ -27,16 +27,17 @@ import { loadCountries, useCountries } from './countries';
 import Countries from './pages/Countries';
 import VideoVisits from './pages/VideoVisits';
 import Prospects from './pages/Prospects';
+import Reactivity from './pages/Reactivity';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects' | 'reactivity';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection', reactivity: 'reactivite',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -139,11 +140,12 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           ? [
               { r: 'companies', icon: 'building', label: 'Entreprises', count: coPending || undefined, alert: true },
               { r: 'drivers', icon: 'bike', label: 'Livreurs' },
+              { r: 'reactivity', icon: 'clock', label: 'Réactivité' },
               { r: 'independents', icon: 'shield', label: 'Indépendants', count: liPending || undefined, alert: true },
               { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
               { r: 'clients', icon: 'people', label: 'Clients' },
             ]
-          : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }, { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' }],
+          : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }, { r: 'reactivity', icon: 'clock', label: 'Réactivité' }, { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' }],
       },
       isSA
         ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
@@ -237,6 +239,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'landing' && <Landing />}
           {current === 'videoVisits' && <VideoVisits />}
           {current === 'prospects' && <Prospects />}
+          {current === 'reactivity' && <Reactivity superAdmin={isSA} />}
         </div>
       </main>
     </div>

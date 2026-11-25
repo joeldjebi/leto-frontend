@@ -231,6 +231,14 @@ export default function Pricing() {
               <div className="grow"><div className="title">Alerte nouvelle commande</div><small className="muted">Durée d’affichage de l’alerte plein écran chez le livreur, avec son</small></div>
               <input type="number" min={10} max={120} step={5} value={grid.orderPopupSec} onChange={(e) => setGrid({ ...grid, orderPopupSec: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Alerte nouvelle commande" /><span className="muted">s</span>
             </div>
+            <div>
+              <div className="grow"><div className="title">Livreurs prévenus par vague</div><small className="muted">Les plus proches d’abord ; les suivants sont prévenus si personne n’accepte</small></div>
+              <input type="number" min={1} max={50} step={1} value={grid.dispatchWaveSize} onChange={(e) => setGrid({ ...grid, dispatchWaveSize: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Livreurs prévenus par vague" /><span className="muted">livreurs</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Délai entre deux vagues</div><small className="muted">Avant de prévenir les livreurs suivants</small></div>
+              <input type="number" min={5} max={120} step={5} value={grid.dispatchWaveSec} onChange={(e) => setGrid({ ...grid, dispatchWaveSec: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Délai entre deux vagues" /><span className="muted">s</span>
+            </div>
           </div>
         </Card>
 
