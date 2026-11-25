@@ -18,7 +18,7 @@ function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
     className: 'track-vehicle',
     iconSize: [64, 64],
     iconAnchor: [32, 32],
-    // Pointe violette = sens de marche (orientée par SmoothDriverMarker)
+    // Pointe colorée = sens de marche (orientée par SmoothDriverMarker)
     html: `<div class="trk-heading" style="position:absolute;inset:0;opacity:0;transition:transform .6s ease-out,opacity .3s"><svg width="64" height="64" viewBox="0 0 64 64"><path d="M32 1 L41 13 L23 13 Z" fill="#6D28D9" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg></div><div style="position:absolute;left:9px;top:9px;width:46px;height:46px;border-radius:50%;background:${bg};border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 14px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d}"/></svg></div>`,
   });
 }

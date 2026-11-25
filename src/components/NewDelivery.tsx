@@ -382,7 +382,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
           <MapTiles />
           <FitBounds points={mapPoints} />
           <MapClick onPick={pickOnMap} />
-          {quote && <Polyline positions={quote.points} pathOptions={{ color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#6d28d9', weight: 5, opacity: 0.85 }} />}
+          {quote && <Polyline positions={quote.points} pathOptions={{ color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#c2410c', weight: 5, opacity: 0.85 }} />}
           {pickup && <Marker position={[pickup.lat, pickup.lng]} icon={pin('A', true)} />}
           {stops.map((s, i) => s.place && <Marker key={s.key} position={[s.place.lat, s.place.lng]} icon={pin(String(i + 1), false)} />)}
         </MapContainer>

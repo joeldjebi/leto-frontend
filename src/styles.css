@@ -13,9 +13,12 @@
   --separator: rgba(18, 18, 20, 0.1);
   --fill: rgba(120, 120, 128, 0.1);
   --fill-strong: rgba(120, 120, 128, 0.18);
-  --accent: #6d28d9;
-  --accent-text: #5b21b6;
-  --accent-soft: rgba(109, 40, 217, 0.1);
+  /* Charte soleil : jaune #FBC02D · orange #F28C1A · orange vif #E86A17 · noir #1A1A1A */
+  --primary: #fbc02d; /* boutons principaux (texte noir) */
+  --on-primary: #1a1a1a;
+  --accent: #c2410c; /* liens, sélection : orange foncé lisible sur blanc */
+  --accent-text: #9a3412;
+  --accent-soft: rgba(251, 192, 45, 0.2);
   --blue: #2563eb;
   --green: #16a34a;
   --green-soft: rgba(52, 199, 89, 0.14);
@@ -28,7 +31,7 @@
   --blue-soft: rgba(0, 113, 227, 0.1);
   --orange: #c2410c;
   --orange-soft: rgba(234, 88, 12, 0.12);
-  --chart: #6d28d9; /* validé : contraste ≥ 3:1 sur fond clair */
+  --chart: #e86a17; /* orange vif : contraste ≥ 3:1 sur fond clair */
   --grid: rgba(60, 60, 67, 0.1);
   --shadow: 0 1px 1px rgba(0, 0, 0, 0.02), 0 2px 12px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.16);
@@ -49,9 +52,11 @@
     --separator: rgba(255, 255, 255, 0.1);
     --fill: rgba(120, 120, 128, 0.22);
     --fill-strong: rgba(120, 120, 128, 0.32);
-    --accent: #8b5cf6;
-    --accent-text: #c4b5fd;
-    --accent-soft: rgba(139, 92, 246, 0.2);
+    --primary: #fbc02d;
+    --on-primary: #1a1a1a;
+    --accent: #e86a17; /* orange vif : fonds avec texte blanc en gras */
+    --accent-text: #fbc02d;
+    --accent-soft: rgba(251, 192, 45, 0.16);
     --blue: #60a5fa;
     --green: #22c55e;
     --green-soft: rgba(48, 209, 88, 0.18);
@@ -64,7 +69,7 @@
     --blue-soft: rgba(41, 151, 255, 0.16);
     --orange: #fb923c;
     --orange-soft: rgba(251, 146, 60, 0.18);
-    --chart: #a78bfa; /* validé pour fond sombre */
+    --chart: #fbc02d; /* jaune soleil sur fond sombre */
     --grid: rgba(255, 255, 255, 0.08);
     --shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
     --shadow-lg: 0 12px 48px rgba(0, 0, 0, 0.6);
@@ -103,9 +108,9 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
 .app-icon {
   width: 34px; height: 34px; border-radius: 9px;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  background: #1a1a1a; /* tuile de l'icône : soleil sur fond noir */
   display: grid; place-items: center; color: #fff;
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 .brand strong { font-size: 17px; letter-spacing: 0.02em; }
 .brand small { display: block; font-size: 12px; margin-top: -2px; }
@@ -190,7 +195,7 @@ h1, h2, h3 { margin: 0; letter-spacing: -0.02em; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 32px; padding: 0 14px; border-radius: 8px; border: 0;
-  background: var(--accent); color: #fff; font: inherit; font-weight: 500; cursor: pointer; white-space: nowrap;
+  background: var(--primary); color: var(--on-primary); font: inherit; font-weight: 600; cursor: pointer; white-space: nowrap;
 }
 .btn:hover { filter: brightness(1.05); }
 .btn:disabled { opacity: 0.45; cursor: default; }
@@ -302,7 +307,9 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 .login { min-height: 100%; display: grid; place-items: center; padding: 24px; }
 .login .card { width: 100%; max-width: 380px; padding: 36px 32px 28px; text-align: center; }
 .login .app-icon { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 16px; }
-.login h1 { font-size: 26px; font-weight: 700; }
+.login h1 { font-size: 28px; font-weight: 700; font-family: 'Unbounded', var(--font); letter-spacing: 0.02em; }
+/* Mot « LETO » : police de la charte */
+.brand-word { font-family: 'Unbounded', var(--font); font-weight: 700; letter-spacing: 0.02em; }
 .login form { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; text-align: left; }
 .login input { padding: 12px 14px; font-size: 15px; border-radius: 12px; }
 .center { display: grid; place-items: center; height: 100%; color: var(--secondary); }
@@ -849,3 +856,4 @@ small.down { color: var(--green); }
 .pr-step.purple { color: var(--accent-text); }
 .pr-step.green { color: var(--green); }
 .pr-step.red { color: var(--red); }
+.app-icon svg { width: 100%; height: 100%; display: block; }

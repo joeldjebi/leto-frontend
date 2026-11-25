@@ -1,3 +1,4 @@
+import sunSvg from './assets/sun-dark.svg?raw';
 import { createContext, ReactNode, useContext, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { initial, Status, STATUS_COLOR, STATUS_LABEL } from './api';
 import { parsePhone, toE164, useCountries } from './countries';
@@ -61,17 +62,9 @@ export const ICON_PATHS: Record<string, string> = {
   truck: 'M2.5 6h11.5v10H2.5z M14 9.5h4l3.5 3.5v3H14z M6.5 18.5a2 2 0 100-4 2 2 0 000 4z M17.5 18.5a2 2 0 100-4 2 2 0 000 4z',
 };
 
-/** Symbole LETO « Le code » (quatre points en L, le dernier validé), blanc sur la tuile violette */
+/** Symbole LETO : le soleil (rayons fins blancs), sur la tuile noire. Source : brand/sun-dark.svg */
 export function LetoMark({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="17.25 10 80 80" aria-hidden="true">
-      <circle cx="30" cy="22" r="11" fill="#fff" />
-      <circle cx="30" cy="50" r="11" fill="#fff" />
-      <circle cx="30" cy="78" r="11" fill="#fff" />
-      <circle cx="60" cy="78" r="11" fill="#4ADE80" />
-      <path d="M74 46 L80 52 L92 38" fill="none" stroke="#4ADE80" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <span aria-hidden="true" style={{ width: size, height: size, display: 'block' }} dangerouslySetInnerHTML={{ __html: sunSvg }} />;
 }
 
 export function Icon({ name, size = 18, className }: { name: string; size?: number; className?: string }) {

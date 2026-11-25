@@ -11,7 +11,7 @@ import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
 
-const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#6d28d9');
+const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#c2410c');
 
 /** Recadre la carte une fois la fiche ouverte (sa taille n'est connue qu'après l'animation) */
 function FitPoints({ points }: { points: [number, number][] }) {
