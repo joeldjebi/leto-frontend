@@ -308,13 +308,33 @@ export interface IndependentsConfig {
   companyMaxPct: number; companyMaxFixed: number; transitionDays: number; transitionStartedAt: string | null;
   earningsHoldHours: number; minWithdrawal: number;
 }
-export interface IndependentCounts { pending: number; approved: number; rejected: number; suspended: number; draft: number }
+export interface IndependentCounts { pending: number; approved: number; rejected: number; suspended: number; draft: number; renewals: number; expired: number }
+/** Permis et assurance : validité */
+export type ExpiryState = 'OK' | 'SOON' | 'EXPIRED' | 'UNKNOWN';
+export interface DocsState { license: { expiresOn: string | null; state: ExpiryState }; insurance: { expiresOn: string | null; state: ExpiryState } }
+export const EXPIRY_BADGE: Record<ExpiryState, [string, string]> = {
+  OK: ['Valide', 'green'], SOON: ['Expire bientôt', 'yellow'], EXPIRED: ['Expiré', 'red'], UNKNOWN: ['Date à renseigner', 'gray'],
+};
+/** Documents renouvelables (ou dont l'entreprise peut demander la mise à jour) */
+export type RenewableDoc = 'docsSelfieUrl' | 'idFrontUrl' | 'idBackUrl' | 'licenseUrl' | 'registrationUrl' | 'insuranceUrl';
+export const RENEWABLE_LABEL: Record<RenewableDoc, string> = {
+  docsSelfieUrl: 'Photo avec ses documents', idFrontUrl: 'Pièce d’identité (recto)', idBackUrl: 'Pièce d’identité (verso)',
+  licenseUrl: 'Permis de conduire', registrationUrl: 'Carte grise', insuranceUrl: 'Assurance',
+};
+export interface Renewal { id: string; field: RenewableDoc; url: string | null; link: string | null; label: string; expiresOn: string | null; at: string }
+export interface UpdateRequest { id: string; field: RenewableDoc; label: string; note: string | null; companyId: string; by: string; at: string }
+export type IndependentAction =
+  | 'CREATED' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'REACTIVATED'
+  | 'AFFILIATED' | 'UNAFFILIATED' | 'VIEWED' | 'UPDATE_REQUESTED'
+  | 'RENEWAL_SENT' | 'RENEWAL_APPROVED' | 'RENEWAL_REJECTED' | 'EXPIRY_SET' | 'EXPIRED';
+export interface IndependentEvent { at: string; action: IndependentAction; by?: string; note?: string }
 export interface IndependentRow {
   id: string; status: IndependentStatus; vehicleType: Vehicle | null; vehiclePlate: string | null; commune: string | null;
   submittedAt: string | null; reviewedAt: string | null; reviewNote: string | null; createdAt: string;
   userId: string; name: string; phone: string; active: boolean; lastLocationAt: string | null;
   companyId: string; credit: number | string; completed: number;
   affiliatedCompanyId: string | null; affiliatedCompanyName: string | null; legacyUntil: string | null;
+  licenseExpiresOn: string | null; insuranceExpiresOn: string | null; renewals: number;
 }
 export type IndependentDoc = 'selfieUrl' | 'docsSelfieUrl' | 'idFrontUrl' | 'idBackUrl' | 'licenseUrl' | 'registrationUrl' | 'insuranceUrl';
 export interface IndependentDossier {
@@ -325,7 +345,9 @@ export interface IndependentDossier {
   vehicleType: Vehicle | null; vehicleBrand: string | null; vehiclePlate: string | null; licenseNumber: string | null;
   consentAt: string | null; submittedAt: string | null; reviewedAt: string | null; reviewedBy: string | null; reviewNote: string | null;
   createdAt: string;
-  history: { at: string; action: 'CREATED' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'REACTIVATED'; by?: string; note?: string }[];
+  history: IndependentEvent[];
+  licenseExpiresOn: string | null; insuranceExpiresOn: string | null;
+  renewals: Renewal[]; updateRequests: UpdateRequest[]; docs: DocsState;
   user: User;
   links: Partial<Record<IndependentDoc, string | null>>;
   required: { key: string; label: string; ok: boolean }[];
@@ -395,11 +417,29 @@ export function uploadApk(file: File, version: string, onProgress: (pct: number)
 export interface PoolDriver {
   id: string; name: string; selfieUrl: string | null; commune: string | null; vehicleType: Vehicle | null; legacyUntil: string | null;
   ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; inviteId: string | null;
+  vehicleBrand: string | null; plate: string | null;
+  /** Vérifié par LETO ; permis et assurance avec leur validité (null = absent) */
+  verified: { identity: boolean; license: ExpiryState | null; registration: boolean; insurance: ExpiryState | null };
 }
 export interface MyIndependent {
   id: string; userId: string; name: string; phone: string; selfieUrl: string | null; commune: string | null; vehicleType: Vehicle | null; vehiclePlate: string | null;
   affiliatedAt: string; affCommissionType: CommissionType | null; affCommissionValue: number | null; appliedRate: number | null; credit: number;
   ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; active: number; earned: number; pendingRate: string | null;
+  docs: DocsState; renewals: number; updateRequests: number;
+}
+/** Dossier complet d'un LI rattaché (vu par son entreprise) */
+export interface CompanyDossier {
+  id: string; name: string; phone: string; avatarUrl: string | null;
+  birthDate: string | null; commune: string | null; address: string | null;
+  idType: 'CNI' | 'PASSPORT' | 'CONSULAR' | 'RESIDENCE' | null; idNumber: string | null;
+  emergencyName: string | null; emergencyPhone: string | null;
+  vehicleType: Vehicle | null; vehicleBrand: string | null; vehiclePlate: string | null; licenseNumber: string | null;
+  approvedAt: string | null; affiliatedAt: string | null;
+  links: Partial<Record<IndependentDoc, string | null>>;
+  docs: DocsState;
+  renewals: { field: RenewableDoc; label: string; expiresOn: string | null; at: string }[];
+  updateRequests: UpdateRequest[];
+  views: IndependentEvent[];
 }
 export interface CompanyAffiliations {
   rate: { type: CommissionType; value: number } | null;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, IndependentCounts, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,errText } from '../api';
+  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, EXPIRY_BADGE, ExpiryState, IndependentCounts, Renewal, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,errText } from '../api';
 import { formatMoney, formatPhone, currencySymbol } from '../countries';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, Search, Segmented, Sheet, Switch, useToast } from '../ui';
 
@@ -19,6 +19,22 @@ const HISTORY: Record<IndependentDossier['history'][number]['action'], [string, 
   REJECTED: ['Dossier refusé', '#ff3b30'],
   SUSPENDED: ['Livreur suspendu', '#ff3b30'],
   REACTIVATED: ['Livreur réactivé', '#34c759'],
+  AFFILIATED: ['Rattaché · dossier partagé avec l’entreprise', '#F28C1A'],
+  UNAFFILIATED: ['Fin du rattachement', '#8e8e93'],
+  VIEWED: ['Dossier consulté par l’entreprise', '#8e8e93'],
+  UPDATE_REQUESTED: ['Mise à jour demandée par l’entreprise', '#F28C1A'],
+  RENEWAL_SENT: ['Document renouvelé envoyé', '#c2410c'],
+  RENEWAL_APPROVED: ['Document renouvelé validé', '#34c759'],
+  RENEWAL_REJECTED: ['Document renouvelé refusé', '#ff3b30'],
+  EXPIRY_SET: ['Dates de validité modifiées', '#8e8e93'],
+  EXPIRED: ['Document expiré', '#ff3b30'],
+};
+/** Validité d'une date (AAAA-MM-JJ) : même règle que le serveur (30 jours) */
+const stateOf = (d: string | null): ExpiryState => {
+  if (!d) return 'UNKNOWN';
+  const today = new Date().toISOString().slice(0, 10);
+  const warn = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  return d < today ? 'EXPIRED' : d <= warn ? 'SOON' : 'OK';
 };
 const vehicleIcon = (v: string | null) => (v === 'CAR' ? 'car' : v === 'CARGO' ? 'truck' : 'moto');
 const age = (iso: string) => {
@@ -26,6 +42,19 @@ const age = (iso: string) => {
   const n = new Date();
   return n.getFullYear() - b.getFullYear() - (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate()) ? 1 : 0);
 };
+
+/** Liste : renouvellement à vérifier, sinon le document le plus urgent */
+function RowDocs({ r }: { r: IndependentRow }) {
+  if (r.status === 'DRAFT' || r.status === 'PENDING' || r.status === 'REJECTED') return <span className="muted">—</span>;
+  const states = [stateOf(r.licenseExpiresOn), stateOf(r.insuranceExpiresOn)];
+  const worst = (['EXPIRED', 'SOON', 'UNKNOWN'] as ExpiryState[]).find((x) => states.includes(x));
+  return (
+    <>
+      {r.renewals > 0 ? <Badge color="orange">{r.renewals} à vérifier</Badge> : worst ? <Badge color={EXPIRY_BADGE[worst][1]}>{EXPIRY_BADGE[worst][0]}</Badge> : <Badge color="green">À jour</Badge>}
+      {r.renewals > 0 && worst && worst !== 'UNKNOWN' && <span className="sub">{EXPIRY_BADGE[worst][0]}</span>}
+    </>
+  );
+}
 
 const StatusBadgeLI = ({ status }: { status: IndependentStatus }) => <Badge color={INDEPENDENT_STATUS[status][1]}>{INDEPENDENT_STATUS[status][0]}</Badge>;
 
@@ -54,7 +83,7 @@ export default function Independents() {
     <>
       <PageHeader
         title="Livreurs indépendants"
-        subtitle={c ? `${c.approved} validé(s) · ${c.pending} dossier(s) à vérifier` : 'Chargement…'}
+        subtitle={c ? `${c.approved} validé(s) · ${c.pending} dossier(s) à vérifier${c.renewals ? ` · ${c.renewals} document(s) renouvelé(s) à vérifier` : ''}${c.expired ? ` · ${c.expired} avec un document expiré` : ''}` : 'Chargement…'}
       />
       <div className="stack">
         <RulesCard />
@@ -82,7 +111,7 @@ export default function Independents() {
             ) : (
               <div className="table-scroll">
                 <table className="list">
-                  <thead><tr><th>Livreur</th><th>Engin</th><th>Commune</th><th>Envoyé le</th><th>Entreprise</th><th className="num">Solde</th><th className="num">Courses</th><th>Statut</th></tr></thead>
+                  <thead><tr><th>Livreur</th><th>Engin</th><th>Commune</th><th>Envoyé le</th><th>Entreprise</th><th>Documents</th><th className="num">Solde</th><th className="num">Courses</th><th>Statut</th></tr></thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.id} className="clickable" onClick={() => setOpen(r)}>
@@ -98,6 +127,7 @@ export default function Independents() {
                             ? (r.legacyUntil && new Date(r.legacyUntil) > new Date() ? <span className="muted">Seul jusqu’au {date(r.legacyUntil)}</span> : <Badge color="yellow">Sans entreprise</Badge>)
                             : <span className="muted">—</span>)}
                         </td>
+                        <td><RowDocs r={r} /></td>
                         <td className="num">{formatMoney(Number(r.credit) || 0)}</td>
                         <td className="num">{r.completed}</td>
                         <td><StatusBadgeLI status={r.status} />{r.reviewNote && (r.status === 'REJECTED' || r.status === 'SUSPENDED') && <span className="sub">{r.reviewNote}</span>}</td>
@@ -285,6 +315,26 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
             </div>
           )}
 
+          {d.renewals.length > 0 && (
+            <div>
+              <div className="section-title">Documents renouvelés à vérifier ({d.renewals.length})</div>
+              <div className="group rows">
+                {d.renewals.map((r) => <RenewalRow key={r.id} r={r} busy={busy} current={d.links[r.field] ?? null}
+                  onZoom={(url, label) => setZoom([url, label])}
+                  onApprove={() => act(`renewals/${r.id}/approve`, `${r.label.charAt(0).toUpperCase() + r.label.slice(1)} validé(e) — remplace l’ancien document`)}
+                  onReject={(note) => act(`renewals/${r.id}/reject`, 'Document refusé — le livreur est prévenu', { note })} />)}
+              </div>
+            </div>
+          )}
+
+          {d.updateRequests.length > 0 && (
+            <div className="alert info">
+              <strong>Demandé par l’entreprise :</strong> {d.updateRequests.map((u) => `${u.label}${u.note ? ` (« ${u.note} »)` : ''} · ${u.by}, ${date(u.at)}`).join(' ; ')}
+            </div>
+          )}
+
+          {d.status !== 'DRAFT' && <ExpiryEditor d={d} onSaved={(x) => { setD(x); onChanged(); }} />}
+
           <div>
             <div className="section-title">Photos</div>
             <div className="li-photos">
@@ -371,6 +421,85 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
         </Modal>
       )}
     </Sheet>
+  );
+}
+
+/** Document renouvelé par le livreur : nouvelle photo et/ou nouvelle date, à valider ou refuser */
+function RenewalRow({ r, current, busy, onZoom, onApprove, onReject }: {
+  r: Renewal; current: string | null; busy: boolean; onZoom: (url: string, label: string) => void; onApprove: () => void; onReject: (note: string) => void;
+}) {
+  const [rejecting, setRejecting] = useState(false);
+  const [note, setNote] = useState('');
+  const label = r.label.charAt(0).toUpperCase() + r.label.slice(1);
+  return (
+    <div style={{ flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div className="li-photos" style={{ gridTemplateColumns: 'repeat(2, 84px)', margin: 0 }}>
+        {[['Nouveau', r.link], ['Actuel', current]].map(([cap, url]) => (
+          <figure key={cap}>
+            {url ? <button type="button" onClick={() => onZoom(url, `${label} · ${cap!.toLowerCase()}`)}><img src={photoUrl(url)} alt={`${label} · ${cap}`} /></button>
+              : <div className="li-missing">{cap === 'Nouveau' ? 'Même photo' : '—'}</div>}
+            <figcaption>{cap}</figcaption>
+          </figure>
+        ))}
+      </div>
+      <div className="grow" style={{ minWidth: 200 }}>
+        <div className="title">{label}</div>
+        <small className="muted">Envoyé le {dateTime(r.at)}{r.expiresOn && <> · valable jusqu’au <strong>{date(r.expiresOn)}</strong> (à vérifier sur la photo)</>}</small>
+        {rejecting && (
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <input autoFocus value={note} maxLength={300} placeholder="Motif (visible par le livreur)" onChange={(e) => setNote(e.target.value)} style={{ flex: 1 }} />
+            <button className="btn danger" disabled={busy || !note.trim()} onClick={() => onReject(note.trim())}>Refuser</button>
+          </div>
+        )}
+      </div>
+      {!rejecting && (
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn" disabled={busy} onClick={onApprove}><Icon name="check" size={15} />Valider</button>
+          <button className="btn secondary" disabled={busy} onClick={() => setRejecting(true)}>Refuser</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Dates de fin de validité du permis et de l'assurance (lues sur les photos), modifiables par le SA */
+function ExpiryEditor({ d, onSaved }: { d: IndependentDossier; onSaved: (x: IndependentDossier) => void }) {
+  const toast = useToast();
+  const [lic, setLic] = useState(d.licenseExpiresOn ?? '');
+  const [ins, setIns] = useState(d.insuranceExpiresOn ?? '');
+  const [error, setError] = useState('');
+  useEffect(() => { setLic(d.licenseExpiresOn ?? ''); setIns(d.insuranceExpiresOn ?? ''); }, [d.licenseExpiresOn, d.insuranceExpiresOn]);
+  const dirty = lic !== (d.licenseExpiresOn ?? '') || ins !== (d.insuranceExpiresOn ?? '');
+  const save = async () => {
+    setError('');
+    try {
+      onSaved(await api<IndependentDossier>(`/independents/${d.id}/expiry`, { method: 'PUT', body: { licenseExpiresOn: lic || null, insuranceExpiresOn: ins || null } }));
+      toast('Dates de validité enregistrées');
+    } catch (e) {
+      setError(errText(e));
+    }
+  };
+  const row = (label: string, v: string, set: (x: string) => void) => {
+    const st = stateOf(v || null);
+    return (
+      <div>
+        <div className="grow"><div className="title">{label}</div><small className="muted">{v ? `Valable jusqu’au ${date(v)}` : 'Date pas encore renseignée'}</small></div>
+        <Badge color={EXPIRY_BADGE[st][1]}>{EXPIRY_BADGE[st][0]}</Badge>
+        <input type="date" value={v} onChange={(e) => set(e.target.value)} aria-label={`Fin de validité : ${label}`} style={{ width: 150 }} />
+      </div>
+    );
+  };
+  return (
+    <div>
+      <div className="section-title">Validité du permis et de l’assurance</div>
+      <div className="group rows">
+        {row('Permis de conduire', lic, setLic)}
+        {row('Assurance', ins, setIns)}
+        {dirty && <div><span className="grow" /><button className="btn" onClick={save}>Enregistrer les dates</button></div>}
+      </div>
+      {error && <div className="alert error">{error}</div>}
+      <small className="muted">Rappel au livreur et à son entreprise 30 jours avant ; expiré, il ne reçoit plus de courses jusqu’au renouvellement validé.</small>
+    </div>
   );
 }
 
