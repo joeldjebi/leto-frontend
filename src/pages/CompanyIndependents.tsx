@@ -23,6 +23,16 @@ export default function CompanyIndependents() {
       setError(errText(e));
     }
   }, []);
+  // Vivier consulté : le bandeau « nouveaux livreurs » disparaît (à l'arrivée et en quittant la page)
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (data) setFresh((f) => (data.pool.some((p) => p.isNew && !f.has(p.id)) ? new Set([...f, ...data.pool.filter((p) => p.isNew).map((p) => p.id)]) : f));
+  }, [data]);
+  useEffect(() => {
+    const seen = () => api('/affiliations/company/pool-seen', { method: 'POST' }).catch(() => {});
+    const t = window.setTimeout(seen, 1500);
+    return () => { window.clearTimeout(t); seen(); };
+  }, []);
   useEffect(() => {
     load();
     const t = window.setInterval(load, 30_000);
@@ -46,7 +56,7 @@ export default function CompanyIndependents() {
         </div>
         <RateCard data={data} onSaved={setData} />
         <MineCard data={data} onChanged={load} />
-        <PoolCard data={data} onChanged={setData} />
+        <PoolCard data={data} fresh={fresh} onChanged={setData} />
         <EarningsCard earnings={earnings} onChanged={setEarnings} />
       </div>
     </>
@@ -359,11 +369,14 @@ function EndDialog({ driver, onClose, onDone }: { driver: MyIndependent; onClose
   );
 }
 
-function PoolCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (d: CompanyAffiliations) => void }) {
+function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh: Set<string>; onChanged: (d: CompanyAffiliations) => void }) {
   const toast = useToast();
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
-  const list = data.pool.filter((p) => `${p.name} ${p.commune ?? ''}`.toLowerCase().includes(q.toLowerCase()));
+  // Nouveaux en tête
+  const list = data.pool
+    .filter((p) => `${p.name} ${p.commune ?? ''}`.toLowerCase().includes(q.toLowerCase()))
+    .sort((a, b) => Number(fresh.has(b.id)) - Number(fresh.has(a.id)));
   const invite = async (p: PoolDriver) => {
     setError('');
     try {
@@ -394,7 +407,7 @@ function PoolCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
             <tbody>
               {list.map((p) => (
                 <tr key={p.id}>
-                  <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Face name={p.name} url={p.selfieUrl} /><div>{p.name} {p.online && <Badge color="green">En ligne</Badge>}{p.legacyUntil && <span className="sub">Travaille seul jusqu’au {date(p.legacyUntil)}</span>}</div></div></td>
+                  <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Face name={p.name} url={p.selfieUrl} /><div>{p.name} {fresh.has(p.id) && <Badge color="orange">Nouveau</Badge>} {p.online && <Badge color="green">En ligne</Badge>}{p.legacyUntil && <span className="sub">Travaille seul jusqu’au {date(p.legacyUntil)}</span>}</div></div></td>
                   <td>{p.vehicleType ? VEHICLE_LABEL[p.vehicleType] : '—'}{(p.vehicleBrand || p.plate) && <span className="sub">{[p.vehicleBrand, p.plate].filter(Boolean).join(' · ')}</span>}</td>
                   <td><VerifiedPills v={p.verified} /></td>
                   <td>{p.commune ?? '—'}</td>

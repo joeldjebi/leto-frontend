@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { go } from '../App';
+import { go, usePoolNews } from '../App';
 import { formatMoney } from '../countries';
 import { useData } from '../data';
 import { BarChart, Card, Empty, Icon, PageHeader, Segmented, Stat } from '../ui';
@@ -9,6 +9,7 @@ type Metric = 'created' | 'volume';
 export default function Overview() {
   const { stats, isSA, me, deliveries, reload } = useData();
   const [metric, setMetric] = useState<Metric>('created');
+  const pool = usePoolNews(isSA);
 
   if (!stats) return <PageHeader title="Vue d’ensemble" subtitle="Chargement des indicateurs…" />;
   const t = stats.totals;
@@ -30,6 +31,17 @@ export default function Overview() {
         subtitle={`${today}${!isSA && me.company ? ` · ${me.company.name}` : ''}`}
         actions={<button className="btn secondary" onClick={() => reload()}><Icon name="refresh" size={15} />Actualiser</button>}
       />
+
+      {pool.count > 0 && (
+        <div className="banner info">
+          <Icon name="shield" size={18} />
+          <span className="grow">
+            <strong>{pool.count === 1 ? 'Nouveau livreur indépendant' : `${pool.count} nouveaux livreurs indépendants`}</strong> dans le vivier depuis votre dernière visite
+            {pool.names.length > 0 && ` : ${pool.names.join(', ')}${pool.count > pool.names.length ? ` et ${pool.count - pool.names.length} autre(s)` : ''}`}. Validés par LETO, prêts à être invités.
+          </span>
+          <button className="btn" onClick={() => go('independents')}>Voir le vivier</button>
+        </div>
+      )}
 
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses aujourd’hui" value={t.createdToday} foot={`${t.deliveredToday} terminée(s)`} onClick={() => go('deliveries')} />

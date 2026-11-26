@@ -418,6 +418,8 @@ export interface PoolDriver {
   id: string; name: string; selfieUrl: string | null; commune: string | null; vehicleType: Vehicle | null; legacyUntil: string | null;
   ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; inviteId: string | null;
   vehicleBrand: string | null; plate: string | null;
+  /** Validé depuis la dernière visite du vivier */
+  isNew: boolean;
   /** Vérifié par LETO ; permis et assurance avec leur validité (null = absent) */
   verified: { identity: boolean; license: ExpiryState | null; registration: boolean; insurance: ExpiryState | null };
 }
@@ -427,6 +429,8 @@ export interface MyIndependent {
   ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; active: number; earned: number; pendingRate: string | null;
   docs: DocsState; renewals: number; updateRequests: number;
 }
+/** Nouveaux livreurs du vivier depuis la dernière visite */
+export interface PoolNews { count: number; names: string[] }
 /** Dossier complet d'un LI rattaché (vu par son entreprise) */
 export interface CompanyDossier {
   id: string; name: string; phone: string; avatarUrl: string | null;

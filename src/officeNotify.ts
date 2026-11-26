@@ -10,7 +10,8 @@ import { API_URL } from './api';
 
 export type OfficeKind =
   | 'NEW_ORDER' | 'ACCEPTED' | 'DECLINED' | 'FINISHED' | 'FAILED' | 'CANCELLED' | 'CANCEL_REQUEST'
-  | 'DISPUTE' | 'CREDIT_LOW' | 'PAYMENT' | 'REMITTANCE' | 'COMPANY_APPLY' | 'INDEPENDENT' | 'VIDEO_VISIT';
+  | 'DISPUTE' | 'CREDIT_LOW' | 'PAYMENT' | 'REMITTANCE' | 'COMPANY_APPLY' | 'INDEPENDENT' | 'VIDEO_VISIT'
+  | 'AFFILIATION' | 'WITHDRAWAL' | 'POOL';
 
 export interface OfficeNotification {
   id: string;
@@ -40,11 +41,14 @@ export const KIND_LABEL: Record<OfficeKind, string> = {
   COMPANY_APPLY: 'Demandes des entreprises',
   INDEPENDENT: 'Dossiers des livreurs indépendants',
   VIDEO_VISIT: 'Visites de la vidéo de présentation',
+  AFFILIATION: 'Livreurs indépendants rattachés',
+  WITHDRAWAL: 'Retraits des gains',
+  POOL: 'Nouveaux livreurs indépendants disponibles',
 };
 export const KINDS_FOR = (isSA: boolean): OfficeKind[] =>
   isSA
-    ? ['NEW_ORDER', 'DISPUTE', 'PAYMENT', 'COMPANY_APPLY', 'INDEPENDENT', 'VIDEO_VISIT']
-    : ['NEW_ORDER', 'ACCEPTED', 'DECLINED', 'CANCEL_REQUEST', 'FAILED', 'FINISHED', 'CANCELLED', 'DISPUTE', 'CREDIT_LOW', 'PAYMENT', 'REMITTANCE'];
+    ? ['NEW_ORDER', 'DISPUTE', 'PAYMENT', 'COMPANY_APPLY', 'INDEPENDENT', 'WITHDRAWAL', 'VIDEO_VISIT']
+    : ['NEW_ORDER', 'ACCEPTED', 'DECLINED', 'CANCEL_REQUEST', 'FAILED', 'FINISHED', 'CANCELLED', 'DISPUTE', 'CREDIT_LOW', 'PAYMENT', 'REMITTANCE', 'POOL', 'AFFILIATION', 'WITHDRAWAL'];
 
 export interface OfficePrefs {
   sound: boolean;

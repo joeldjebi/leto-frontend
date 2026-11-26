@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { api, BillingOverview, getToken, ROLE_LABEL, setToken, User } from './api';
+import { api, BillingOverview, getToken, PoolNews, ROLE_LABEL, setToken, User } from './api';
 import { DataProvider, useData } from './data';
 import Clients from './pages/Clients';
 import Collections from './pages/Collections';
@@ -122,6 +122,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
 
   const { n: billingAlert, subscriptions } = useBillingBadge(isSA);
   const liPending = useIndependentsBadge(isSA);
+  const poolNews = usePoolNews(isSA);
   const coPending = useCompaniesBadge(isSA);
   const active = deliveries.filter((d) => d.status === 'PENDING' || d.status === 'ACCEPTED' || d.status === 'PICKED_UP').length;
   const nav = useMemo(() => {
@@ -149,7 +150,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
             ]
           : [
               { r: 'drivers', icon: 'bike', label: 'Livreurs' },
-              { r: 'independents', icon: 'shield', label: 'Indépendants' },
+              { r: 'independents', icon: 'shield', label: 'Indépendants', count: poolNews.count || undefined },
               { r: 'reactivity', icon: 'clock', label: 'Réactivité' },
               { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
             ],
@@ -176,7 +177,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
     return items;
-  }, [isSA, active, stats, billingAlert, subscriptions, liPending, coPending]);
+  }, [isSA, active, stats, billingAlert, subscriptions, liPending, coPending, poolNews.count]);
 
   const allowed = nav.flatMap((s) => s.links.map((l) => l.r));
   const current = allowed.includes(route) ? route : 'overview';
@@ -289,6 +290,20 @@ function useIndependentsBadge(isSA: boolean) {
     return () => { window.clearInterval(t); window.removeEventListener('independents:changed', load); };
   }, [isSA]);
   return n;
+}
+
+/** Entreprise : nouveaux livreurs indépendants dans le vivier depuis la dernière visite (menu et Vue d'ensemble) */
+export function usePoolNews(isSA: boolean) {
+  const [news, setNews] = useState<PoolNews>({ count: 0, names: [] });
+  useEffect(() => {
+    if (isSA) return;
+    const load = () => api<PoolNews>('/affiliations/company/pool-news').then(setNews).catch(() => {});
+    load();
+    const t = window.setInterval(load, 60_000);
+    window.addEventListener('affiliations:changed', load);
+    return () => { window.clearInterval(t); window.removeEventListener('affiliations:changed', load); };
+  }, [isSA]);
+  return news;
 }
 
 /** Pastille du menu (SA) : demandes d'inscription d'entreprises à traiter */
