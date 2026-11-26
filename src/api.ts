@@ -437,6 +437,47 @@ export interface MyIndependent {
   /** Encaissé à la livraison, reste à verser à l'entreprise, versements à confirmer */
   cod: number; codToRemit: number; codPending: number;
 }
+// ---------- Paye des livreurs (entreprise) ----------
+export type PayPeriod = 'WEEK' | 'FORTNIGHT' | 'MONTH';
+export const PAY_PERIOD_LABEL: Record<PayPeriod, string> = { WEEK: 'Semaine', FORTNIGHT: 'Quinzaine', MONTH: 'Mois' };
+export interface PayRule {
+  fixed: number; perStop: number; percent: number;
+  ratingBonus?: { min: number; amount: number } | null;
+  volumeBonus?: { stops: number; amount: number } | null;
+}
+export type PayLineKind = 'FIXED' | 'STOPS' | 'PERCENT' | 'BONUS' | 'DEDUCTION' | 'ADVANCE' | 'CASH';
+export interface PayLine { id: string; kind: PayLineKind; label: string; amount: number; manual?: boolean; advanceId?: string }
+export type PayslipStatus = 'DRAFT' | 'PAID' | 'CONFIRMED' | 'DISPUTED';
+export const PAYSLIP_STATUS: Record<PayslipStatus, [string, string]> = {
+  DRAFT: ['Brouillon', 'gray'], PAID: ['Payée', 'orange'], CONFIRMED: ['Reçue', 'green'], DISPUTED: ['Contestée', 'red'],
+};
+export interface Payslip {
+  id: string; driverId: string; driverName?: string; period: PayPeriod; periodStart: string; periodEnd: string; label: string;
+  status: PayslipStatus; deliveries: number; stops: number; revenue: number; rule: PayRule; lines: PayLine[];
+  gross: number; cashCompensated: number; net: number; paidAt: string | null; paidBy: string | null;
+  method: 'CASH' | 'MOBILE_MONEY' | null; reference: string | null; proofUrl: string | null; confirmedAt: string | null; disputeNote: string | null;
+  estimate?: { cashCompensated: number; net: number; cashOwed: number } | null;
+}
+export type AdvanceStatus = 'PENDING' | 'GIVEN' | 'REJECTED' | 'DEDUCTED';
+export const ADVANCE_STATUS: Record<AdvanceStatus, [string, string]> = {
+  PENDING: ['À décider', 'yellow'], GIVEN: ['Versée · à retenir', 'orange'], REJECTED: ['Refusée', 'gray'], DEDUCTED: ['Retenue', 'green'],
+};
+export interface PayAdvance {
+  id: string; driverId: string; driverName?: string; amount: number; reason: string | null; status: AdvanceStatus; createdBy: 'DRIVER' | 'COMPANY';
+  method: 'CASH' | 'MOBILE_MONEY' | null; decidedBy: string | null; decidedAt: string | null; note: string | null; createdAt: string;
+}
+export interface PayrollRow {
+  driverId: string; name: string; active: boolean; payslip: Payslip | null;
+  estimate: { deliveries?: number; stops?: number; revenue?: number; gross?: number; cashCompensated: number; net: number; cashOwed: number } | null;
+}
+export interface PayrollOverview {
+  enabled: boolean; period: PayPeriod; start: string; end: string; label: string; current: boolean;
+  periods: { start: string; end: string; label: string }[]; rows: PayrollRow[]; advances: PayAdvance[];
+}
+export interface PayrollSettings {
+  enabled: boolean; period: PayPeriod; rule: PayRule; sharePercent: number;
+  drivers: { id: string; name: string; active: boolean; rule: PayRule | null }[];
+}
 /** Horaires d'ouverture d'une entreprise (1 = lundi … 7 = dimanche) */
 export interface OpeningHours { open: string; close: string; days: number[] }
 export interface Availability {

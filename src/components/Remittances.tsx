@@ -9,14 +9,14 @@ export interface DriverCash {
   confirmed: number; pending: number; toRemit: number; today: number; week: number; month: number;
 }
 export interface Remittance {
-  id: string; driverId: string; driver?: User; amount: number; method: 'CASH' | 'MOBILE_MONEY';
+  id: string; driverId: string; driver?: User; amount: number; method: 'CASH' | 'MOBILE_MONEY' | 'PAYROLL';
   reference: string | null; proofUrl: string | null; note: string | null;
   status: 'PENDING' | 'CONFIRMED' | 'REJECTED'; createdBy: 'DRIVER' | 'COMPANY';
   reviewedBy: string | null; reviewedAt: string | null; reviewNote: string | null; createdAt: string;
 }
 export interface CompanyCash { balances: DriverCash[]; pending: Remittance[]; sharePercent: number }
 
-const METHOD = { CASH: 'Espèces', MOBILE_MONEY: 'Mobile Money' } as const;
+const METHOD = { CASH: 'Espèces', MOBILE_MONEY: 'Mobile Money', PAYROLL: 'Déduit de la paie' } as const;
 const STATUS = { PENDING: ['À confirmer', 'yellow'], CONFIRMED: ['Confirmé', 'green'], REJECTED: ['Refusé', 'red'] } as const;
 
 /** Soldes de tous les livreurs de l'entreprise (gérant) */

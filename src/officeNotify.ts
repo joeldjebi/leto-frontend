@@ -11,7 +11,7 @@ import { API_URL } from './api';
 export type OfficeKind =
   | 'NEW_ORDER' | 'ACCEPTED' | 'DECLINED' | 'FINISHED' | 'FAILED' | 'CANCELLED' | 'CANCEL_REQUEST'
   | 'DISPUTE' | 'CREDIT_LOW' | 'PAYMENT' | 'REMITTANCE' | 'COMPANY_APPLY' | 'INDEPENDENT' | 'VIDEO_VISIT'
-  | 'AFFILIATION' | 'WITHDRAWAL' | 'POOL' | 'RATING';
+  | 'AFFILIATION' | 'WITHDRAWAL' | 'POOL' | 'RATING' | 'PAYROLL';
 
 export interface OfficeNotification {
   id: string;
@@ -45,11 +45,12 @@ export const KIND_LABEL: Record<OfficeKind, string> = {
   WITHDRAWAL: 'Retraits des gains',
   POOL: 'Nouveaux livreurs indépendants disponibles',
   RATING: 'Notes basses des livreurs',
+  PAYROLL: 'Paye des livreurs (avances, contestations)',
 };
 export const KINDS_FOR = (isSA: boolean): OfficeKind[] =>
   isSA
     ? ['NEW_ORDER', 'DISPUTE', 'PAYMENT', 'COMPANY_APPLY', 'INDEPENDENT', 'WITHDRAWAL', 'RATING', 'VIDEO_VISIT']
-    : ['NEW_ORDER', 'ACCEPTED', 'DECLINED', 'CANCEL_REQUEST', 'FAILED', 'FINISHED', 'CANCELLED', 'DISPUTE', 'CREDIT_LOW', 'PAYMENT', 'REMITTANCE', 'POOL', 'AFFILIATION', 'WITHDRAWAL', 'RATING'];
+    : ['NEW_ORDER', 'ACCEPTED', 'DECLINED', 'CANCEL_REQUEST', 'FAILED', 'FINISHED', 'CANCELLED', 'DISPUTE', 'CREDIT_LOW', 'PAYMENT', 'REMITTANCE', 'POOL', 'AFFILIATION', 'WITHDRAWAL', 'RATING', 'PAYROLL'];
 
 export interface OfficePrefs {
   sound: boolean;

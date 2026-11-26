@@ -885,3 +885,4 @@ small.down { color: var(--green); }
 .day-chips button { border: 1px solid var(--separator); background: var(--card); color: var(--label); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
 .day-chips button.on { background: #FBC02D; border-color: #FBC02D; color: #1A1A1A; }
 .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.group > table { display: table; width: 100%; padding: 0 8px; }
