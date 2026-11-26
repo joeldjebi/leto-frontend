@@ -58,6 +58,7 @@ export default function Independents() {
       />
       <div className="stack">
         <RulesCard />
+        <AffiliationRulesCard />
         <div>
           <div className="toolbar">
             <div className="li-tabs"><Segmented<Filter>
@@ -81,7 +82,7 @@ export default function Independents() {
             ) : (
               <div className="table-scroll">
                 <table className="list">
-                  <thead><tr><th>Livreur</th><th>Engin</th><th>Commune</th><th>Envoyé le</th><th className="num">Solde</th><th className="num">Courses</th><th>Statut</th></tr></thead>
+                  <thead><tr><th>Livreur</th><th>Engin</th><th>Commune</th><th>Envoyé le</th><th>Entreprise</th><th className="num">Solde</th><th className="num">Courses</th><th>Statut</th></tr></thead>
                   <tbody>
                     {rows.map((r) => (
                       <tr key={r.id} className="clickable" onClick={() => setOpen(r)}>
@@ -92,6 +93,11 @@ export default function Independents() {
                         </td>
                         <td>{r.commune ?? <span className="muted">—</span>}</td>
                         <td style={{ whiteSpace: 'nowrap' }}>{r.submittedAt ? dateTime(r.submittedAt) : <span className="muted">Pas encore envoyé</span>}<span className="sub">inscrit le {date(r.createdAt)}</span></td>
+                        <td>
+                          {r.affiliatedCompanyName ?? (r.status === 'APPROVED'
+                            ? (r.legacyUntil && new Date(r.legacyUntil) > new Date() ? <span className="muted">Seul jusqu’au {date(r.legacyUntil)}</span> : <Badge color="yellow">Sans entreprise</Badge>)
+                            : <span className="muted">—</span>)}
+                        </td>
                         <td className="num">{formatMoney(Number(r.credit) || 0)}</td>
                         <td className="num">{r.completed}</td>
                         <td><StatusBadgeLI status={r.status} />{r.reviewNote && (r.status === 'REJECTED' || r.status === 'SUSPENDED') && <span className="sub">{r.reviewNote}</span>}</td>
@@ -455,5 +461,48 @@ function BalanceSection({ companyId, onChanged }: { companyId: string; onChanged
         </div>
       )}
     </div>
+  );
+}
+
+/** Rattachement aux entreprises : plafonds de leur commission, transition, gains (modifiables par le SA) */
+function AffiliationRulesCard() {
+  const toast = useToast();
+  const [cfg, setCfg] = useState<IndependentsConfig | null>(null);
+  const [form, setForm] = useState<Record<string, string>>({});
+  const [error, setError] = useState('');
+  const KEYS = ['companyMaxPct', 'companyMaxFixed', 'transitionDays', 'earningsHoldHours', 'minWithdrawal'] as const;
+  const apply = (c: IndependentsConfig) => { setCfg(c); setForm(Object.fromEntries(KEYS.map((k) => [k, String(c[k] ?? '')]))); };
+  useEffect(() => { api<IndependentsConfig>('/independents/config').then(apply).catch(() => {}); }, []);
+  if (!cfg) return null;
+  const dirty = KEYS.some((k) => form[k] !== String(cfg[k] ?? ''));
+  const valid = KEYS.every((k) => form[k] !== '' && Number.isFinite(Number(form[k])) && Number(form[k]) >= 0);
+  const save = async () => {
+    setError('');
+    try {
+      apply(await api<IndependentsConfig>('/independents/config', { method: 'PUT', body: Object.fromEntries(KEYS.map((k) => [k, Number(form[k])])) }));
+      toast('Règles du rattachement enregistrées');
+    } catch (e) {
+      setError(errText(e));
+    }
+  };
+  const end = cfg.transitionStartedAt ? new Date(new Date(cfg.transitionStartedAt).getTime() + Number(form.transitionDays || 0) * 86_400_000) : null;
+  const row = (k: (typeof KEYS)[number], title: string, hint: string, unit: string, max?: number) => (
+    <div key={k}>
+      <div className="grow"><div className="title">{title}</div><small className="muted">{hint}</small></div>
+      <input type="number" min={0} max={max} value={form[k] ?? ''} onChange={(e) => setForm({ ...form, [k]: e.target.value })} style={{ width: 96, textAlign: 'right' }} aria-label={title} />
+      <span className="muted">{unit}</span>
+    </div>
+  );
+  return (
+    <Card title="Rattachement aux entreprises" actions={<button className="btn" disabled={!dirty || !valid} onClick={save}>Enregistrer</button>}>
+      {error && <div className="alert error" style={{ margin: '0 20px 8px' }}>{error}</div>}
+      <div className="rows">
+        {row('companyMaxPct', 'Commission maximum d’une entreprise (%)', 'Une entreprise ne peut pas prendre plus sur les courses de ses livreurs indépendants', '%', 100)}
+        {row('companyMaxFixed', 'Commission fixe maximum d’une entreprise', 'Si l’entreprise choisit un montant fixe par course', 'F')}
+        {row('transitionDays', 'Période de transition', `Les livreurs validés avant le rattachement obligatoire travaillent seuls jusqu’au ${end ? date(end.toISOString()) : '—'}`, 'jours', 365)}
+        {row('earningsHoldHours', 'Délai avant retrait des gains', 'Les commissions des entreprises deviennent retirables après ce délai (temps de traiter les litiges)', 'h', 720)}
+        {row('minWithdrawal', 'Retrait minimum', 'Montant minimum d’une demande de retrait', 'F')}
+      </div>
+    </Card>
   );
 }

@@ -14,5 +14,9 @@ export function connectRealtime(auth: { token: string } | { trackToken: string }
   socket.on('countries:changed', () => { loadCountries(); window.dispatchEvent(new Event('countries:changed')); });
   // SA : nouvelle demande d'inscription d'une entreprise → liste et pastille du menu rechargées
   socket.on('companies:changed', () => { window.dispatchEvent(new Event('companies:changed')); });
+  // Livreurs indépendants rattachés, gains, retraits → pages rechargées
+  for (const ev of ['affiliations:changed', 'earnings:changed', 'withdrawals:changed']) {
+    socket.on(ev, () => window.dispatchEvent(new Event(ev === 'earnings:changed' ? 'affiliations:changed' : ev)));
+  }
   return socket;
 }

@@ -16,6 +16,8 @@ import CompanyPricing from './pages/CompanyPricing';
 import Overview from './pages/Overview';
 import Pricing from './pages/Pricing';
 import Independents from './pages/Independents';
+import CompanyIndependents from './pages/CompanyIndependents';
+import Withdrawals from './pages/Withdrawals';
 import Sounds from './pages/Sounds';
 import CancelReasons from './pages/CancelReasons';
 import Landing from './pages/Landing';
@@ -31,13 +33,13 @@ import Reactivity from './pages/Reactivity';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects' | 'reactivity';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects' | 'reactivity' | 'withdrawals';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection', reactivity: 'reactivite',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection', reactivity: 'reactivite', withdrawals: 'retraits',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -145,10 +147,18 @@ function Shell({ onLogout }: { onLogout: () => void }) {
               { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
               { r: 'clients', icon: 'people', label: 'Clients' },
             ]
-          : [{ r: 'drivers', icon: 'bike', label: 'Livreurs' }, { r: 'reactivity', icon: 'clock', label: 'Réactivité' }, { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' }],
+          : [
+              { r: 'drivers', icon: 'bike', label: 'Livreurs' },
+              { r: 'independents', icon: 'shield', label: 'Indépendants' },
+              { r: 'reactivity', icon: 'clock', label: 'Réactivité' },
+              { r: 'logbook', icon: 'book', label: 'Carnet des livreurs' },
+            ],
       },
       isSA
-        ? { section: 'Facturation', links: [{ r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true }] }
+        ? { section: 'Facturation', links: [
+            { r: 'payments', icon: 'receipt', label: 'Paiements', count: billingAlert || undefined, alert: true },
+            { r: 'withdrawals', icon: 'wallet', label: 'Retraits' },
+          ] }
         : { section: 'Compte', links: [
             { r: 'myPricing', icon: 'tag', label: 'Mes tarifs' },
             { r: 'billing', icon: 'card', label: subscriptions ? 'Crédit et abonnement' : 'Crédit', count: billingAlert || undefined, alert: true },
@@ -232,7 +242,8 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'payments' && <Payments />}
           {current === 'myPricing' && <CompanyPricing />}
           {current === 'logbook' && <Logbook />}
-          {current === 'independents' && <Independents />}
+          {current === 'independents' && (isSA ? <Independents /> : <CompanyIndependents />)}
+          {current === 'withdrawals' && <Withdrawals />}
           {current === 'sounds' && <Sounds />}
           {current === 'cancelReasons' && <CancelReasons />}
           {current === 'countries' && <Countries />}

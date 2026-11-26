@@ -101,7 +101,7 @@ export interface Delivery {
 export type CommissionType = 'PERCENT' | 'FIXED';
 export type PaymentKind = 'SUBSCRIPTION' | 'TOPUP';
 export type PaymentStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-export type CreditType = 'TOPUP' | 'COMMISSION' | 'REFUND' | 'ADJUSTMENT';
+export type CreditType = 'TOPUP' | 'COMMISSION' | 'REFUND' | 'ADJUSTMENT' | 'AFFILIATE_COMMISSION' | 'EARNINGS_TRANSFER';
 export interface MobileMoneyAccount { operator: string; number: string; name: string }
 export interface BillingConfig {
   subscriptionFee: number; commissionType: CommissionType; commissionValue: number;
@@ -135,6 +135,7 @@ export const PAYMENT_STATUS: Record<PaymentStatus, [string, string]> = {
 };
 export const CREDIT_LABEL: Record<CreditType, string> = {
   TOPUP: 'Recharge', COMMISSION: 'Commission', REFUND: 'Remboursement', ADJUSTMENT: 'Ajustement LETO',
+  AFFILIATE_COMMISSION: 'Commission de l’entreprise', EARNINGS_TRANSFER: 'Gains des indépendants transférés',
 };
 export const ruleLabel = (type: CommissionType, value: number) => (type === 'PERCENT' ? `${value} %` : formatMoney(value));
 export const date = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—');
@@ -301,13 +302,19 @@ export function downloadCsv(filename: string, rows: (string | number | null | un
 
 // ---------- Livreurs indépendants (LI) ----------
 export type IndependentStatus = 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
-export interface IndependentsConfig { registrationOpen: boolean; enabled: boolean; commissionType: CommissionType; commissionValue: number }
+export interface IndependentsConfig {
+  registrationOpen: boolean; enabled: boolean; commissionType: CommissionType; commissionValue: number;
+  /** Plafonds de la commission des entreprises sur leurs LI, transition, gains */
+  companyMaxPct: number; companyMaxFixed: number; transitionDays: number; transitionStartedAt: string | null;
+  earningsHoldHours: number; minWithdrawal: number;
+}
 export interface IndependentCounts { pending: number; approved: number; rejected: number; suspended: number; draft: number }
 export interface IndependentRow {
   id: string; status: IndependentStatus; vehicleType: Vehicle | null; vehiclePlate: string | null; commune: string | null;
   submittedAt: string | null; reviewedAt: string | null; reviewNote: string | null; createdAt: string;
   userId: string; name: string; phone: string; active: boolean; lastLocationAt: string | null;
   companyId: string; credit: number | string; completed: number;
+  affiliatedCompanyId: string | null; affiliatedCompanyName: string | null; legacyUntil: string | null;
 }
 export type IndependentDoc = 'selfieUrl' | 'docsSelfieUrl' | 'idFrontUrl' | 'idBackUrl' | 'licenseUrl' | 'registrationUrl' | 'insuranceUrl';
 export interface IndependentDossier {
@@ -382,4 +389,39 @@ export function uploadApk(file: File, version: string, onProgress: (pct: number)
     xhr.onerror = () => reject(new UserError('Envoi interrompu : vérifiez la connexion'));
     xhr.send(body);
   });
+}
+
+// ---------- Rattachement des LI aux entreprises ----------
+export interface PoolDriver {
+  id: string; name: string; selfieUrl: string | null; commune: string | null; vehicleType: Vehicle | null; legacyUntil: string | null;
+  ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; inviteId: string | null;
+}
+export interface MyIndependent {
+  id: string; userId: string; name: string; phone: string; selfieUrl: string | null; commune: string | null; vehicleType: Vehicle | null; vehiclePlate: string | null;
+  affiliatedAt: string; affCommissionType: CommissionType | null; affCommissionValue: number | null; appliedRate: number | null; credit: number;
+  ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; active: number; earned: number; pendingRate: string | null;
+}
+export interface CompanyAffiliations {
+  rate: { type: CommissionType; value: number } | null;
+  caps: { maxPct: number; maxFixed: number };
+  pool: PoolDriver[];
+  mine: MyIndependent[];
+  invites: { id: string; kind: 'JOIN'; commissionType: CommissionType; commissionValue: number; createdAt: string; profileId: string; name: string }[];
+}
+export type EarningType = 'COMMISSION' | 'REVERSAL' | 'WITHDRAWAL' | 'WITHDRAWAL_CANCELLED' | 'TRANSFER';
+export const EARNING_LABEL: Record<EarningType, string> = {
+  COMMISSION: 'Commission sur une course', REVERSAL: 'Reprise (litige donné au client)', WITHDRAWAL: 'Retrait demandé',
+  WITHDRAWAL_CANCELLED: 'Retrait refusé (montant rendu)', TRANSFER: 'Transfert vers le crédit',
+};
+export type WithdrawalStatus = 'PENDING' | 'PAID' | 'REJECTED';
+export const WITHDRAWAL_STATUS: Record<WithdrawalStatus, [string, string]> = { PENDING: ['À payer', 'yellow'], PAID: ['Payé', 'green'], REJECTED: ['Refusé', 'red'] };
+export interface Withdrawal {
+  id: string; companyId: string; amount: number; operator: string; phone: string; status: WithdrawalStatus; note: string | null;
+  proofUrl: string | null; reference: string | null; requestedBy: string | null; processedBy: string | null; createdAt: string; processedAt: string | null;
+  companyName?: string; companyPhone?: string;
+}
+export interface Earnings {
+  available: number; pending: number; earned: number; minWithdrawal: number; holdHours: number;
+  ledger: { id: string; type: EarningType; amount: number; availableAt: string; deliveryId: string | null; driverName: string | null; note: string | null; createdAt: string }[];
+  withdrawals: Withdrawal[];
 }
