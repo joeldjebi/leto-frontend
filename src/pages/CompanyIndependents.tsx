@@ -6,6 +6,7 @@ import {
 import { formatMoney, formatPhone } from '../countries';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Sheet, Stat, Switch, useToast } from '../ui';
 import { EarningsTab } from '../components/Remittances';
+import { RatingSummary } from '../components/Ratings';
 
 /**
  * Entreprise : livreurs indépendants (LI) validés par LETO à rattacher, LI rattachés,
@@ -323,6 +324,11 @@ function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndepende
                 <dt>N° de permis</dt><dd>{d.licenseNumber ?? '—'}</dd>
               </dl>
             </div>
+          </div>
+
+          <div>
+            <div className="section-title">Avis des clients</div>
+            <div className="group" style={{ padding: 14 }}><RatingSummary driverId={driver.userId} withList /></div>
           </div>
 
           {cod && (

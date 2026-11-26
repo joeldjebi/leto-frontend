@@ -867,3 +867,21 @@ small.down { color: var(--green); }
 .link-btn { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--orange); cursor: pointer; text-align: left; }
 .link-btn:hover { text-decoration: underline; }
 .li-photos .link-btn { display: inline; width: auto; aspect-ratio: auto; border: 0; border-radius: 0; background: none; overflow: visible; cursor: pointer; font-size: 11px; }
+
+/* Avis des clients sur un livreur */
+.rating-summary { display: flex; flex-direction: column; gap: 14px; align-items: stretch; }
+.rating-head { display: flex; gap: 28px; align-items: center; flex-wrap: wrap; }
+.rating-big { font-size: 34px; font-weight: 800; line-height: 1; }
+.rating-big span { font-size: 22px; color: #FBC02D; margin-left: 2px; }
+.rating-bars { display: flex; flex-direction: column; gap: 5px; width: 100%; max-width: 420px; }
+.rating-bars > div { display: grid; grid-template-columns: 28px 1fr 32px; gap: 8px; align-items: center; font-size: 12px; }
+.rating-bars .bar { height: 8px; border-radius: 4px; background: var(--fill); overflow: hidden; }
+.rating-bars .bar > div { height: 100%; border-radius: 4px; }
+.rating-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+.rating-list li { display: flex; gap: 10px; align-items: flex-start; }
+.rating-list li > span { white-space: nowrap; }
+/* Ouverture aux commandes : jours */
+.day-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.day-chips button { border: 1px solid var(--separator); background: var(--card); color: var(--label); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; font-weight: 600; cursor: pointer; }
+.day-chips button.on { background: #FBC02D; border-color: #FBC02D; color: #1A1A1A; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }

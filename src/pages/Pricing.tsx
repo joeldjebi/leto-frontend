@@ -223,6 +223,18 @@ export default function Pricing() {
               <input type="number" min={0} max={100} value={grid.failAlertPct ?? 15} onChange={(e) => setGrid({ ...grid, failAlertPct: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Seuil d’alerte du taux d’échec" /><span className="muted">%</span>
             </div>
             <div>
+              <div className="grow"><div className="title">Priorité aux livreurs bien notés</div><small className="muted">À distance proche, la course est proposée d’abord aux mieux notés (5★ ≈ 10 % plus près, 3★ ≈ 30 % plus loin). Les livreurs de moins de 5 notes ne sont pas pénalisés</small></div>
+              <Switch checked={grid.ratingPriority !== false} onChange={(on) => setGrid({ ...grid, ratingPriority: on })} label={grid.ratingPriority !== false ? 'Désactiver' : 'Activer'} />
+            </div>
+            <div>
+              <div className="grow"><div className="title">Notes prises en compte</div><small className="muted">Moyenne récente calculée sur les dernières courses notées d’un livreur (alertes, suspension automatique)</small></div>
+              <input type="number" min={5} max={200} value={grid.ratingWindow ?? 20} onChange={(e) => setGrid({ ...grid, ratingWindow: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Nombre de notes prises en compte" /><span className="muted">notes</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Alerte note basse</div><small className="muted">L’entreprise (et LETO pour un indépendant) est prévenue sous cette moyenne récente, ou après 3 notes à 1-2★ sur 10 · une alerte par semaine au plus · 0 = jamais</small></div>
+              <input type="number" min={0} max={5} step={0.1} value={grid.ratingAlertBelow ?? 3.5} onChange={(e) => setGrid({ ...grid, ratingAlertBelow: Number(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Seuil d’alerte de note" /><span className="muted">★</span>
+            </div>
+            <div>
               <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés sont toujours rapportés à l’expéditeur. Activé : il confirme avec son code. Désactivé : le livreur confirme au point de départ (position GPS vérifiée)</small></div>
               <Switch checked={grid.returnCodeEnabled} onChange={(on) => setGrid({ ...grid, returnCodeEnabled: on })} label={grid.returnCodeEnabled ? 'Désactiver' : 'Activer'} />
             </div>

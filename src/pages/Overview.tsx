@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { go, usePoolNews } from '../App';
 import { formatMoney } from '../countries';
 import { useData } from '../data';
-import { BarChart, Card, Empty, Icon, PageHeader, Segmented, Stat } from '../ui';
+import { BarChart, Card, Empty, Icon, PageHeader, Segmented, Stat, Switch, useToast } from '../ui';
+import { api, Availability, errText, OpeningHours } from '../api';
 
 type Metric = 'created' | 'volume';
 
@@ -31,6 +32,8 @@ export default function Overview() {
         subtitle={`${today}${!isSA && me.company ? ` · ${me.company.name}` : ''}`}
         actions={<button className="btn secondary" onClick={() => reload()}><Icon name="refresh" size={15} />Actualiser</button>}
       />
+
+      {!isSA && <AvailabilityCard />}
 
       {pool.count > 0 && (
         <div className="banner info">
@@ -131,5 +134,79 @@ export default function Overview() {
         </div>
       </div>
     </>
+  );
+}
+
+const DAYS: [number, string][] = [[1, 'Lun'], [2, 'Mar'], [3, 'Mer'], [4, 'Jeu'], [5, 'Ven'], [6, 'Sam'], [7, 'Dim']];
+
+/** Entreprise : ouverte ou fermée aux commandes des clients, horaires automatiques */
+function AvailabilityCard() {
+  const toast = useToast();
+  const [a, setA] = useState<Availability | null>(null);
+  const [hours, setHours] = useState<OpeningHours>({ open: '07:00', close: '21:00', days: [1, 2, 3, 4, 5, 6] });
+  const [editing, setEditing] = useState(false);
+  const load = () => api<Availability>('/companies/me/availability').then((x) => { setA(x); if (x.openingHours) setHours(x.openingHours); }).catch(() => {});
+  useEffect(() => {
+    load();
+    const t = window.setInterval(load, 60_000); // horaires : ouverture / fermeture automatiques
+    return () => window.clearInterval(t);
+  }, []);
+  if (!a) return null;
+  const save = async (body: Partial<Availability>, msg: string) => {
+    try {
+      const x = await api<Availability>('/companies/me/availability', { method: 'PUT', body });
+      setA(x);
+      if (x.openingHours) setHours(x.openingHours);
+      toast(msg);
+      setEditing(false);
+    } catch (e) {
+      toast(errText(e));
+    }
+  };
+  const fmt = (h: OpeningHours) => `${h.open} – ${h.close} · ${DAYS.filter(([d]) => h.days.includes(d)).map(([, l]) => l).join(', ')}`;
+  return (
+    <Card title="Commandes des clients" pad>
+      <div className="rows" style={{ margin: '-8px -20px' }}>
+        <div>
+          <span className="status-dot" style={{ background: a.openNow ? 'var(--green)' : 'var(--tertiary)' }} />
+          <div className="grow">
+            <div className="title">{a.openNow ? 'Ouverte aux commandes' : 'Fermée'}</div>
+            <small className="muted">{a.openNow ? 'Les clients vous voient dans l’app et peuvent vous passer commande.' : `${a.status}. Vous n’apparaissez plus dans la liste des clients ; les courses en cours continuent.`}</small>
+          </div>
+          <Switch checked={a.acceptingOrders} label={a.acceptingOrders ? 'Fermer aux commandes' : 'Ouvrir aux commandes'}
+            onChange={(v) => save({ acceptingOrders: v }, v ? 'Entreprise ouverte aux commandes' : 'Entreprise fermée aux commandes des clients')} />
+        </div>
+        <div style={{ flexWrap: 'wrap' }}>
+          <div className="grow" style={{ minWidth: 220 }}>
+            <div className="title">Horaires d’ouverture</div>
+            <small className="muted">{a.openingHours ? `Ouverture et fermeture automatiques : ${fmt(a.openingHours)}` : 'Aucun horaire : ouverte tant que l’interrupteur est activé.'}</small>
+          </div>
+          {!editing && <button className="btn secondary" onClick={() => setEditing(true)}>{a.openingHours ? 'Modifier' : 'Définir des horaires'}</button>}
+          {!editing && a.openingHours && <button className="btn plain" onClick={() => save({ openingHours: null }, 'Horaires retirés')}>Retirer</button>}
+        </div>
+        {editing && (
+          <div style={{ flexWrap: 'wrap', gap: 12 }}>
+            <label className="muted">De <input type="time" value={hours.open} onChange={(e) => setHours({ ...hours, open: e.target.value })} /></label>
+            <label className="muted">à <input type="time" value={hours.close} onChange={(e) => setHours({ ...hours, close: e.target.value })} /></label>
+            <div className="day-chips">
+              {DAYS.map(([d, l]) => (
+                <button key={d} type="button" className={hours.days.includes(d) ? 'on' : ''} aria-pressed={hours.days.includes(d)}
+                  onClick={() => setHours({ ...hours, days: hours.days.includes(d) ? hours.days.filter((x) => x !== d) : [...hours.days, d].sort() })}>{l}</button>
+              ))}
+            </div>
+            <span className="grow" />
+            <button className="btn secondary" onClick={() => setEditing(false)}>Annuler</button>
+            <button className="btn" disabled={!hours.days.length || hours.open === hours.close} onClick={() => save({ openingHours: hours }, 'Horaires enregistrés')}>Enregistrer</button>
+          </div>
+        )}
+        {(!a.openOrders || !a.liOpenOrders) && (
+          <div>
+            <small className="muted grow">
+              Réglage de LETO : {!a.openOrders && !a.liOpenOrders ? 'vos livreurs et vos livreurs indépendants' : !a.openOrders ? 'vos livreurs' : 'vos livreurs indépendants'} ne voient que les commandes passées à votre nom et celles que vous leur affectez.
+            </small>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }

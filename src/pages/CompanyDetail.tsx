@@ -114,6 +114,7 @@ export default function CompanyDetail({ id }: { id: string }) {
       </header>
 
       <CompanyBillingAlert companyId={company.id} onOpen={() => setTab('billing')} />
+      <OrderAccessCard company={company} />
 
       {/* ----- Chiffres clés ----- */}
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
@@ -297,6 +298,35 @@ function DriversTab({ drivers, deliveries }: { drivers: User[]; deliveries: Deli
 }
 
 /** Bandeau sur la fiche si l'entreprise ne peut pas travailler */
+/** SA : ses livreurs (et ses livreurs indépendants) voient-ils les commandes ouvertes ? */
+function OrderAccessCard({ company }: { company: Company }) {
+  const toast = useToast();
+  const [c, setC] = useState({ openOrders: company.openOrders !== false, liOpenOrders: company.liOpenOrders !== false });
+  const save = async (patch: Partial<typeof c>) => {
+    try {
+      const x = await api<Company>(`/companies/${company.id}/order-access`, { method: 'PUT', body: patch });
+      setC({ openOrders: x.openOrders !== false, liOpenOrders: x.liOpenOrders !== false });
+      toast('Accès aux commandes enregistré');
+    } catch (e) {
+      toast(errText(e));
+    }
+  };
+  return (
+    <Card title="Accès aux commandes ouvertes" pad>
+      <div className="rows" style={{ margin: '-8px -20px' }}>
+        <div>
+          <div className="grow"><div className="title">Ses livreurs</div><small className="muted">{c.openOrders ? 'Voient toutes les commandes ouvertes, en plus de celles passées à l’entreprise.' : 'Ne voient que les commandes passées à l’entreprise et ses affectations.'}</small></div>
+          <Switch checked={c.openOrders} onChange={(v) => save({ openOrders: v })} label="Commandes ouvertes pour ses livreurs" />
+        </div>
+        <div>
+          <div className="grow"><div className="title">Ses livreurs indépendants</div><small className="muted">{c.liOpenOrders ? 'Voient toutes les commandes ouvertes, en plus de celles passées à l’entreprise.' : 'Ne voient que les commandes passées à l’entreprise et ses affectations.'}</small></div>
+          <Switch checked={c.liOpenOrders} onChange={(v) => save({ liOpenOrders: v })} label="Commandes ouvertes pour ses livreurs indépendants" />
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function CompanyBillingAlert({ companyId, onOpen }: { companyId: string; onOpen: () => void }) {
   const { data } = useBilling(companyId);
   return data ? <div onClick={onOpen} style={{ cursor: 'pointer' }}><BillingAlert b={data} /></div> : null;

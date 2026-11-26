@@ -599,7 +599,7 @@ function AffiliationRulesCard() {
   const [cfg, setCfg] = useState<IndependentsConfig | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
-  const KEYS = ['companyMaxPct', 'companyMaxFixed', 'transitionDays', 'earningsHoldHours', 'minWithdrawal'] as const;
+  const KEYS = ['companyMaxPct', 'companyMaxFixed', 'transitionDays', 'earningsHoldHours', 'minWithdrawal', 'autoSuspendBelow'] as const;
   const apply = (c: IndependentsConfig) => { setCfg(c); setForm(Object.fromEntries(KEYS.map((k) => [k, String(c[k] ?? '')]))); };
   useEffect(() => { api<IndependentsConfig>('/independents/config').then(apply).catch(() => {}); }, []);
   if (!cfg) return null;
@@ -631,6 +631,13 @@ function AffiliationRulesCard() {
         {row('transitionDays', 'Période de transition', `Les livreurs validés avant le rattachement obligatoire travaillent seuls jusqu’au ${end ? date(end.toISOString()) : '—'}`, 'jours', 365)}
         {row('earningsHoldHours', 'Délai avant retrait des gains', 'Les commissions des entreprises deviennent retirables après ce délai (temps de traiter les litiges)', 'h', 720)}
         {row('minWithdrawal', 'Retrait minimum', 'Montant minimum d’une demande de retrait', 'F')}
+        <div>
+          <div className="grow"><div className="title">Suspension automatique (note basse)</div><small className="muted">Un livreur indépendant dont la moyenne récente passe sous le seuil est suspendu ; LETO et son entreprise sont prévenus pour examiner son cas</small></div>
+          <Switch checked={cfg.autoSuspendEnabled} label={cfg.autoSuspendEnabled ? 'Désactiver' : 'Activer'} onChange={async (v) => {
+            try { apply(await api<IndependentsConfig>('/independents/config', { method: 'PUT', body: { autoSuspendEnabled: v } })); toast(v ? 'Suspension automatique activée' : 'Suspension automatique désactivée'); } catch (e) { setError(errText(e)); }
+          }} />
+        </div>
+        {cfg.autoSuspendEnabled && row('autoSuspendBelow', 'Seuil de suspension', 'Moyenne récente (voir « Notes prises en compte » dans Tarifs et règles) en dessous de laquelle le livreur est suspendu', '★', 5)}
       </div>
     </Card>
   );

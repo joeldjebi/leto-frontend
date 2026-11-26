@@ -10,6 +10,8 @@ export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
 
 export interface Company {
   id: string; name: string; phone: string; active: boolean; createdAt: string;
+  /** Ouverte aux commandes des clients, horaires ; SA : accès de ses livreurs aux commandes ouvertes */
+  acceptingOrders?: boolean; openingHours?: OpeningHours | null; openOrders?: boolean; liOpenOrders?: boolean;
   credit: number; subscriptionEndsAt: string | null;
   /** Fin de l'essai gratuit (sans crédit ni commission) */
   trialEndsAt?: string | null;
@@ -164,6 +166,8 @@ export interface PricingGrid {
   cancelFeeEnabled: boolean; cancelFeeType: 'PERCENT' | 'FIXED'; cancelFeeValue: number; cancelFreeMinutes: number;
   returnCodeEnabled: boolean; deliveryCodeEnabled: boolean; cancelRequestAutoMin: number; orderExpiryMin: number; dispatchRadiusKm: number; busyRadiusKm: number; routeCorridorM: number; maxActiveCourses: number; standardMaxActiveCourses: number; standardMaxDetourMin: number; orderPopupSec: number; dispatchWaveSize: number; dispatchWaveSec: number; maxStops: number; absenceWaitMin: number;
   returnFeePct: number; retryFeePct: number; followUpAutoMin: number; preCallRequired: boolean; failAlertPct: number;
+  /** Notes des clients : priorité à l'attribution, fenêtre, seuil d'alerte (0 = jamais) */
+  ratingPriority: boolean; ratingWindow: number; ratingAlertBelow: number;
   multiStopDiscountPct: number; multiStopDiscountMaxPct: number; surcharges: SurchargeRules;
   updatedAt?: string | null; updatedBy?: string | null;
 }
@@ -307,6 +311,8 @@ export interface IndependentsConfig {
   /** Plafonds de la commission des entreprises sur leurs LI, transition, gains */
   companyMaxPct: number; companyMaxFixed: number; transitionDays: number; transitionStartedAt: string | null;
   earningsHoldHours: number; minWithdrawal: number;
+  /** Suspension automatique d'un LI sous ce seuil de note */
+  autoSuspendEnabled: boolean; autoSuspendBelow: number;
 }
 export interface IndependentCounts { pending: number; approved: number; rejected: number; suspended: number; draft: number; renewals: number; expired: number }
 /** Permis et assurance : validité */
@@ -430,6 +436,19 @@ export interface MyIndependent {
   docs: DocsState; renewals: number; updateRequests: number;
   /** Encaissé à la livraison, reste à verser à l'entreprise, versements à confirmer */
   cod: number; codToRemit: number; codPending: number;
+}
+/** Horaires d'ouverture d'une entreprise (1 = lundi … 7 = dimanche) */
+export interface OpeningHours { open: string; close: string; days: number[] }
+export interface Availability {
+  acceptingOrders: boolean; openingHours: OpeningHours | null; openNow: boolean; status: string;
+  openOrders: boolean; liOpenOrders: boolean;
+}
+/** Avis des clients sur un livreur */
+export interface DriverRatings {
+  avg: number | null; count: number; window: number;
+  recent: { avg: number | null; n: number; low: number };
+  distribution: number[];
+  items: { deliveryId: string; rating: number; tags: string[] | null; comment: string | null; ratedAt: string; clientName: string | null }[];
 }
 /** Nouveaux livreurs du vivier depuis la dernière visite */
 export interface PoolNews { count: number; names: string[] }

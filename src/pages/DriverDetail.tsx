@@ -1,3 +1,4 @@
+import { RatingSummary } from '../components/Ratings';
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
 import { api, dateTime, Delivery, FAILURE_LABEL, isOnline, RATING_TAG_LABEL, stars, Stop, time, Vehicle } from '../api';
@@ -239,6 +240,7 @@ export default function DriverDetail({ id }: { id: string }) {
           </Card>
         )}
         {tab === 'collections' && <CollectionsTab cod={k.cod} />}
+        {tab === 'reviews' && <Card pad><RatingSummary driverId={driver.id} /></Card>}
         {tab === 'reviews' && (
           <Card>
             {reviews.length === 0 ? <Empty icon="check">Aucun avis pour l’instant</Empty> : (
