@@ -5,7 +5,7 @@ import { Badge, Card, Empty, Field, Icon, Modal, Segmented, Stat, useToast } fro
 import { ProofThumb } from './Billing';
 
 export interface DriverCash {
-  driverId: string; earned: number; deliveries: number; cod: number; share: number; sharePercent: number;
+  driverId: string; independent?: boolean; earned: number; deliveries: number; cod: number; share: number; sharePercent: number;
   confirmed: number; pending: number; toRemit: number; today: number; week: number; month: number;
 }
 export interface Remittance {
@@ -48,15 +48,23 @@ export function EarningsTab({ driver, canManage }: { driver: User; canManage: bo
       {canManage && (
         <div className="toolbar">
           <button className="btn" onClick={() => setDialog('record')}><Icon name="plus" size={15} />Enregistrer un versement reçu</button>
-          <span className="muted">Part du livreur : {b.sharePercent} % du prix des courses</span>
+          <span className="muted">{b.independent ? 'Livreur indépendant : il garde le prix de ses courses et vous verse les paiements encaissés à la livraison' : `Part du livreur : ${b.sharePercent} % du prix des courses`}</span>
         </div>
       )}
+      {b.independent ? (
+        <div className="grid grid-stats">
+          <Stat icon="wallet" label="Encaissé à la livraison" value={formatMoney(b.cod)} foot="Montants payés par les destinataires sur ses courses pour vous" />
+          <Stat icon="check" label="Déjà versé" value={formatMoney(b.confirmed)} foot={b.pending ? `${formatMoney(b.pending)} en attente de confirmation` : 'Versements confirmés'} />
+          <Stat icon="receipt" label="Reste à verser" value={formatMoney(b.toRemit)} foot="Encaissé − déjà versé" />
+        </div>
+      ) : (
       <div className="grid grid-stats">
         <Stat icon="wallet" label="Gagné (courses terminées)" value={formatMoney(b.earned)} foot={`${b.deliveries} course(s) · aujourd’hui ${formatMoney(b.today)} · semaine ${formatMoney(b.week)} · mois ${formatMoney(b.month)}`} />
         <Stat icon="check" label={`Part du livreur (${b.sharePercent} %)`} value={formatMoney(b.share)} foot={b.sharePercent ? 'Gardée par le livreur sur ses encaissements' : 'Le livreur verse la totalité (part à 0 %)'} />
         <Stat icon="receipt" label="Reste à verser" value={formatMoney(b.toRemit)}
           foot={`Courses ${formatMoney(b.earned)} + paiements à la livraison ${formatMoney(b.cod)} − part − déjà versé ${formatMoney(b.confirmed)}${b.pending ? ` · ${formatMoney(b.pending)} en attente` : ''}`} />
       </div>
+      )}
       {pending.length > 0 && (
         <Card title={`Versements à confirmer (${pending.length})`}>
           <RemittanceTable rows={pending} onReview={canManage ? setDialog : undefined} />

@@ -428,6 +428,8 @@ export interface MyIndependent {
   affiliatedAt: string; affCommissionType: CommissionType | null; affCommissionValue: number | null; appliedRate: number | null; credit: number;
   ratingAvg: number | null; ratingCount: number; online: boolean; completed: number; active: number; earned: number; pendingRate: string | null;
   docs: DocsState; renewals: number; updateRequests: number;
+  /** Encaissé à la livraison, reste à verser à l'entreprise, versements à confirmer */
+  cod: number; codToRemit: number; codPending: number;
 }
 /** Nouveaux livreurs du vivier depuis la dernière visite */
 export interface PoolNews { count: number; names: string[] }
@@ -446,6 +448,8 @@ export interface CompanyDossier {
   views: IndependentEvent[];
 }
 export interface CompanyAffiliations {
+  /** Ses LI peuvent prendre les courses avec paiement à la livraison */
+  codAllowed: boolean;
   rate: { type: CommissionType; value: number } | null;
   caps: { maxPct: number; maxFixed: number };
   pool: PoolDriver[];

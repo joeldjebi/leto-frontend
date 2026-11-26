@@ -4,7 +4,8 @@ import {
   MyIndependent, PoolDriver, photoUrl, RENEWABLE_LABEL, RenewableDoc, ruleLabel, VEHICLE_LABEL, WITHDRAWAL_STATUS,
 } from '../api';
 import { formatMoney, formatPhone } from '../countries';
-import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Sheet, Stat, useToast } from '../ui';
+import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Sheet, Stat, Switch, useToast } from '../ui';
+import { EarningsTab } from '../components/Remittances';
 
 /**
  * Entreprise : livreurs indépendants (LI) validés par LETO à rattacher, LI rattachés,
@@ -101,9 +102,10 @@ function RateCard({ data, onSaved }: { data: CompanyAffiliations; onSaved: (d: C
         </div>
         <div>
           <small className="muted grow">
-            Un changement de taux doit être accepté par chaque livreur rattaché ; d’ici là, l’ancien taux s’applique. Les livreurs indépendants ne prennent pas de course avec paiement à la livraison.
+            Un changement de taux doit être accepté par chaque livreur rattaché ; d’ici là, l’ancien taux s’applique.
           </small>
         </div>
+        <CodRow data={data} onSaved={onSaved} />
       </div>
     </Card>
   );
@@ -123,6 +125,38 @@ function DocsSummary({ m }: { m: MyIndependent }) {
   );
 }
 
+/** Paiement à la livraison : décision de l'entreprise pour ses LI (encaissements versés à l'entreprise) */
+function CodRow({ data, onSaved }: { data: CompanyAffiliations; onSaved: (d: CompanyAffiliations) => void }) {
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
+  const owed = data.mine.reduce((a, m) => a + m.codToRemit, 0);
+  const toggle = async (allowed: boolean) => {
+    setBusy(true);
+    try {
+      onSaved(await api<CompanyAffiliations>('/affiliations/company/cod', { method: 'PUT', body: { allowed } }));
+      toast(allowed ? 'Vos livreurs indépendants peuvent prendre les courses avec paiement à la livraison' : 'Paiement à la livraison retiré pour vos livreurs indépendants');
+    } catch (e) {
+      toast(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div>
+      <div className="grow">
+        <div className="title">Paiement à la livraison</div>
+        <small className="muted">
+          {data.codAllowed
+            ? 'Vos livreurs indépendants prennent aussi les courses avec paiement à la livraison. Ils vous versent les montants encaissés, et vous les reversez aux clients comme pour vos livreurs.'
+            : 'Autorisez-le pour que vos livreurs indépendants prennent aussi ces courses : ils encaissent auprès des destinataires et vous versent les montants, vous les reversez aux clients.'}
+          {owed > 0 && <> Reste à vous verser : <strong>{formatMoney(owed)}</strong>.</>}
+        </small>
+      </div>
+      <Switch checked={data.codAllowed} label="Paiement à la livraison pour mes livreurs indépendants" onChange={(v) => !busy && toggle(v)} />
+    </div>
+  );
+}
+
 function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: () => void }) {
   const [ending, setEnding] = useState<MyIndependent | null>(null);
   const [open, setOpen] = useState<MyIndependent | null>(null);
@@ -133,7 +167,7 @@ function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
       ) : (
         <div className="table-scroll">
           <table className="list">
-            <thead><tr><th>Livreur</th><th>Engin</th><th>Documents</th><th>Commission</th><th className="num">Solde LETO</th><th className="num">Courses</th><th className="num">Gains générés</th><th /></tr></thead>
+            <thead><tr><th>Livreur</th><th>Engin</th><th>Documents</th><th>Commission</th>{(data.codAllowed || data.mine.some((m) => m.cod > 0)) && <th className="num">Encaissements à verser</th>}<th className="num">Solde LETO</th><th className="num">Courses</th><th className="num">Gains générés</th><th /></tr></thead>
             <tbody>
               {data.mine.map((m) => {
                 const pending = m.pendingRate?.split(':');
@@ -151,6 +185,9 @@ function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
                       {m.affCommissionType && m.appliedRate != null ? ruleLabel(m.affCommissionType, m.appliedRate) : '—'}
                       {pending && <span className="sub">Nouveau taux en attente : {ruleLabel(pending[0] as CommissionType, Number(pending[1]))}</span>}
                     </td>
+                    {(data.codAllowed || data.mine.some((x) => x.cod > 0)) && (
+                      <td className="num">{m.codToRemit > 0 ? <Badge color="orange">{formatMoney(m.codToRemit)}</Badge> : formatMoney(0)}{m.codPending > 0 && <span className="sub">{formatMoney(m.codPending)} à confirmer</span>}</td>
+                    )}
                     <td className="num">{Number(m.credit) < 1000 ? <Badge color="yellow">{formatMoney(Number(m.credit))}</Badge> : formatMoney(Number(m.credit))}</td>
                     <td className="num">{m.completed}{m.active > 0 && <span className="sub">{m.active} en cours</span>}</td>
                     <td className="num">{formatMoney(m.earned)}</td>
@@ -166,7 +203,7 @@ function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
         </div>
       )}
       {ending && <EndDialog driver={ending} onClose={() => setEnding(null)} onDone={onChanged} />}
-      {open && <DossierSheet driver={open} onClose={() => setOpen(null)} onChanged={onChanged} />}
+      {open && <DossierSheet driver={open} cod={data.codAllowed || open.cod > 0} onClose={() => setOpen(null)} onChanged={onChanged} />}
     </Card>
   );
 }
@@ -196,7 +233,7 @@ function Validity({ label, v }: { label: string; v: DocsState['license'] }) {
 }
 
 /** Dossier complet d'un LI rattaché : partagé quand il a accepté l'invitation, chaque ouverture est notée */
-function DossierSheet({ driver, onClose, onChanged }: { driver: MyIndependent; onClose: () => void; onChanged: () => void }) {
+function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndependent; cod: boolean; onClose: () => void; onChanged: () => void }) {
   const [d, setD] = useState<CompanyDossier | null>(null);
   const [error, setError] = useState('');
   const [zoom, setZoom] = useState<[string, string] | null>(null);
@@ -287,6 +324,13 @@ function DossierSheet({ driver, onClose, onChanged }: { driver: MyIndependent; o
               </dl>
             </div>
           </div>
+
+          {cod && (
+            <div>
+              <div className="section-title">Encaissements à la livraison</div>
+              <EarningsTab driver={{ id: driver.userId, name: driver.name, phone: driver.phone } as never} canManage />
+            </div>
+          )}
 
           {d.views.length > 0 && (
             <div>
