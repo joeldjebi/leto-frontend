@@ -56,7 +56,7 @@ export default function CompanyIndependents() {
           <Stat icon="wallet" label="Gains disponibles" value={formatMoney(earnings.available)} foot={`${formatMoney(earnings.pending)} en attente (${earnings.holdHours} h de délai)`} />
           <Stat icon="tag" label="Commission" value={data.rate ? ruleLabel(data.rate.type, data.rate.value) : '—'} foot={`par course · maximum LETO ${data.caps.maxPct} % ou ${formatMoney(data.caps.maxFixed)}`} />
         </div>
-        <RateCard data={data} onSaved={setData} />
+        <div id="li-rate"><RateCard data={data} onSaved={setData} /></div>
         <MineCard data={data} onChanged={load} />
         <PoolCard data={data} fresh={fresh} onChanged={setData} />
         <EarningsCard earnings={earnings} onChanged={setEarnings} />
@@ -429,6 +429,13 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
     .sort((a, b) => Number(fresh.has(b.id)) - Number(fresh.has(a.id)));
   const invite = async (p: PoolDriver) => {
     setError('');
+    // Pas encore de commission : on mène l'entreprise au réglage au lieu d'un bouton grisé
+    if (!data.rate) {
+      toast('Fixez d’abord votre commission sur leurs courses (en haut de la page), puis invitez ce livreur');
+      document.getElementById('li-rate')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.querySelector<HTMLInputElement>('#li-rate input[type="number"]')?.focus();
+      return;
+    }
     try {
       onChanged(await api<CompanyAffiliations>('/affiliations/invites', { method: 'POST', body: { profileId: p.id } }));
       toast(`Invitation envoyée à ${p.name}`);
@@ -447,7 +454,12 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
     <Card title={`Vivier · livreurs validés par LETO (${data.pool.length})`} actions={<Search value={q} onChange={setQ} placeholder="Nom, commune" />}>
       <small className="muted" style={{ display: 'block', margin: '0 20px 8px' }}>Le dossier complet (téléphone, pièce d’identité, permis, carte grise, assurance, photos) vous est partagé quand le livreur accepte votre invitation.</small>
       {error && <div className="alert error" style={{ margin: '0 20px 8px' }}>{error}</div>}
-      {!data.rate && <div className="alert" style={{ margin: '0 20px 8px' }}>Fixez d’abord votre commission ci-dessus pour pouvoir inviter des livreurs.</div>}
+      {!data.rate && (
+        <div className="banner warn" style={{ margin: '0 20px 8px' }}>
+          <span className="grow">Avant d’inviter un livreur, fixez la commission que vous prélèverez sur ses courses : elle figure dans l’invitation qu’il accepte.</span>
+          <button className="btn" onClick={() => { document.getElementById('li-rate')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); document.querySelector<HTMLInputElement>('#li-rate input[type="number"]')?.focus(); }}>Fixer ma commission</button>
+        </div>
+      )}
       {list.length === 0 ? (
         <Empty icon="people">Aucun livreur indépendant disponible pour le moment.</Empty>
       ) : (
@@ -467,7 +479,7 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
                     {p.inviteId ? (
                       <span style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}><Badge color="yellow">Invitation envoyée</Badge><button className="btn plain" onClick={() => cancel(p)}>Annuler</button></span>
                     ) : (
-                      <button className="btn secondary" disabled={!data.rate} onClick={() => invite(p)}>Inviter</button>
+                      <button className="btn secondary" onClick={() => invite(p)}>Inviter</button>
                     )}
                   </td>
                 </tr>

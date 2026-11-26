@@ -19,6 +19,7 @@ import Independents from './pages/Independents';
 import CompanyIndependents from './pages/CompanyIndependents';
 import Withdrawals from './pages/Withdrawals';
 import Payroll from './pages/Payroll';
+import Partners from './pages/Partners';
 import Sounds from './pages/Sounds';
 import CancelReasons from './pages/CancelReasons';
 import Landing from './pages/Landing';
@@ -34,13 +35,13 @@ import Reactivity from './pages/Reactivity';
 import { useTheme } from './theme';
 import { Avatar, Icon, Segmented, ToastProvider, LetoMark } from './ui';
 
-export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects' | 'reactivity' | 'withdrawals' | 'payroll';
+export type Route = 'overview' | 'deliveries' | 'map' | 'disputes' | 'collections' | 'companies' | 'drivers' | 'clients' | 'pricing' | 'billing' | 'payments' | 'myPricing' | 'logbook' | 'independents' | 'sounds' | 'landing' | 'cancelReasons' | 'countries' | 'videoVisits' | 'prospects' | 'reactivity' | 'withdrawals' | 'payroll' | 'partners';
 
 /** Navigation par l'adresse (#/courses…) pour garder la page au rechargement */
 const PATHS: Record<Route, string> = {
   overview: 'apercu', deliveries: 'courses', map: 'carte', disputes: 'litiges', collections: 'encaissements',
   companies: 'entreprises', drivers: 'livreurs', clients: 'clients', pricing: 'tarifs',
-  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection', reactivity: 'reactivite', withdrawals: 'retraits', payroll: 'paye',
+  billing: 'credit', payments: 'paiements', myPricing: 'mes-tarifs', logbook: 'carnet', independents: 'independants', sounds: 'sons', landing: 'landing', cancelReasons: 'motifs-annulation', countries: 'pays', videoVisits: 'visites-video', prospects: 'prospection', reactivity: 'reactivite', withdrawals: 'retraits', payroll: 'paye', partners: 'partenaires',
 };
 const fromHash = (): Route =>
   (Object.entries(PATHS).find(([, p]) => location.hash === `#/${p}` || location.hash.startsWith(`#/${p}/`))?.[0] as Route) ?? 'overview';
@@ -175,6 +176,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
       { r: 'pricing', icon: 'tag', label: 'Tarifs et règles' },
       { r: 'cancelReasons', icon: 'close', label: 'Motifs d’annulation' },
       { r: 'countries', icon: 'flag', label: 'Pays' },
+      { r: 'partners', icon: 'globe', label: 'Partenaires API' },
       { r: 'sounds', icon: 'bell', label: 'Sons' },
       { r: 'landing', icon: 'globe', label: 'Landing page' },
     ] });
@@ -248,6 +250,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
           {current === 'independents' && (isSA ? <Independents /> : <CompanyIndependents />)}
           {current === 'withdrawals' && <Withdrawals />}
           {current === 'payroll' && <Payroll />}
+          {current === 'partners' && <Partners />}
           {current === 'sounds' && <Sounds />}
           {current === 'cancelReasons' && <CancelReasons />}
           {current === 'countries' && <Countries />}
