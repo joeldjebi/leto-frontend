@@ -272,6 +272,8 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
                 {s.status === 'PENDING' && s.cancelRequestedAt && <Badge color="yellow">Annulation demandée</Badge>}
                 {s.status === 'PENDING' && (d.status === 'CANCELLED' ? <Badge>Annulé</Badge> : <Badge color={s.arrivedAt ? 'blue' : 'gray'}>{s.arrivedAt ? 'Livreur sur place' : 'À livrer'}</Badge>)}
               </div>
+              {(s.feeDue ?? 0) > 0 && <div className="muted" style={{ fontSize: 12, marginTop: 6, marginLeft: 34 }}>Livraison payée par le destinataire : {formatMoney(s.feeDue!, d.currency)}{s.status === 'DELIVERED' ? ' (encaissée)' : s.status !== 'PENDING' ? ' (due par l’expéditeur au retour)' : ''}</div>}
+              {s.paymentRequired && <div className="muted" style={{ fontSize: 12, marginTop: 6, marginLeft: 34 }}>{s.paymentConfirmedAt ? `Marchandise payée en ligne · confirmée ${new Date(s.paymentConfirmedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'Marchandise payée en ligne · confirmation du vendeur en attente'}</div>}
               {s.codAmount > 0 && (
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 8, marginLeft: 34 }}>
                   <Badge color={s.codRemittedAt ? 'green' : 'orange'}>

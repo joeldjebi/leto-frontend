@@ -53,6 +53,8 @@ export const stars = (n: number) => '★'.repeat(n) + '☆'.repeat(5 - n);
 /** Un arrêt d'une course (tournée = plusieurs arrêts) */
 export interface Stop {
   id: string; position: number; status: StopStatus;
+  /** Livraison payée par le destinataire (sa part) ; marchandise payée en ligne à confirmer */
+  feeDue?: number; paymentRequired?: boolean; paymentConfirmedAt?: string | null;
   address: string; commune: string; details: string | null; lat: number; lng: number;
   recipientName: string; recipientPhone: string; packageDescription: string | null; photoUrl: string | null;
   /** Code de livraison (visible seulement par l'expéditeur et l'entreprise) */
@@ -79,6 +81,8 @@ export interface Delivery {
   id: string; status: Status; price: number;
   /** Frais ajoutés après la commande (retours, nouvelles tentatives) : total dû = price + extraFees */
   extraFees?: number; pickupCalledAt?: string | null;
+  /** Qui paie la livraison : l'expéditeur au départ ou les destinataires à la remise */
+  feePaidBy?: 'SENDER' | 'RECIPIENT';
   /** Devise de la course (code ISO, ex. XOF) */
   currency?: string;
   pricingDetails?: { inAbidjan: boolean; surchargePct: number; surcharges: { key: string; label: string; pct: number }[]; stopDiscountPct: number } | null;
