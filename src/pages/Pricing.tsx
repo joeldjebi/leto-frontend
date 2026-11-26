@@ -170,7 +170,7 @@ export default function Pricing() {
 
         <SurchargeSettings grid={grid} setGrid={setGrid} />
 
-        <Card title="Annulations et retours" pad>
+        <Card title="Annulations, échecs et retours" pad>
           <div className="rows" style={{ margin: '0 -20px' }}>
             <div>
               <div className="grow"><div className="title">Frais de déplacement</div><small className="muted">Dus par l’expéditeur s’il annule alors que le livreur est déjà en route (récupérés par l’entreprise)</small></div>
@@ -203,7 +203,27 @@ export default function Pricing() {
               <Switch checked={grid.deliveryCodeEnabled !== false} onChange={(on) => setGrid({ ...grid, deliveryCodeEnabled: on })} label={grid.deliveryCodeEnabled !== false ? 'Désactiver' : 'Activer'} />
             </div>
             <div>
-              <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés (absence, refus, annulation après récupération) sont rapportés à l’expéditeur, qui confirme avec un code</small></div>
+              <div className="grow"><div className="title">Appel avant de prendre la route</div><small className="muted">Le livreur doit appeler chaque destinataire (depuis l’app) avant de partir avec les colis, pour confirmer qu’il est disponible</small></div>
+              <Switch checked={grid.preCallRequired !== false} onChange={(on) => setGrid({ ...grid, preCallRequired: on })} label={grid.preCallRequired !== false ? 'Désactiver' : 'Activer'} />
+            </div>
+            <div>
+              <div className="grow"><div className="title">Choix après un échec</div><small className="muted">L’expéditeur choisit une nouvelle tentative ou le retour du colis ; sans réponse, le colis lui est rapporté après ce délai</small></div>
+              <input type="number" min={1} max={120} value={grid.followUpAutoMin ?? 10} onChange={(e) => setGrid({ ...grid, followUpAutoMin: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Délai de choix après un échec" /><span className="muted">min</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Nouvelle tentative</div><small className="muted">Prix du 2e passage, en % du prix de l’arrêt (70 % = 30 % de réduction). Une seule nouvelle tentative par colis</small></div>
+              <input type="number" min={0} max={100} step={5} value={grid.retryFeePct ?? 70} onChange={(e) => setGrid({ ...grid, retryFeePct: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Prix de la nouvelle tentative en %" /><span className="muted">%</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Retour à l’expéditeur</div><small className="muted">Colis non livré ou annulé après la récupération : retour facturé en % du prix de l’arrêt. Annulé si un litige est donné à l’expéditeur</small></div>
+              <input type="number" min={0} max={100} step={5} value={grid.returnFeePct ?? 50} onChange={(e) => setGrid({ ...grid, returnFeePct: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Frais de retour en %" /><span className="muted">%</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Alerte taux d’échec d’un livreur</div><small className="muted">Alerte au back-office quand un livreur dépasse ce taux d’échec sur 7 jours (5 livraisons et 3 échecs minimum) · 0 = jamais</small></div>
+              <input type="number" min={0} max={100} value={grid.failAlertPct ?? 15} onChange={(e) => setGrid({ ...grid, failAlertPct: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Seuil d’alerte du taux d’échec" /><span className="muted">%</span>
+            </div>
+            <div>
+              <div className="grow"><div className="title">Code de retour</div><small className="muted">Les colis non livrés sont toujours rapportés à l’expéditeur. Activé : il confirme avec son code. Désactivé : le livreur confirme au point de départ (position GPS vérifiée)</small></div>
               <Switch checked={grid.returnCodeEnabled} onChange={(on) => setGrid({ ...grid, returnCodeEnabled: on })} label={grid.returnCodeEnabled ? 'Désactiver' : 'Activer'} />
             </div>
           </div>

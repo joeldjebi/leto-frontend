@@ -57,17 +57,26 @@ export interface Stop {
   confirmationCode?: string;
   codAmount: number; codRemittedAt: string | null;
   arrivedAt: string | null; deliveredAt: string | null;
-  failedAt: string | null; failureReason: 'ABSENT' | 'REFUSED' | null; failurePhotoUrl: string | null;
+  failedAt: string | null; failureReason: FailureReason | null; failurePhotoUrl: string | null;
   failureNote: string | null; failureLat: number | null; failureLng: number | null;
   disputedAt: string | null; disputeNote: string | null;
   disputeDecision: 'UPHELD' | 'REJECTED' | null; disputeResolutionNote: string | null;
   disputeResolvedBy: string | null; disputeResolvedAt: string | null;
   cancelledAt: string | null; cancelledBy: string | null; cancelReason: string | null;
   cancelRequestedAt: string | null; cancelRequestNote: string | null;
+  /** Appels du livreur (obligatoires avant de partir), aide demandée sur place */
+  calledAt: string | null; callCount: number;
+  helpRequestedAt: string | null; helpAnswer: string | null; waitUntil: string | null;
+  /** Passage n° (2 = nouvelle tentative), suite donnée à l'échec, frais de l'arrêt */
+  attempt: number; pastAttempts: { failedAt: string; reason: FailureReason; photoUrl: string | null; note: string | null; address: string }[] | null;
+  followUp: 'DECIDING' | 'RETRY' | 'RETURN' | null; followUpDeadline: string | null; followUpBy: string | null;
+  returnFee: number; retryFee: number;
 }
 
 export interface Delivery {
   id: string; status: Status; price: number;
+  /** Frais ajoutés après la commande (retours, nouvelles tentatives) : total dû = price + extraFees */
+  extraFees?: number; pickupCalledAt?: string | null;
   /** Devise de la course (code ISO, ex. XOF) */
   currency?: string;
   pricingDetails?: { inAbidjan: boolean; surchargePct: number; surcharges: { key: string; label: string; pct: number }[]; stopDiscountPct: number } | null;
@@ -153,6 +162,7 @@ export interface PricingGrid {
   codEnabled: boolean; codFee: number; extraStopFee: number;
   cancelFeeEnabled: boolean; cancelFeeType: 'PERCENT' | 'FIXED'; cancelFeeValue: number; cancelFreeMinutes: number;
   returnCodeEnabled: boolean; deliveryCodeEnabled: boolean; cancelRequestAutoMin: number; orderExpiryMin: number; dispatchRadiusKm: number; busyRadiusKm: number; routeCorridorM: number; maxActiveCourses: number; standardMaxActiveCourses: number; standardMaxDetourMin: number; orderPopupSec: number; dispatchWaveSize: number; dispatchWaveSec: number; maxStops: number; absenceWaitMin: number;
+  returnFeePct: number; retryFeePct: number; followUpAutoMin: number; preCallRequired: boolean; failAlertPct: number;
   multiStopDiscountPct: number; multiStopDiscountMaxPct: number; surcharges: SurchargeRules;
   updatedAt?: string | null; updatedBy?: string | null;
 }
@@ -198,7 +208,12 @@ export const STATUS_COLOR: Record<Status, string> = {
 };
 export const VEHICLE_LABEL: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
 export const SPEED_LABEL: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: 'Dans 2 h' };
-export const FAILURE_LABEL = { ABSENT: 'Destinataire absent', REFUSED: 'Colis refusé' } as const;
+export type FailureReason = 'ABSENT' | 'REFUSED' | 'WRONG_ADDRESS' | 'NO_MONEY' | 'DAMAGED' | 'UNSAFE';
+export const FAILURE_LABEL: Record<FailureReason, string> = {
+  ABSENT: 'Destinataire absent', REFUSED: 'Colis refusé', WRONG_ADDRESS: 'Adresse introuvable',
+  NO_MONEY: 'Pas l’argent pour payer', DAMAGED: 'Colis abîmé', UNSAFE: 'Lieu dangereux ou inaccessible',
+};
+export const FOLLOW_UP_LABEL = { DECIDING: 'Choix de l’expéditeur en attente', RETRY: 'Nouvelle tentative', RETURN: 'Colis rapporté' } as const;
 export const ROLE_LABEL: Record<Role, string> = { CLIENT: 'Client', DRIVER: 'Livreur', COMPANY: 'Gérant', SUPER_ADMIN: 'Super Admin' };
 
 // ---------- Formatage ----------

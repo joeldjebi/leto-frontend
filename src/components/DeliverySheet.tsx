@@ -4,7 +4,7 @@ import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-lea
 import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
-  api, codTotal, dateTime, Delivery, FAILURE_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
+  api, codTotal, dateTime, Delivery, FAILURE_LABEL, FOLLOW_UP_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
   RATING_TAG_LABEL, stars,errText } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
@@ -138,9 +138,14 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       </div>
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{formatMoney(d.price, d.currency)}</span>
+        <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{formatMoney(d.price + (d.extraFees ?? 0), d.currency)}</span>
         <span className="muted">Espèces · {VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
       </div>
+      {(d.extraFees ?? 0) > 0 && (
+        <small className="muted" style={{ marginTop: -8 }}>
+          Course {formatMoney(d.price, d.currency)} + {formatMoney(d.extraFees ?? 0, d.currency)} de retour ou nouvelle tentative
+        </small>
+      )}
       {d.pricingDetails && (d.pricingDetails.surcharges.length > 0 || d.pricingDetails.stopDiscountPct > 0 || d.pricingDetails.inAbidjan) && (
         <div className="price-factors">
           {d.pricingDetails.inAbidjan && <span className="pf">Grand Abidjan</span>}
@@ -260,6 +265,9 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
                 </div>
                 {s.status === 'DELIVERED' && <Badge color="green">Livré {time(s.deliveredAt)}</Badge>}
                 {s.status === 'FAILED' && <Badge color="red">{FAILURE_LABEL[s.failureReason!]}</Badge>}
+                {s.status === 'FAILED' && s.followUp && <Badge color={s.followUp === 'DECIDING' ? 'yellow' : 'gray'}>{FOLLOW_UP_LABEL[s.followUp]}</Badge>}
+                {s.status === 'PENDING' && (s.attempt ?? 1) > 1 && <Badge color="orange">2e passage</Badge>}
+                {s.status === 'PENDING' && s.helpRequestedAt && !s.helpAnswer && <Badge color="yellow">Injoignable · expéditeur prévenu</Badge>}
                 {s.status === 'CANCELLED' && <Badge>Annulé · {s.cancelledBy ?? 'Client'}</Badge>}
                 {s.status === 'PENDING' && s.cancelRequestedAt && <Badge color="yellow">Annulation demandée</Badge>}
                 {s.status === 'PENDING' && (d.status === 'CANCELLED' ? <Badge>Annulé</Badge> : <Badge color={s.arrivedAt ? 'blue' : 'gray'}>{s.arrivedAt ? 'Livreur sur place' : 'À livrer'}</Badge>)}
@@ -272,6 +280,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
                   {!isSA && s.status === 'DELIVERED' && !s.codRemittedAt && <button className="btn plain" onClick={() => remit(s)}>Marquer reversé</button>}
                 </div>
               )}
+              <StopTrail stop={s} currency={d.currency} />
               {s.status === 'FAILED' && <FailureProof stop={s} onResolve={() => setResolveStop(s)} />}
             </div>
           ))}
@@ -432,4 +441,17 @@ function CancelDialog({ delivery, onClose }: { delivery: Delivery; onClose: () =
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );
+}
+
+/** Appels du livreur, aide demandée sur place, tentative précédente, frais de l'arrêt */
+function StopTrail({ stop: s, currency }: { stop: Stop; currency?: string }) {
+  const parts: string[] = [];
+  if (s.callCount) parts.push(`${s.callCount} appel${s.callCount > 1 ? 's' : ''} du livreur${s.calledAt ? ` (dernier ${time(s.calledAt)})` : ''}`);
+  if (s.helpAnswer) parts.push(`Réponse de l’expéditeur : ${s.helpAnswer}`);
+  for (const a of s.pastAttempts ?? []) parts.push(`1er passage ${time(a.failedAt)} : ${FAILURE_LABEL[a.reason]}${a.note ? ` (« ${a.note} »)` : ''}`);
+  if (s.followUpBy && s.followUp && s.followUp !== 'DECIDING') parts.push(`${FOLLOW_UP_LABEL[s.followUp]} · ${s.followUpBy}`);
+  if (s.retryFee > 0) parts.push(`Nouvelle tentative : ${formatMoney(s.retryFee, currency)}`);
+  if (s.returnFee > 0) parts.push(`Retour : ${formatMoney(s.returnFee, currency)}`);
+  if (!parts.length) return null;
+  return <small className="muted" style={{ display: 'block', marginTop: 6, marginLeft: 34 }}>{parts.join(' · ')}</small>;
 }
