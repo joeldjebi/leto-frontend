@@ -332,7 +332,8 @@ export interface UpdateRequest { id: string; field: RenewableDoc; label: string;
 export type IndependentAction =
   | 'CREATED' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'REACTIVATED'
   | 'AFFILIATED' | 'UNAFFILIATED' | 'VIEWED' | 'UPDATE_REQUESTED'
-  | 'RENEWAL_SENT' | 'RENEWAL_APPROVED' | 'RENEWAL_REJECTED' | 'EXPIRY_SET' | 'EXPIRED';
+  | 'RENEWAL_SENT' | 'RENEWAL_APPROVED' | 'RENEWAL_REJECTED' | 'EXPIRY_SET' | 'EXPIRED'
+  | 'TRANSITION_GRANTED' | 'PROPOSED';
 export interface IndependentEvent { at: string; action: IndependentAction; by?: string; note?: string }
 export interface IndependentRow {
   id: string; status: IndependentStatus; vehicleType: Vehicle | null; vehiclePlate: string | null; commune: string | null;
@@ -353,6 +354,7 @@ export interface IndependentDossier {
   createdAt: string;
   history: IndependentEvent[];
   licenseExpiresOn: string | null; insuranceExpiresOn: string | null;
+  affiliatedCompanyId: string | null; legacyUntil: string | null;
   renewals: Renewal[]; updateRequests: UpdateRequest[]; docs: DocsState;
   user: User;
   links: Partial<Record<IndependentDoc, string | null>>;

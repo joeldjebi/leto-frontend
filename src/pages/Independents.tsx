@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, EXPIRY_BADGE, ExpiryState, IndependentCounts, Renewal, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,errText } from '../api';
 import { formatMoney, formatPhone, currencySymbol } from '../countries';
+import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, Search, Segmented, Sheet, Switch, useToast } from '../ui';
 
 type Filter = IndependentStatus | 'ALL';
@@ -28,6 +29,8 @@ const HISTORY: Record<IndependentDossier['history'][number]['action'], [string, 
   RENEWAL_REJECTED: ['Document renouvelé refusé', '#ff3b30'],
   EXPIRY_SET: ['Dates de validité modifiées', '#8e8e93'],
   EXPIRED: ['Document expiré', '#ff3b30'],
+  TRANSITION_GRANTED: ['Période de transition accordée', '#34c759'],
+  PROPOSED: ['Proposé à une entreprise par LETO', '#F28C1A'],
 };
 /** Validité d'une date (AAAA-MM-JJ) : même règle que le serveur (30 jours) */
 const stateOf = (d: string | null): ExpiryState => {
@@ -223,6 +226,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
   const [motif, setMotif] = useState<'reject' | 'suspend' | null>(null);
   const [zoom, setZoom] = useState<[string, string] | null>(null);
   const [busy, setBusy] = useState(false);
+  const [proposing, setProposing] = useState(false);
   const [broken, setBroken] = useState<Partial<Record<IndependentDoc | 'avatar', boolean>>>({});
 
   // Les liens des pièces d'identité expirent (15 min) : on recharge le dossier à chaque ouverture
@@ -290,6 +294,19 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
                 {d.status === 'APPROVED' && 'Suspendu, il ne reçoit plus de courses.'}
                 {d.status === 'SUSPENDED' && 'Réactivé, il reçoit de nouveau des courses.'}
               </small>
+            </div>
+          )}
+          {d.status === 'APPROVED' && !d.affiliatedCompanyId && (
+            <div className="li-actions">
+              <small className="muted grow">
+                {d.legacyUntil && new Date(d.legacyUntil) > new Date()
+                  ? `Sans entreprise : travaille seul jusqu’au ${date(d.legacyUntil)} (période de transition).`
+                  : 'Sans entreprise : il ne reçoit aucune course tant qu’il n’est pas rattaché.'}
+              </small>
+              {!(d.legacyUntil && new Date(d.legacyUntil) > new Date()) && (
+                <button className="btn secondary" disabled={busy} onClick={() => act('grant-transition', `${name} peut travailler seul jusqu’à la fin de la transition`)}>Accorder la période de transition</button>
+              )}
+              <button className="btn" disabled={busy} onClick={() => setProposing(true)}>Proposer à une entreprise</button>
             </div>
           )}
           {d.status === 'DRAFT' && <div className="alert info">Dossier en cours de remplissage dans l’app : il n’a pas encore été envoyé.</div>}
@@ -401,6 +418,10 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
         </>
       )}
 
+      {proposing && d && <ProposeDialog profileId={d.id} name={name} onClose={() => setProposing(false)} onDone={() => {
+        setProposing(false);
+        api<IndependentDossier>(`/independents/${row.id}`).then(setD).catch(() => {});
+      }} />}
       {motif && (
         <MotifDialog
           kind={motif}
@@ -500,6 +521,36 @@ function ExpiryEditor({ d, onSaved }: { d: IndependentDossier; onSaved: (x: Inde
       {error && <div className="alert error">{error}</div>}
       <small className="muted">Rappel au livreur et à son entreprise 30 jours avant ; expiré, il ne reçoit plus de courses jusqu’au renouvellement validé.</small>
     </div>
+  );
+}
+
+/** SA : propose le livreur à une entreprise ; il reçoit son invitation et l'accepte lui-même */
+function ProposeDialog({ profileId, name, onClose, onDone }: { profileId: string; name: string; onClose: () => void; onDone: () => void }) {
+  const toast = useToast();
+  const { companies } = useData();
+  const list = companies.filter((c) => c.active && (c.status ?? 'APPROVED') === 'APPROVED');
+  const [companyId, setCompanyId] = useState(list[0]?.id ?? '');
+  const [error, setError] = useState('');
+  const submit = async () => {
+    setError('');
+    try {
+      await api('/affiliations/propose', { method: 'POST', body: { profileId, companyId } });
+      toast(`Invitation envoyée à ${name} · l’entreprise est prévenue`);
+      onDone();
+    } catch (e) {
+      setError(errText(e));
+    }
+  };
+  return (
+    <Modal title={`Proposer ${name} à une entreprise`} subtitle="Le livreur reçoit l’invitation de l’entreprise (avec sa commission) et l’accepte lui-même : son dossier n’est partagé qu’avec son accord." onClose={onClose}
+      footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" disabled={!companyId} onClick={submit}>Envoyer l’invitation</button></>}>
+      <Field label="Entreprise">
+        <select value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+          {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </Field>
+      {error && <div className="alert error">{error}</div>}
+    </Modal>
   );
 }
 
