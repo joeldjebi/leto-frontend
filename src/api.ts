@@ -16,7 +16,7 @@ export interface Company {
   /** Fin de l'essai gratuit (sans crédit ni commission) */
   trialEndsAt?: string | null;
   commissionType: CommissionType | null; commissionValue: number | null;
-  /** Inscription en ligne : en attente, validée ou refusée par LETO */
+  /** Inscription en ligne : en attente, validée ou refusée par VITE */
   status?: CompanyStatus;
   application?: CompanyApplication | null;
   reviewNote?: string | null; reviewedAt?: string | null;
@@ -140,7 +140,7 @@ export const PAYMENT_STATUS: Record<PaymentStatus, [string, string]> = {
   PENDING: ['À vérifier', 'yellow'], APPROVED: ['Validé', 'green'], REJECTED: ['Refusé', 'red'],
 };
 export const CREDIT_LABEL: Record<CreditType, string> = {
-  TOPUP: 'Recharge', COMMISSION: 'Commission', REFUND: 'Remboursement', ADJUSTMENT: 'Ajustement LETO',
+  TOPUP: 'Recharge', COMMISSION: 'Commission', REFUND: 'Remboursement', ADJUSTMENT: 'Ajustement VITE',
   AFFILIATE_COMMISSION: 'Commission de l’entreprise', EARNINGS_TRANSFER: 'Gains des indépendants transférés',
 };
 export const ruleLabel = (type: CommissionType, value: number) => (type === 'PERCENT' ? `${value} %` : formatMoney(value));
@@ -432,7 +432,7 @@ export interface PoolDriver {
   vehicleBrand: string | null; plate: string | null;
   /** Validé depuis la dernière visite du vivier */
   isNew: boolean;
-  /** Vérifié par LETO ; permis et assurance avec leur validité (null = absent) */
+  /** Vérifié par VITE ; permis et assurance avec leur validité (null = absent) */
   verified: { identity: boolean; license: ExpiryState | null; registration: boolean; insurance: ExpiryState | null };
 }
 export interface MyIndependent {

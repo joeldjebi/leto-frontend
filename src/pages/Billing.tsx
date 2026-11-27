@@ -16,7 +16,7 @@ export default function Billing() {
         title={b.subscriptionRequired ? 'Crédit et abonnement' : 'Crédit'}
         subtitle={b.inTrial
           ? `Essai gratuit jusqu’au ${new Date(b.trialEndsAt!).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} : aucune commission. Ensuite : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit.`
-          : `Commission LETO : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit à la fin de la tournée.`}
+          : `Commission VITE : ${b.rule.label} du prix de chaque tournée, prélevée sur votre crédit à la fin de la tournée.`}
         actions={<>
           {b.subscriptionRequired && <button className="btn secondary" onClick={() => setPay('SUBSCRIPTION')}><Icon name="calendar" size={15} />{b.subscriptionEndsAt && b.subscribed ? 'Renouveler l’abonnement' : 'Payer l’abonnement'}</button>}
           <button className="btn" onClick={() => setPay('TOPUP')}><Icon name="plus" size={15} />Recharger</button>
@@ -24,7 +24,7 @@ export default function Billing() {
       />
       <BillingAlert b={b} onPay={setPay} />
       {pending.length > 0 && (
-        <div className="banner warn"><Icon name="clock" size={18} /><span className="grow">{pending.length} paiement(s) en cours de vérification par LETO.</span></div>
+        <div className="banner warn"><Icon name="clock" size={18} /><span className="grow">{pending.length} paiement(s) en cours de vérification par VITE.</span></div>
       )}
       <div className="stack">
         <BillingStats b={b} onTopup={() => setPay('TOPUP')} />

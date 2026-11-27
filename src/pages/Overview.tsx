@@ -40,7 +40,7 @@ export default function Overview() {
           <Icon name="shield" size={18} />
           <span className="grow">
             <strong>{pool.count === 1 ? 'Nouveau livreur indépendant' : `${pool.count} nouveaux livreurs indépendants`}</strong> dans le vivier depuis votre dernière visite
-            {pool.names.length > 0 && ` : ${pool.names.join(', ')}${pool.count > pool.names.length ? ` et ${pool.count - pool.names.length} autre(s)` : ''}`}. Validés par LETO, prêts à être invités.
+            {pool.names.length > 0 && ` : ${pool.names.join(', ')}${pool.count > pool.names.length ? ` et ${pool.count - pool.names.length} autre(s)` : ''}`}. Validés par VITE, prêts à être invités.
           </span>
           <button className="btn" onClick={() => go('independents')}>Voir le vivier</button>
         </div>
@@ -202,7 +202,7 @@ function AvailabilityCard() {
         {(!a.openOrders || !a.liOpenOrders) && (
           <div>
             <small className="muted grow">
-              Réglage de LETO : {!a.openOrders && !a.liOpenOrders ? 'vos livreurs et vos livreurs indépendants' : !a.openOrders ? 'vos livreurs' : 'vos livreurs indépendants'} ne voient que les commandes passées à votre nom et celles que vous leur affectez.
+              Réglage de VITE : {!a.openOrders && !a.liOpenOrders ? 'vos livreurs et vos livreurs indépendants' : !a.openOrders ? 'vos livreurs' : 'vos livreurs indépendants'} ne voient que les commandes passées à votre nom et celles que vous leur affectez.
             </small>
           </div>
         )}

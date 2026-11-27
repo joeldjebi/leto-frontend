@@ -231,7 +231,7 @@ export default function Pricing() {
               <input type="number" min={5} max={200} value={grid.ratingWindow ?? 20} onChange={(e) => setGrid({ ...grid, ratingWindow: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Nombre de notes prises en compte" /><span className="muted">notes</span>
             </div>
             <div>
-              <div className="grow"><div className="title">Alerte note basse</div><small className="muted">L’entreprise (et LETO pour un indépendant) est prévenue sous cette moyenne récente, ou après 3 notes à 1-2★ sur 10 · une alerte par semaine au plus · 0 = jamais</small></div>
+              <div className="grow"><div className="title">Alerte note basse</div><small className="muted">L’entreprise (et VITE pour un indépendant) est prévenue sous cette moyenne récente, ou après 3 notes à 1-2★ sur 10 · une alerte par semaine au plus · 0 = jamais</small></div>
               <input type="number" min={0} max={5} step={0.1} value={grid.ratingAlertBelow ?? 3.5} onChange={(e) => setGrid({ ...grid, ratingAlertBelow: Number(e.target.value) })} style={{ width: 96, textAlign: 'right' }} aria-label="Seuil d’alerte de note" /><span className="muted">★</span>
             </div>
             <div>

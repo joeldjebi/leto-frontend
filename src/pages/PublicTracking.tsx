@@ -106,7 +106,7 @@ export default function PublicTracking({ token }: { token: string }) {
   if (!t) {
     return (
       <div className="track-page">
-        <div className="track-card"><div className="brand-mini"><span className="app-icon"><Icon name="bike" size={18} /></span><strong>LETO</strong></div>
+        <div className="track-card"><div className="brand-mini"><span className="app-icon"><Icon name="bike" size={18} /></span><strong>VITE</strong></div>
           <p className="muted">{error || 'Chargement du suivi…'}</p></div>
       </div>
     );
@@ -164,7 +164,7 @@ export default function PublicTracking({ token }: { token: string }) {
       </div>
 
       <div className="track-card">
-        <div className="brand-mini"><span className="app-icon"><Icon name="bike" size={18} /></span><strong>LETO</strong><span className="muted">Suivi de livraison</span></div>
+        <div className="brand-mini"><span className="app-icon"><Icon name="bike" size={18} /></span><strong>VITE</strong><span className="muted">Suivi de livraison</span></div>
         <h1>{TITLE[t.status]}</h1>
         {t.etaMin != null && <div className="track-eta">Arrivée estimée dans <strong>{t.etaMin} min</strong>{t.status === 'ACCEPTED' ? ' au point de départ' : ''}</div>}
         {t.status !== 'CANCELLED' && (

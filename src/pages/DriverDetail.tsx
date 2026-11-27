@@ -175,7 +175,7 @@ export default function DriverDetail({ id }: { id: string }) {
       <div className="grid grid-stats" style={{ marginBottom: 16 }}>
         <Stat icon="box" label="Courses" value={k.total} foot={`${k.done} terminée(s) · ${k.cancelled} annulée(s) · ${k.clients} client(s)`} />
         <Stat icon="check" label="Taux de réussite" value={k.successRate == null ? '—' : `${k.successRate} %`} foot={`${k.delivered} colis livré(s) · ${k.failed.length} échec(s)`} onClick={() => setTab('stops')} />
-        <Stat icon="wallet" label="Volume des courses" value={formatMoney(k.volume)} foot={`${formatMoney(k.volumeWeek)} sur 7 jours · ${formatMoney(k.commissions)} de commission LETO`} />
+        <Stat icon="wallet" label="Volume des courses" value={formatMoney(k.volume)} foot={`${formatMoney(k.volumeWeek)} sur 7 jours · ${formatMoney(k.commissions)} de commission VITE`} />
         <Stat icon="map" label="Distance parcourue" value={`${k.km.toLocaleString('fr-FR')} km`} foot={k.avgMin != null ? `${k.avgMin} min en moyenne par tournée` : 'Aucune tournée terminée'} />
         <Stat icon="wallet" label="Espèces à reverser" value={formatMoney(k.codHeld)} foot={`${k.cod.length} paiement(s) à la livraison encaissé(s)`} onClick={() => setTab('collections')} />
         <Stat icon="alert" label="Litiges" value={k.disputes.length} foot={`${k.disputesLost} donné(s) au client · ${k.disputes.length - k.disputesLost} au livreur ou en attente`} onClick={() => setTab('disputes')} />

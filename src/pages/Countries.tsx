@@ -43,7 +43,7 @@ function validate(f: Form): Partial<Record<keyof Form, string>> {
 const sample = (symbol: string, decimals: number) =>
   `${(1500).toLocaleString('fr-FR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} ${symbol || '?'}`;
 
-/** SA : pays (indicatifs, format des numéros, devises) et pays où LETO livre */
+/** SA : pays (indicatifs, format des numéros, devises) et pays où VITE livre */
 export default function Countries() {
   const toast = useToast();
   const [list, setList] = useState<Country[] | null>(null);
@@ -87,7 +87,7 @@ export default function Countries() {
         <div className="cty-summary">
           <span className="cty-flag big" aria-hidden="true">{operating.flag}</span>
           <div className="grow">
-            <strong>LETO livre en {operating.name}</strong>
+            <strong>VITE livre en {operating.name}</strong>
             <small className="muted">Prix, commissions et montants en {operating.currencyName || operating.currencyCode} ({operating.currencyCode} · {operating.currencySymbol})</small>
           </div>
           <small className="muted cty-hint"><Icon name="phone" size={13} />Seuls les pays actifs ({activeCount}) apparaissent dans les sélecteurs de téléphone.</small>
@@ -120,12 +120,12 @@ export default function Countries() {
                     </td>
                     <td className="cty-operating" data-label="Livraison">
                       {c.operating
-                        ? <Badge color="accent"><Icon name="check" size={12} />Pays où LETO livre</Badge>
+                        ? <Badge color="accent"><Icon name="check" size={12} />Pays où VITE livre</Badge>
                         : <button className="btn plain" onClick={() => setOperate(c)}>Livrer ici</button>}
                     </td>
                     <td className="cty-actions">
                       <button className="btn secondary icon-btn" onClick={() => setEditing(c)} title="Modifier" aria-label={`Modifier ${c.name}`}><Icon name="edit" size={15} /></button>
-                      <button className="btn danger icon-btn" onClick={() => setRemove(c)} disabled={c.operating} title={c.operating ? 'Le pays où LETO livre ne peut pas être supprimé' : 'Supprimer'} aria-label={`Supprimer ${c.name}`}><Icon name="trash" size={15} /></button>
+                      <button className="btn danger icon-btn" onClick={() => setRemove(c)} disabled={c.operating} title={c.operating ? 'Le pays où VITE livre ne peut pas être supprimé' : 'Supprimer'} aria-label={`Supprimer ${c.name}`}><Icon name="trash" size={15} /></button>
                     </td>
                   </tr>
                 ))}
@@ -143,7 +143,7 @@ export default function Countries() {
 
       {operate && (
         <Modal
-          title={`LETO livre en ${operate.name} ?`}
+          title={`VITE livre en ${operate.name} ?`}
           subtitle={<>
             Les prix, commissions, abonnements et montants du back-office et des apps passeront en <strong>{operate.currencyName || operate.currencyCode}</strong> ({sample(operate.currencySymbol, operate.currencyDecimals)}).
             {' '}Les numéros saisis sans indicatif seront lus comme des numéros de ce pays. Les courses déjà créées gardent leur devise.
@@ -154,7 +154,7 @@ export default function Countries() {
             <button className="btn secondary" onClick={() => setOperate(null)} disabled={busy}>Annuler</button>
             <button className="btn" disabled={busy} onClick={async () => {
               setBusy(true);
-              await patch(operate, operate.active ? { operating: true } : { operating: true, active: true }, `LETO livre désormais en ${operate.name}`);
+              await patch(operate, operate.active ? { operating: true } : { operating: true, active: true }, `VITE livre désormais en ${operate.name}`);
               setBusy(false);
               setOperate(null);
             }}>Confirmer</button>

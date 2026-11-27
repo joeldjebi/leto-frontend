@@ -216,7 +216,7 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
                 <span className="nd-num">{s.position + 1}</span>
                 <div className="grow"><strong>{s.recipientName}</strong><small className="muted">{formatPhone(s.recipientPhone)} · {s.address}</small></div>
                 <span className="nd-code-value">{s.confirmationCode}</span>
-                <button className="btn secondary" onClick={() => copy(`Bonjour ${s.recipientName}, votre colis arrive avec LETO.\nCode de livraison à donner au livreur : ${s.confirmationCode}${url ? `\nSuivre la livraison : ${url}` : ''}`, 'Message')}>Copier le message</button>
+                <button className="btn secondary" onClick={() => copy(`Bonjour ${s.recipientName}, votre colis arrive avec VITE.\nCode de livraison à donner au livreur : ${s.confirmationCode}${url ? `\nSuivre la livraison : ${url}` : ''}`, 'Message')}>Copier le message</button>
               </div>
             ))}
           </div>

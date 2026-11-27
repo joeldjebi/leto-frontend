@@ -6,7 +6,7 @@ const EVENTS: SoundEvent[] = ['NEW_ORDER', 'ASSIGNED', 'CANCELLED', 'UPDATED', '
 const RECIPIENTS: Record<SoundEvent, string> = {
   NEW_ORDER: 'Livreurs en ligne à moins de 10 km',
   ASSIGNED: 'Le livreur affecté (et proposition acceptée)',
-  CANCELLED: 'Le livreur (et le client si LETO annule)',
+  CANCELLED: 'Le livreur (et le client si VITE annule)',
   UPDATED: 'Le livreur',
   CLIENT_UPDATE: 'Le client (livreur trouvé, colis récupérés, livré, nouvelle proposition)',
 };
@@ -85,7 +85,7 @@ export default function Sounds() {
     <>
       <PageHeader
         title="Sons des notifications"
-        subtitle="L’app joue ces sons avec ses notifications (nouvelle course, affectation, annulation…). Les 3 sons LETO sont intégrés à l’app et toujours disponibles."
+        subtitle="L’app joue ces sons avec ses notifications (nouvelle course, affectation, annulation…). Les 3 sons VITE sont intégrés à l’app et toujours disponibles."
       />
       <div className="stack">
         {error && <div className="alert error">{error}</div>}
@@ -102,7 +102,7 @@ export default function Sounds() {
                   <div className="snd-controls">
                     <select value={cfg.events[ev]} disabled={busy === ev} onChange={(e) => choose(ev, e.target.value)} aria-label={`Son : ${cfg.labels[ev] ?? ev}`}>
                       {!byId(cfg.events[ev]) && <option value={cfg.events[ev]}>{cfg.events[ev]}</option>}
-                      <optgroup label="Sons LETO (intégrés)">
+                      <optgroup label="Sons VITE (intégrés)">
                         {builtin.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                       </optgroup>
                       {custom.length > 0 && (
@@ -159,7 +159,7 @@ export default function Sounds() {
         <Modal
           title={`Supprimer « ${remove.name} » ?`}
           subtitle={usedBy(remove.id).length
-            ? `Il est utilisé pour : ${usedBy(remove.id).map((e) => cfg?.labels[e] ?? e).join(', ')}. Ces événements reprendront leur son LETO par défaut.`
+            ? `Il est utilisé pour : ${usedBy(remove.id).map((e) => cfg?.labels[e] ?? e).join(', ')}. Ces événements reprendront leur son VITE par défaut.`
             : 'Le son sera retiré de la bibliothèque et des téléphones.'}
           onClose={() => setRemove(null)}
           footer={<><button className="btn secondary" onClick={() => setRemove(null)}>Annuler</button><button className="btn danger" onClick={confirmRemove}>Supprimer</button></>}

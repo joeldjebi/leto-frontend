@@ -79,7 +79,7 @@ export function OfficeBell({ isSA }: { isSA: boolean }) {
           ) : (
             <div className="ob-settings">
               <div className="ob-row">
-                <span className="grow"><b>Son</b><small>Le son LETO de chaque événement</small></span>
+                <span className="grow"><b>Son</b><small>Le son VITE de chaque événement</small></span>
                 <Switch checked={prefs.sound} onChange={(on) => setPrefs({ sound: on })} label={prefs.sound ? 'Couper le son' : 'Activer le son'} />
               </div>
               <div className="ob-row">
@@ -87,7 +87,7 @@ export function OfficeBell({ isSA }: { isSA: boolean }) {
                   <b>Notifications du navigateur</b>
                   <small>{permission === 'unsupported' ? 'Non prises en charge par ce navigateur'
                     : permission === 'denied' ? 'Bloquées : autorisez-les dans les réglages du site (cadenas de la barre d’adresse)'
-                    : 'Quand l’onglet LETO n’est pas affiché (il doit rester ouvert)'}</small>
+                    : 'Quand l’onglet VITE n’est pas affiché (il doit rester ouvert)'}</small>
                 </span>
                 {permission === 'default'
                   ? <button className="btn" onClick={() => askPermission()}>Autoriser</button>
@@ -135,7 +135,7 @@ export function OfficeInvite() {
   return (
     <div className="banner info ob-invite">
       <Icon name="bell" size={18} />
-      <span className="grow"><strong>Ne manquez aucune commande.</strong> Autorisez les notifications : LETO vous prévient avec un son, même quand l’onglet est en arrière-plan.</span>
+      <span className="grow"><strong>Ne manquez aucune commande.</strong> Autorisez les notifications : VITE vous prévient avec un son, même quand l’onglet est en arrière-plan.</span>
       <button className="btn" onClick={() => askPermission()}>Autoriser</button>
       <button className="btn plain" onClick={() => setPrefs({ dismissed: true })}>Plus tard</button>
     </div>

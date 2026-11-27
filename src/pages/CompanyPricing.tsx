@@ -11,7 +11,7 @@ const VEHICLE_HINT: Record<Vehicle, string> = { MOTO: 'Petits colis, documents',
 
 const SPEED_SHORT: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: '2 h' };
 
-/** Montant éditable, avec la valeur LETO en repère */
+/** Montant éditable, avec la valeur VITE en repère */
 function Amount({ label, value, platform, step, onChange, suffix }: { label: string; value: number; platform: number; step: number; onChange: (n: number) => void; suffix?: string }) {
   const diff = value - platform;
   return (
@@ -22,13 +22,13 @@ function Amount({ label, value, platform, step, onChange, suffix }: { label: str
         <span>{suffix ?? currencySymbol()}</span>
       </span>
       <small className={diff === 0 ? 'muted' : diff > 0 ? 'up' : 'down'}>
-        LETO : {!suffix ? formatMoney(platform) : platform}{diff !== 0 && ` · ${diff > 0 ? '+' : '−'}${!suffix ? formatMoney(Math.abs(diff)) : Math.abs(Math.round(diff * 100) / 100)}`}
+        VITE : {!suffix ? formatMoney(platform) : platform}{diff !== 0 && ` · ${diff > 0 ? '+' : '−'}${!suffix ? formatMoney(Math.abs(diff)) : Math.abs(Math.round(diff * 100) / 100)}`}
       </small>
     </label>
   );
 }
 
-/** Gérant : grille tarifaire de l'entreprise (prix libres ; sinon grille LETO) */
+/** Gérant : grille tarifaire de l'entreprise (prix libres ; sinon grille VITE) */
 export default function CompanyPricing() {
   const toast = useToast();
   const [data, setData] = useState<CompanyPricingData | null>(null);
@@ -84,7 +84,7 @@ export default function CompanyPricing() {
   const reset = async () => {
     load(await api<CompanyPricingData>('/companies/me/pricing', { method: 'DELETE' }));
     setConfirmReset(false);
-    toast('Grille LETO rétablie');
+    toast('Grille VITE rétablie');
   };
 
   return (
@@ -95,8 +95,8 @@ export default function CompanyPricing() {
           <p className="muted">Appliqués quand une boutique choisit votre entreprise et pour les courses que vous créez.</p>
         </div>
         <div className="cp-head-side">
-          {data.custom ? <Badge color="purple">Grille propre</Badge> : <Badge>Grille LETO</Badge>}
-          {data.custom && <button className="btn secondary" onClick={() => setConfirmReset(true)}>Revenir à la grille LETO</button>}
+          {data.custom ? <Badge color="purple">Grille propre</Badge> : <Badge>Grille VITE</Badge>}
+          {data.custom && <button className="btn secondary" onClick={() => setConfirmReset(true)}>Revenir à la grille VITE</button>}
         </div>
       </header>
 
@@ -115,7 +115,7 @@ export default function CompanyPricing() {
                   <div className="cp-vehicle-head">
                     <span className="cp-vehicle-icon"><Icon name={VEHICLE_ICON[v]} size={28} /></span>
                     <div className="grow"><strong>{VEHICLE_LABEL[v]}</strong><small className="muted">{VEHICLE_HINT[v]}</small></div>
-                    {letoOff ? <Badge>Désactivé par LETO</Badge> : (
+                    {letoOff ? <Badge>Désactivé par VITE</Badge> : (
                       <label className="cp-has">
                         <span>{has ? 'J’en dispose' : 'Je n’en ai pas'}</span>
                         <Switch checked={has} onChange={(on) => toggleVehicle(v, on)} label={has ? `Je n’ai pas de ${VEHICLE_LABEL[v].toLowerCase()}` : `Je dispose de ${VEHICLE_LABEL[v].toLowerCase()}`} />
@@ -137,7 +137,7 @@ export default function CompanyPricing() {
                           <label key={s} className="cp-cap">
                             <small>{SPEED_SHORT[s]}</small>
                             <input type="number" min={0} step={50} value={cap} onChange={(e) => setCap(v, s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Prix maximum ${VEHICLE_LABEL[v]} ${SPEED_SHORT[s]}`} />
-                            <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`LETO : ${leto ? formatMoney(leto) : 'aucun plafond'}`}>{cap === leto ? '= LETO' : leto ? `LETO ${leto}` : 'LETO : —'}</small>
+                            <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`VITE : ${leto ? formatMoney(leto) : 'aucun plafond'}`}>{cap === leto ? '= VITE' : leto ? `VITE ${leto}` : 'VITE : —'}</small>
                           </label>
                         );
                       })}
@@ -145,7 +145,7 @@ export default function CompanyPricing() {
                     <small className="muted">{(() => { const f = capFromKm(grid, v, 'STANDARD'); return c.maxAbidjan?.STANDARD ? (f !== null ? `Standard plafonné dès ${f} km` : 'Plafonné') : '0 = pas de plafond'; })()}</small>
                   </div>
                   <div className="cp-vehicle-foot">
-                    {c.enabled ? <>Course de {km} km : <strong>{formatMoney(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">{letoOff ? 'Désactivé par LETO' : 'Non proposé : vous n’en disposez pas'}</span>}
+                    {c.enabled ? <>Course de {km} km : <strong>{formatMoney(price(grid, km, v, 'STANDARD', stops))}</strong></> : <span className="muted">{letoOff ? 'Désactivé par VITE' : 'Non proposé : vous n’en disposez pas'}</span>}
                   </div>
                 </section>
               );
@@ -163,14 +163,14 @@ export default function CompanyPricing() {
                     <span>×</span>
                     <input type="number" min={0.3} max={5} step={0.05} value={f} onChange={(e) => setFactor(s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Coefficient ${grid.speeds[s].label}`} />
                   </div>
-                  <small className="muted">{f === 1 ? 'Prix de base' : f > 1 ? `+${Math.round((f - 1) * 100)} % sur le prix` : `−${Math.round((1 - f) * 100)} % sur le prix`} · LETO × {P.speeds[s].factor}</small>
+                  <small className="muted">{f === 1 ? 'Prix de base' : f > 1 ? `+${Math.round((f - 1) * 100)} % sur le prix` : `−${Math.round((1 - f) * 100)} % sur le prix`} · VITE × {P.speeds[s].factor}</small>
                 </section>
               );
             })}
             <section className="cp-speed">
               <strong>Arrêt supplémentaire</strong>
               <div className="cp-factor"><input type="number" min={0} step={50} value={grid.extraStopFee} onChange={(e) => setGrid({ ...grid, extraStopFee: e.target.value === '' ? 0 : Number(e.target.value) })} aria-label="Supplément par arrêt" /><span>{currencySymbol()}</span></div>
-              <small className="muted">Par adresse en plus dans une tournée · LETO {formatMoney(P.extraStopFee)}</small>
+              <small className="muted">Par adresse en plus dans une tournée · VITE {formatMoney(P.extraStopFee)}</small>
             </section>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function CompanyPricing() {
                   <span className="cp-sim-v"><Icon name={VEHICLE_ICON[v]} size={18} />{VEHICLE_LABEL[v]}</span>
                   {SPEEDS.map((s) => {
                     const mine = price(grid, km, v, s, stops), leto = price(P, km, v, s, stops);
-                    return <span key={s}><strong>{formatMoney(mine)}</strong><small className={mine === leto ? 'muted' : mine > leto ? 'up' : 'down'}>LETO {formatMoney(leto)}</small></span>;
+                    return <span key={s}><strong>{formatMoney(mine)}</strong><small className={mine === leto ? 'muted' : mine > leto ? 'up' : 'down'}>VITE {formatMoney(leto)}</small></span>;
                   })}
                 </div>
               ))}
@@ -223,7 +223,7 @@ export default function CompanyPricing() {
       )}
 
       {confirmReset && (
-        <Modal title="Revenir à la grille LETO ?" subtitle="Vos prix seront remplacés par ceux de LETO pour les prochaines commandes." onClose={() => setConfirmReset(false)}
+        <Modal title="Revenir à la grille VITE ?" subtitle="Vos prix seront remplacés par ceux de VITE pour les prochaines commandes." onClose={() => setConfirmReset(false)}
           footer={<><button className="btn secondary" onClick={() => setConfirmReset(false)}>Annuler</button><button className="btn danger" onClick={reset}>Rétablir</button></>} />
       )}
     </div>

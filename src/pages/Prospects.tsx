@@ -30,12 +30,12 @@ const COUNTRY: Record<string, string> = { CI: '🇨🇮 Côte d’Ivoire', SN: '
 const VIDEO = 'leto.performx.online/video';
 /** Message de premier contact (WhatsApp, e-mail), au nom de l'entreprise */
 const firstMessage = (company: string, sender: string) =>
-  `Bonjour ${company} 👋\nJe suis ${sender}, fondateur de LETO, une plateforme de livraison conçue à Abidjan :\n• une app pour vos boutiques, qui commandent une livraison en quelques secondes ;\n• une app pour vos livreurs, qui acceptent la course directement et l’exécutent ;\n• le suivi en temps réel, pour vous comme pour vos clients ;\n• un tableau de bord où vous voyez vos livreurs bouger sur la carte pendant leurs livraisons.\nAuriez-vous 15 minutes pour une présentation ?\nVidéo : ${VIDEO}`;
+  `Bonjour ${company} 👋\nJe suis ${sender}, fondateur de VITE, une plateforme de livraison conçue à Abidjan :\n• une app pour vos boutiques, qui commandent une livraison en quelques secondes ;\n• une app pour vos livreurs, qui acceptent la course directement et l’exécutent ;\n• le suivi en temps réel, pour vous comme pour vos clients ;\n• un tableau de bord où vous voyez vos livreurs bouger sur la carte pendant leurs livraisons.\nAuriez-vous 15 minutes pour une présentation ?\nVidéo : ${VIDEO}`;
 
 /** Messages de la fiche (personnalisés) ou message standard, signés au nom de l'expéditeur */
 const sign = (t: string, sender: string) => t.replace(/\{prenom\}/g, sender);
 const waText = (p: Partial<Prospect>, sender: string) => sign(p.waMessage?.trim() || firstMessage(p.name || 'votre entreprise', sender), sender);
-const mailSubject = (p: Partial<Prospect>) => p.emailSubject?.trim() || `LETO · présentation de 15 minutes pour ${p.name || 'votre entreprise'}`;
+const mailSubject = (p: Partial<Prospect>) => p.emailSubject?.trim() || `VITE · présentation de 15 minutes pour ${p.name || 'votre entreprise'}`;
 const mailBody = (p: Partial<Prospect>, sender: string) => sign(p.emailBody?.trim() || firstMessage(p.name || 'votre entreprise', sender), sender);
 
 const digits = (p: string) => p.replace(/[^\d]/g, '');

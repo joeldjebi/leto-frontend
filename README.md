@@ -1,4 +1,4 @@
-# LETO — Back-office (React)
+# VITE — Back-office (React)
 
 Back-office web au **design inspiré des apps Apple** (barre latérale macOS, grands titres, cartes et listes, fiches en panneau latéral, police système, mode sombre). Thème au choix dans la barre latérale : Automatique, Clair ou Sombre.
 

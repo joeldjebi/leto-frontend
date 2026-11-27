@@ -9,7 +9,7 @@ import { EarningsTab } from '../components/Remittances';
 import { RatingSummary } from '../components/Ratings';
 
 /**
- * Entreprise : livreurs indépendants (LI) validés par LETO à rattacher, LI rattachés,
+ * Entreprise : livreurs indépendants (LI) validés par VITE à rattacher, LI rattachés,
  * commission prélevée sur leurs courses et gains (retrait ou transfert vers le crédit).
  */
 export default function CompanyIndependents() {
@@ -47,14 +47,14 @@ export default function CompanyIndependents() {
     <>
       <PageHeader
         title="Livreurs indépendants"
-        subtitle="Livreurs validés par LETO, à rattacher à votre entreprise : vous en êtes responsable et vous prélevez une commission sur leurs courses, sur leur solde LETO."
+        subtitle="Livreurs validés par VITE, à rattacher à votre entreprise : vous en êtes responsable et vous prélevez une commission sur leurs courses, sur leur solde VITE."
       />
       <div className="stack">
         {error && <div className="alert error">{error}</div>}
         <div className="grid grid-stats">
           <Stat icon="bike" label="Mes livreurs indépendants" value={data.mine.length} foot={`${data.mine.filter((m) => m.online).length} en ligne · ${data.pool.length} disponibles dans le vivier`} />
           <Stat icon="wallet" label="Gains disponibles" value={formatMoney(earnings.available)} foot={`${formatMoney(earnings.pending)} en attente (${earnings.holdHours} h de délai)`} />
-          <Stat icon="tag" label="Commission" value={data.rate ? ruleLabel(data.rate.type, data.rate.value) : '—'} foot={`par course · maximum LETO ${data.caps.maxPct} % ou ${formatMoney(data.caps.maxFixed)}`} />
+          <Stat icon="tag" label="Commission" value={data.rate ? ruleLabel(data.rate.type, data.rate.value) : '—'} foot={`par course · maximum VITE ${data.caps.maxPct} % ou ${formatMoney(data.caps.maxFixed)}`} />
         </div>
         <div id="li-rate"><RateCard data={data} onSaved={setData} /></div>
         <MineCard data={data} onChanged={load} />
@@ -65,7 +65,7 @@ export default function CompanyIndependents() {
   );
 }
 
-/** Commission de l'entreprise sur les courses de ses LI (sous les plafonds de LETO) */
+/** Commission de l'entreprise sur les courses de ses LI (sous les plafonds de VITE) */
 function RateCard({ data, onSaved }: { data: CompanyAffiliations; onSaved: (d: CompanyAffiliations) => void }) {
   const toast = useToast();
   const [type, setType] = useState<CommissionType>(data.rate?.type ?? 'PERCENT');
@@ -93,7 +93,7 @@ function RateCard({ data, onSaved }: { data: CompanyAffiliations; onSaved: (d: C
           <div className="grow" style={{ minWidth: 220 }}>
             <div className="title">Commission par course</div>
             <small className="muted">
-              Prélevée sur le solde du livreur à la fin de chaque course, en plus de celle de LETO · ex. course à {formatMoney(sample)} → {formatMoney(type === 'PERCENT' ? Math.round((sample * (n || 0)) / 100) : n || 0)}.
+              Prélevée sur le solde du livreur à la fin de chaque course, en plus de celle de VITE · ex. course à {formatMoney(sample)} → {formatMoney(type === 'PERCENT' ? Math.round((sample * (n || 0)) / 100) : n || 0)}.
               Maximum autorisé : {type === 'PERCENT' ? `${data.caps.maxPct} %` : formatMoney(data.caps.maxFixed)}.
             </small>
           </div>
@@ -120,7 +120,7 @@ function DocsSummary({ m }: { m: MyIndependent }) {
     <>
       {worst ? <Badge color={EXPIRY_BADGE[worst][1]}>{worst === 'UNKNOWN' ? 'Dates à renseigner' : EXPIRY_BADGE[worst][0]}</Badge> : <Badge color="green">À jour</Badge>}
       {worst && worst !== 'UNKNOWN' && <span className="sub">{which(worst).charAt(0).toUpperCase() + which(worst).slice(1)}</span>}
-      {m.renewals > 0 && <span className="sub">Renouvellement en vérification chez LETO</span>}
+      {m.renewals > 0 && <span className="sub">Renouvellement en vérification chez VITE</span>}
       {m.updateRequests > 0 && <span className="sub">Mise à jour demandée</span>}
     </>
   );
@@ -168,7 +168,7 @@ function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
       ) : (
         <div className="table-scroll">
           <table className="list">
-            <thead><tr><th>Livreur</th><th>Engin</th><th>Documents</th><th>Commission</th>{(data.codAllowed || data.mine.some((m) => m.cod > 0)) && <th className="num">Encaissements à verser</th>}<th className="num">Solde LETO</th><th className="num">Courses</th><th className="num">Gains générés</th><th /></tr></thead>
+            <thead><tr><th>Livreur</th><th>Engin</th><th>Documents</th><th>Commission</th>{(data.codAllowed || data.mine.some((m) => m.cod > 0)) && <th className="num">Encaissements à verser</th>}<th className="num">Solde VITE</th><th className="num">Courses</th><th className="num">Gains générés</th><th /></tr></thead>
             <tbody>
               {data.mine.map((m) => {
                 const pending = m.pendingRate?.split(':');
@@ -216,7 +216,7 @@ const PHOTOS: [RenewableDoc, string][] = [
 ];
 const VIEW_LABEL: Partial<Record<string, string>> = {
   AFFILIATED: 'Dossier partagé avec votre entreprise', VIEWED: 'Dossier consulté', UPDATE_REQUESTED: 'Mise à jour demandée',
-  RENEWAL_SENT: 'Document renouvelé, envoyé à LETO', RENEWAL_APPROVED: 'Document renouvelé validé par LETO', RENEWAL_REJECTED: 'Document renouvelé refusé par LETO',
+  RENEWAL_SENT: 'Document renouvelé, envoyé à VITE', RENEWAL_APPROVED: 'Document renouvelé validé par VITE', RENEWAL_REJECTED: 'Document renouvelé refusé par VITE',
   EXPIRED: 'Document expiré',
 };
 
@@ -226,7 +226,7 @@ function Validity({ label, v }: { label: string; v: DocsState['license'] }) {
     <div>
       <div className="grow">
         <div className="title">{label}</div>
-        <small className="muted">{v.expiresOn ? `Valable jusqu’au ${date(v.expiresOn)}` : 'Date de fin de validité pas encore renseignée par LETO'}</small>
+        <small className="muted">{v.expiresOn ? `Valable jusqu’au ${date(v.expiresOn)}` : 'Date de fin de validité pas encore renseignée par VITE'}</small>
       </div>
       <Badge color={EXPIRY_BADGE[v.state][1]}>{EXPIRY_BADGE[v.state][0]}</Badge>
     </div>
@@ -270,11 +270,11 @@ function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndepende
               <Validity label="Permis de conduire" v={d.docs.license} />
               <Validity label="Assurance" v={d.docs.insurance} />
             </div>
-            <small className="muted">Le livreur et vous êtes prévenus 30 jours avant la fin de validité. Expiré, il ne reçoit plus de courses jusqu’à ce que LETO valide le nouveau document.</small>
+            <small className="muted">Le livreur et vous êtes prévenus 30 jours avant la fin de validité. Expiré, il ne reçoit plus de courses jusqu’à ce que VITE valide le nouveau document.</small>
           </div>
 
           <div>
-            <div className="section-title">Documents vérifiés par LETO</div>
+            <div className="section-title">Documents vérifiés par VITE</div>
             <div className="li-photos">
               {PHOTOS.map(([k, label]) => {
                 const url = d.links[k];
@@ -297,7 +297,7 @@ function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndepende
                 );
               })}
             </div>
-            <small className="muted">Documents privés : liens valables 15 minutes. Chaque consultation du dossier est notée et visible par LETO.</small>
+            <small className="muted">Documents privés : liens valables 15 minutes. Chaque consultation du dossier est notée et visible par VITE.</small>
           </div>
 
           <div>
@@ -309,7 +309,7 @@ function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndepende
                 <dt>Quartier, adresse</dt><dd>{d.address ?? '—'}</dd>
                 <dt>Pièce d’identité</dt><dd>{d.idType ? ID_LABEL[d.idType] : '—'}{d.idNumber ? ` · n° ${d.idNumber}` : ''}</dd>
                 <dt>Contact d’urgence</dt><dd>{d.emergencyName || d.emergencyPhone ? `${d.emergencyName ?? ''}${d.emergencyPhone ? ` · ${formatPhone(d.emergencyPhone)}` : ''}` : '—'}</dd>
-                <dt>Validé par LETO</dt><dd>{d.approvedAt ? date(d.approvedAt) : '—'}</dd>
+                <dt>Validé par VITE</dt><dd>{d.approvedAt ? date(d.approvedAt) : '—'}</dd>
               </dl>
             </div>
           </div>
@@ -384,7 +384,7 @@ function AskUpdateDialog({ driver, field, onClose, onDone }: { driver: MyIndepen
     }
   };
   return (
-    <Modal title={`Demander une mise à jour · ${RENEWABLE_LABEL[field]}`} subtitle={`${driver.name} est prévenu dans l’app. LETO vérifie le nouveau document avant qu’il remplace l’ancien.`} onClose={onClose}
+    <Modal title={`Demander une mise à jour · ${RENEWABLE_LABEL[field]}`} subtitle={`${driver.name} est prévenu dans l’app. VITE vérifie le nouveau document avant qu’il remplace l’ancien.`} onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>Envoyer la demande</button></>}>
       <Field label="Précision (facultatif)" hint="Visible par le livreur">
         <input value={note} maxLength={300} placeholder="Ex. : photo floue, document bientôt expiré…" onChange={(e) => setNote(e.target.value)} />
@@ -451,7 +451,7 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
     }
   };
   return (
-    <Card title={`Vivier · livreurs validés par LETO (${data.pool.length})`} actions={<Search value={q} onChange={setQ} placeholder="Nom, commune" />}>
+    <Card title={`Vivier · livreurs validés par VITE (${data.pool.length})`} actions={<Search value={q} onChange={setQ} placeholder="Nom, commune" />}>
       <small className="muted" style={{ display: 'block', margin: '0 20px 8px' }}>Le dossier complet (téléphone, pièce d’identité, permis, carte grise, assurance, photos) vous est partagé quand le livreur accepte votre invitation.</small>
       {error && <div className="alert error" style={{ margin: '0 20px 8px' }}>{error}</div>}
       {!data.rate && (
@@ -492,12 +492,12 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
   );
 }
 
-/** Pastilles du vivier : documents contrôlés par LETO (sans les montrer avant le rattachement) */
+/** Pastilles du vivier : documents contrôlés par VITE (sans les montrer avant le rattachement) */
 function VerifiedPills({ v }: { v: PoolDriver['verified'] }) {
   const pill = (label: string, ok: boolean | ExpiryState | null) => {
     const state = typeof ok === 'string' ? ok : ok ? 'OK' : null;
     const tone = state === 'EXPIRED' || state === null ? 'off' : state === 'SOON' ? 'warn' : 'ok';
-    const title = state === null ? 'Manquant' : state === 'OK' ? 'Vérifié par LETO' : EXPIRY_BADGE[state][0];
+    const title = state === null ? 'Manquant' : state === 'OK' ? 'Vérifié par VITE' : EXPIRY_BADGE[state][0];
     return <span key={label} className={`doc-pill ${tone}`} title={title}><Icon name={tone === 'ok' ? 'check' : tone === 'warn' ? 'clock' : 'close'} size={11} />{label}</span>;
   };
   return <div className="doc-pills">{[pill('Identité', v.identity), pill('Permis', v.license), pill('Carte grise', v.registration), pill('Assurance', v.insurance)]}</div>;
@@ -517,7 +517,7 @@ function EarningsCard({ earnings, onChanged }: { earnings: Earnings; onChanged: 
         <div>
           <small className="muted grow">
             Disponible : <strong>{formatMoney(earnings.available)}</strong> · en attente : {formatMoney(earnings.pending)} (disponible {earnings.holdHours} h après la course, le temps de traiter un éventuel litige).
-            Retrait minimum {formatMoney(earnings.minWithdrawal)}, payé par LETO par Mobile Money. Le transfert vers le crédit est immédiat.
+            Retrait minimum {formatMoney(earnings.minWithdrawal)}, payé par VITE par Mobile Money. Le transfert vers le crédit est immédiat.
           </small>
         </div>
       </div>
@@ -583,7 +583,7 @@ function MoneyDialog({ mode, earnings, onClose, onDone }: { mode: 'withdraw' | '
       if (mode === 'withdraw') {
         if (!phone) return setError('Numéro Mobile Money obligatoire');
         onDone(await api<Earnings>('/affiliations/withdrawals', { method: 'POST', body: { amount: n, operator, phone } }));
-        toast('Demande de retrait envoyée à LETO');
+        toast('Demande de retrait envoyée à VITE');
       } else {
         onDone(await api<Earnings>('/affiliations/earnings/transfer', { method: 'POST', body: { amount: n } }));
         toast(`${formatMoney(n)} ajouté(s) à votre crédit`);
@@ -596,7 +596,7 @@ function MoneyDialog({ mode, earnings, onClose, onDone }: { mode: 'withdraw' | '
   return (
     <Modal
       title={mode === 'withdraw' ? 'Demander un retrait' : 'Transférer vers mon crédit'}
-      subtitle={mode === 'withdraw' ? `LETO vous envoie le montant par Mobile Money. Minimum ${formatMoney(earnings.minWithdrawal)}.` : 'Le montant est ajouté tout de suite au crédit qui paie vos commissions LETO.'}
+      subtitle={mode === 'withdraw' ? `VITE vous envoie le montant par Mobile Money. Minimum ${formatMoney(earnings.minWithdrawal)}.` : 'Le montant est ajouté tout de suite au crédit qui paie vos commissions VITE.'}
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit}>{mode === 'withdraw' ? 'Envoyer la demande' : 'Transférer'}</button></>}
     >

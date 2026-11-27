@@ -78,7 +78,7 @@ export function BillingStats({ b, onTopup }: { b: BillingOverview; onTopup?: () 
         <Stat icon="calendar" label="Essai gratuit" value={<Badge color="blue">{b.trialDaysLeft} j restant{b.trialDaysLeft > 1 ? 's' : ''}</Badge>}
           foot={`Jusqu’au ${date(b.trialEndsAt)} · sans crédit ni commission`} />
       ) : !b.subscriptionRequired ? (
-        <Stat icon="calendar" label="Abonnement annuel" value={<Badge>Non demandé</Badge>} foot="LETO ne demande pas d’abonnement pour le moment" />
+        <Stat icon="calendar" label="Abonnement annuel" value={<Badge>Non demandé</Badge>} foot="VITE ne demande pas d’abonnement pour le moment" />
       ) : (
         <Stat icon="calendar" label="Abonnement annuel" value={b.subscribed ? <Badge color="green">Actif</Badge> : <Badge color="red">Inactif</Badge>}
           foot={b.subscriptionEndsAt ? `${b.subscribed ? 'Jusqu’au' : 'Expiré le'} ${date(b.subscriptionEndsAt)}${b.subscribed && left != null ? ` · ${left} j` : ''}` : `${formatMoney(b.config.subscriptionFee)} par an`} />
@@ -166,10 +166,10 @@ export function PaymentsTable({ payments, showCompany, onReview }: { payments: P
   );
 }
 
-/** Comptes Mobile Money de LETO où l'entreprise doit payer */
+/** Comptes Mobile Money de VITE où l'entreprise doit payer */
 export function AccountsList({ config }: { config: BillingConfig }) {
   const toast = useToast();
-  if (config.accounts.length === 0) return <div className="alert info">Les numéros de paiement LETO ne sont pas encore renseignés : contactez LETO.</div>;
+  if (config.accounts.length === 0) return <div className="alert info">Les numéros de paiement VITE ne sont pas encore renseignés : contactez VITE.</div>;
   return (
     <div className="accounts">
       {config.accounts.map((a) => (
@@ -225,7 +225,7 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
     setSending(true);
     try {
       await api('/billing/me/payments', { method: 'POST', body: { kind, amount: n, operator, senderPhone, reference: reference.trim() || undefined, proofUrl: proof } });
-      toast('Preuve envoyée — LETO la vérifie et vous serez crédité dès validation');
+      toast('Preuve envoyée — VITE la vérifie et vous serez crédité dès validation');
       onDone();
       onClose();
     } catch (e) {
@@ -238,7 +238,7 @@ export function PayDialog({ kind: initial, config, onClose, onDone }: { kind: Pa
   return (
     <Modal
       title={kind === 'SUBSCRIPTION' ? 'Payer l’abonnement annuel' : 'Recharger le crédit'}
-      subtitle="1. Envoyez le montant sur un des numéros LETO ci-dessous. 2. Joignez la capture du paiement : LETO valide sous peu."
+      subtitle="1. Envoyez le montant sur un des numéros VITE ci-dessous. 2. Joignez la capture du paiement : VITE valide sous peu."
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" onClick={submit} disabled={sending || uploading}>{sending ? 'Envoi…' : 'Envoyer la preuve'}</button></>}
     >
@@ -303,7 +303,7 @@ export function ReviewDialog({ payment: p, onClose, onDone }: { payment: Payment
   return (
     <Modal
       title={`${PAYMENT_KIND_LABEL[p.kind]} · ${p.company?.name ?? ''}`}
-      subtitle={`${formatMoney(p.amount)} déclaré(s) via ${p.operator} depuis le ${formatPhone(p.senderPhone)}${p.reference ? ` · réf. ${p.reference}` : ''} — vérifiez la réception sur le compte LETO avant de valider.`}
+      subtitle={`${formatMoney(p.amount)} déclaré(s) via ${p.operator} depuis le ${formatPhone(p.senderPhone)}${p.reference ? ` · réf. ${p.reference}` : ''} — vérifiez la réception sur le compte VITE avant de valider.`}
       onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button>
         <button className={`btn${mode === 'reject' ? ' danger' : ''}`} onClick={submit}>{mode === 'approve' ? 'Valider le paiement' : 'Refuser'}</button></>}

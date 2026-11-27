@@ -1,4 +1,4 @@
-// LETO back-office : affiche les notifications locales et ouvre la page concernée au clic.
+// VITE back-office : affiche les notifications locales et ouvre la page concernée au clic.
 // Aucune notification « push » distante : elles viennent de la connexion temps réel de la page.
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));

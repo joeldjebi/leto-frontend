@@ -41,7 +41,7 @@ export default function Payroll() {
   const pendingAdv = data.advances.filter((a) => a.status === 'PENDING');
   return (
     <>
-      <PageHeader title="Paye des livreurs" subtitle="LETO calcule la paie de vos livreurs à partir de leurs courses ; vous les payez vous-même (espèces ou Mobile Money) et le livreur confirme la réception dans l’app." />
+      <PageHeader title="Paye des livreurs" subtitle="VITE calcule la paie de vos livreurs à partir de leurs courses ; vous les payez vous-même (espèces ou Mobile Money) et le livreur confirme la réception dans l’app." />
       <div className="stack">
         {error && <div className="alert error">{error}</div>}
         <SettingsCard settings={settings} onSaved={(s) => { setSettings(s); load(); }} />
@@ -373,7 +373,7 @@ function printPayslip(s: Payslip) {
 .b td{font-weight:700;border-top:2px solid #1A1A1A}.f{margin-top:24px;color:#666;font-size:12px}.bar{height:6px;background:#FBC02D;margin-bottom:20px}</style></head><body>
 <div class="bar"></div><h1>Fiche de paie · ${esc(s.driverName ?? '')}</h1><div class="m">${esc(s.label)} · ${s.deliveries} course(s), ${s.stops} colis livré(s)</div>
 <table>${s.lines.map((l) => row(esc(l.label), l.amount)).join('')}${row('Net payé', s.net, true)}</table>
-<div class="f">Payée le ${s.paidAt ? new Date(s.paidAt).toLocaleDateString('fr-FR') : '—'}${s.method ? ` · ${METHOD[s.method]}` : ''}${s.reference ? ` · réf. ${esc(s.reference)}` : ''}${s.confirmedAt ? ` · réception confirmée par le livreur le ${new Date(s.confirmedAt).toLocaleDateString('fr-FR')}` : ''}. Calculée avec LETO.</div>
+<div class="f">Payée le ${s.paidAt ? new Date(s.paidAt).toLocaleDateString('fr-FR') : '—'}${s.method ? ` · ${METHOD[s.method]}` : ''}${s.reference ? ` · réf. ${esc(s.reference)}` : ''}${s.confirmedAt ? ` · réception confirmée par le livreur le ${new Date(s.confirmedAt).toLocaleDateString('fr-FR')}` : ''}. Calculée avec VITE.</div>
 <script>window.onload=()=>window.print()</script></body></html>`);
   w.document.close();
 }

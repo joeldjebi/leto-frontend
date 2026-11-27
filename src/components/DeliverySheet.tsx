@@ -155,7 +155,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
       )}
       {d.commissionAmount != null && (
         <div className="muted" style={{ marginTop: -8 }}>
-          Commission LETO {d.commissionRule} : {formatMoney(d.commissionAmount)}
+          Commission VITE {d.commissionRule} : {formatMoney(d.commissionAmount)}
           {d.commissionChargedAt ? ' · prélevée' : d.status === 'CANCELLED' ? ' · non prélevée (annulée)' : ' · réservée, prélevée à la fin'}
           {d.commissionRefunded > 0 && ` · ${formatMoney(d.commissionRefunded)} remboursé(s) (litige)`}
         </div>

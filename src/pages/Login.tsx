@@ -4,7 +4,7 @@ import { Icon, PhoneInput, LetoMark } from '../ui';
 
 /** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
 const PRO_SPACE = location.pathname.startsWith('/pro');
-/** Ouvert depuis sa.leto… : espace réservé à l'administration LETO */
+/** Ouvert depuis sa.leto… : espace réservé à l'administration VITE */
 const ADMIN_SPACE = location.hostname.startsWith('sa.');
 
 export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
@@ -35,8 +35,8 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
     <div className="login">
       <div className="card">
         <div className="app-icon"><LetoMark size={40} /></div>
-        <h1>LETO</h1>
-        <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : ADMIN_SPACE ? 'Administration LETO' : 'Back-office des livraisons'}</p>
+        <h1>VITE</h1>
+        <p className="muted" style={{ margin: '4px 0 0' }}>{PRO_SPACE ? 'Espace entreprise de livraison' : ADMIN_SPACE ? 'Administration VITE' : 'Back-office des livraisons'}</p>
         <form onSubmit={submit}>
           <PhoneInput value={phone} onChange={setPhone} label="Téléphone" autoComplete="username" />
           <input type="password" placeholder="Mot de passe" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />

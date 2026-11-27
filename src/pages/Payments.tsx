@@ -6,7 +6,7 @@ import { Card, PageHeader, Segmented, Stat } from '../ui';
 
 interface Summary { commissionsMonth: number; commissionsTotal: number; topupsMonth: number; subscriptionsYear: number; pending: number }
 
-/** SA : preuves de paiement des entreprises à vérifier, revenus LETO */
+/** SA : preuves de paiement des entreprises à vérifier, revenus VITE */
 export default function Payments() {
   const [status, setStatus] = useState<PaymentStatus | 'ALL'>('PENDING');
   const [list, setList] = useState<Payment[]>([]);
@@ -28,7 +28,7 @@ export default function Payments() {
 
   return (
     <>
-      <PageHeader title="Paiements" subtitle="Abonnements et recharges envoyés par les entreprises : vérifiez la réception sur le compte LETO, puis validez." />
+      <PageHeader title="Paiements" subtitle="Abonnements et recharges envoyés par les entreprises : vérifiez la réception sur le compte VITE, puis validez." />
       <div className="stack">
         {summary && (
           <div className="grid grid-stats">

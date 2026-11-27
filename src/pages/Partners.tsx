@@ -46,7 +46,7 @@ export default function Partners() {
   };
   return (
     <>
-      <PageHeader title="Partenaires API" subtitle="Applications qui commandent des livraisons LETO automatiquement (Adjamé-Smart, boutiques en ligne) : clés d’API, webhooks, encaissements." />
+      <PageHeader title="Partenaires API" subtitle="Applications qui commandent des livraisons VITE automatiquement (Adjamé-Smart, boutiques en ligne) : clés d’API, webhooks, encaissements." />
       <div className="stack">
         <Card>
           <div className="rows">
@@ -102,11 +102,11 @@ function CreateDialog({ onClose, onDone }: { onClose: () => void; onDone: (id: s
     }
   };
   return (
-    <Modal title="Nouveau partenaire" subtitle="Ses courses sont passées au nom de son compte client LETO (créé avec ce numéro s’il n’existe pas)." onClose={onClose}
+    <Modal title="Nouveau partenaire" subtitle="Ses courses sont passées au nom de son compte client VITE (créé avec ce numéro s’il n’existe pas)." onClose={onClose}
       footer={<><button className="btn secondary" onClick={onClose}>Annuler</button><button className="btn" disabled={!name.trim() || !phone} onClick={submit}>Créer</button></>}>
       <Field label="Nom"><input autoFocus value={name} maxLength={100} placeholder="Ex. : Adjamé-Smart" onChange={(e) => setName(e.target.value)} /></Field>
       <PhoneInput label="Téléphone du compte client" value={phone} onChange={setPhone} />
-      <Field label="Adresse des webhooks (facultatif)" hint="LETO y envoie chaque changement de statut des courses"><input value={webhookUrl} placeholder="https://api.adjame-smart.ci/webhooks/leto" onChange={(e) => setWebhookUrl(e.target.value)} /></Field>
+      <Field label="Adresse des webhooks (facultatif)" hint="VITE y envoie chaque changement de statut des courses"><input value={webhookUrl} placeholder="https://api.adjame-smart.ci/webhooks/leto" onChange={(e) => setWebhookUrl(e.target.value)} /></Field>
       {error && <div className="alert error">{error}</div>}
     </Modal>
   );
@@ -219,7 +219,7 @@ function PartnerSheet({ id, onClose, onChanged }: { id: string; onClose: () => v
         )}
       </div>
 
-      <small className="muted">Compte client LETO : {d.phone ? formatPhone(d.phone) : '—'} · documentation : docs/partner-api.md (dépôt leto-backend).</small>
+      <small className="muted">Compte client VITE : {d.phone ? formatPhone(d.phone) : '—'} · documentation : docs/partner-api.md (dépôt leto-backend).</small>
 
       {shown && (
         <Modal title={shown.title} subtitle={shown.hint} onClose={() => setShown(null)}

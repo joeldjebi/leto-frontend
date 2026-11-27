@@ -1,4 +1,4 @@
-# Back-office LETO (Apache / cPanel)
+# Back-office VITE (Apache / cPanel)
 Options -Indexes
 DirectoryIndex index.html
 

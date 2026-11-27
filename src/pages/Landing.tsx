@@ -313,7 +313,7 @@ function ApkCard({ apk, onUploaded }: { apk: LandingContent['apk']; onUploaded: 
           <div className="grow">
             {apk.url ? (
               <>
-                <div className="title">LETO {apk.version ? `version ${apk.version}` : ''}</div>
+                <div className="title">VITE {apk.version ? `version ${apk.version}` : ''}</div>
                 <small className="muted">
                   {apk.sizeMb == null ? 'Taille inconnue' : apk.sizeMb < 0.1 ? 'Moins de 0,1 Mo' : `${apk.sizeMb.toLocaleString('fr-FR')} Mo`}
                   {apk.updatedAt && ` · mis en ligne le ${dateTime(apk.updatedAt)}`}
@@ -326,7 +326,7 @@ function ApkCard({ apk, onUploaded }: { apk: LandingContent['apk']; onUploaded: 
               </>
             )}
           </div>
-          {apk.url && <a className="btn secondary" href={API_URL + apk.url} download="LETO.apk"><Icon name="download" size={15} />Télécharger pour tester</a>}
+          {apk.url && <a className="btn secondary" href={API_URL + apk.url} download="VITE.apk"><Icon name="download" size={15} />Télécharger pour tester</a>}
         </div>
         <form className="snd-add" onSubmit={submit}>
           <div className="title">{apk.url ? 'Mettre en ligne une nouvelle version' : 'Mettre en ligne l’application'}</div>
@@ -346,7 +346,7 @@ function ApkCard({ apk, onUploaded }: { apk: LandingContent['apk']; onUploaded: 
           )}
           <small className="muted">
             {file ? `${file.name} · ${(file.size / 1024 / 1024).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} Mo · ` : ''}
-            {MAX_APK_MB} Mo maximum. Le fichier remplace l’ancienne version et se télécharge sous le nom LETO.apk.
+            {MAX_APK_MB} Mo maximum. Le fichier remplace l’ancienne version et se télécharge sous le nom VITE.apk.
           </small>
           {error && <div className="alert error">{error}</div>}
         </form>

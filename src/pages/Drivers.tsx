@@ -133,7 +133,7 @@ function AddDriver({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await api('/companies/me/drivers', { method: 'POST', body: form });
-      toast(`${form.name} ajouté — il se connecte à l’app LETO avec ${formatPhone(form.phone)}`);
+      toast(`${form.name} ajouté — il se connecte à l’app VITE avec ${formatPhone(form.phone)}`);
       await reload();
       onClose();
     } catch (err) {

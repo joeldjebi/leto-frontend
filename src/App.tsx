@@ -192,7 +192,7 @@ function Shell({ onLogout }: { onLogout: () => void }) {
         <div className="brand">
           <div className="app-icon"><LetoMark size={22} /></div>
           <div>
-            <strong className="brand-word">LETO</strong>
+            <strong className="brand-word">VITE</strong>
             <small className="muted">{isSA ? 'Super Admin' : me.company?.name}</small>
           </div>
         </div>

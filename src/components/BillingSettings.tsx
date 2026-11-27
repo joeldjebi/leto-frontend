@@ -3,7 +3,7 @@ import { api, BillingConfig, CommissionType, MobileMoneyAccount, errText } from 
 import { formatMoney, currencySymbol } from '../countries';
 import { Card, Icon, Segmented, Switch, useToast } from '../ui';
 
-/** SA : abonnement annuel, commission par défaut, comptes Mobile Money de LETO */
+/** SA : abonnement annuel, commission par défaut, comptes Mobile Money de VITE */
 export default function BillingSettings() {
   const toast = useToast();
   const [saved, setSaved] = useState<BillingConfig | null>(null);
@@ -62,7 +62,7 @@ export default function BillingSettings() {
             <div className="grow">
               <div className="title">Essai gratuit</div>
               <small className="muted">{cfg.trialDays > 0
-                ? `Chaque nouvelle entreprise utilise LETO ${cfg.trialDays} jour(s) à partir de sa validation, sans recharger son crédit ni payer d’abonnement : aucune commission pendant l’essai. Modifiable par entreprise depuis sa fiche.`
+                ? `Chaque nouvelle entreprise utilise VITE ${cfg.trialDays} jour(s) à partir de sa validation, sans recharger son crédit ni payer d’abonnement : aucune commission pendant l’essai. Modifiable par entreprise depuis sa fiche.`
                 : 'Aucun essai : les nouvelles entreprises doivent recharger leur crédit (et payer l’abonnement s’il est activé) avant de travailler.'}</small>
             </div>
             <input type="number" min={0} max={365} step={1} value={cfg.trialDays} onChange={(e) => setCfg({ ...cfg, trialDays: Math.max(0, Math.min(365, Math.round(Number(e.target.value) || 0))) })} style={{ width: 90, textAlign: 'right' }} aria-label="Durée de l’essai gratuit en jours" /><span className="muted">jours</span>
@@ -77,7 +77,7 @@ export default function BillingSettings() {
           </div>
         </div>
         <div>
-          <div className="title" style={{ fontWeight: 500, marginBottom: 4 }}>Comptes Mobile Money de LETO</div>
+          <div className="title" style={{ fontWeight: 500, marginBottom: 4 }}>Comptes Mobile Money de VITE</div>
           <small className="muted">Affichés aux entreprises quand elles paient.</small>
           <div className="stack" style={{ gap: 8, marginTop: 10 }}>
             {cfg.accounts.map((a, i) => (

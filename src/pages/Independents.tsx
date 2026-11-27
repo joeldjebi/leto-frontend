@@ -30,7 +30,7 @@ const HISTORY: Record<IndependentDossier['history'][number]['action'], [string, 
   EXPIRY_SET: ['Dates de validité modifiées', '#8e8e93'],
   EXPIRED: ['Document expiré', '#ff3b30'],
   TRANSITION_GRANTED: ['Période de transition accordée', '#34c759'],
-  PROPOSED: ['Proposé à une entreprise par LETO', '#F28C1A'],
+  PROPOSED: ['Proposé à une entreprise par VITE', '#F28C1A'],
 };
 /** Validité d'une date (AAAA-MM-JJ) : même règle que le serveur (30 jours) */
 const stateOf = (d: string | null): ExpiryState => {
@@ -196,7 +196,7 @@ function RulesCard() {
         </div>
         <div style={{ flexWrap: 'wrap' }}>
           <div className="grow" style={{ minWidth: 220 }}>
-            <div className="title">Commission LETO par course</div>
+            <div className="title">Commission VITE par course</div>
             <small className="muted">
               Prélevée sur le solde du livreur · ex. course à {formatMoney(sample)} → {formatMoney(type === 'PERCENT' ? Math.round((sample * (n || 0)) / 100) : n || 0)}.
               Actuellement : {ruleLabel(cfg.commissionType, cfg.commissionValue)}.
@@ -210,7 +210,7 @@ function RulesCard() {
         <div>
           <Icon name="tag" size={16} className="muted" />
           <small className="muted grow">
-            Les livreurs indépendants appliquent les tarifs LETO par défaut (Tarifs et règles) et ne peuvent pas prendre de course avec paiement à la livraison.
+            Les livreurs indépendants appliquent les tarifs VITE par défaut (Tarifs et règles) et ne peuvent pas prendre de course avec paiement à la livraison.
           </small>
         </div>
       </div>
@@ -683,7 +683,7 @@ function AffiliationRulesCard() {
         {row('earningsHoldHours', 'Délai avant retrait des gains', 'Les commissions des entreprises deviennent retirables après ce délai (temps de traiter les litiges)', 'h', 720)}
         {row('minWithdrawal', 'Retrait minimum', 'Montant minimum d’une demande de retrait', 'F')}
         <div>
-          <div className="grow"><div className="title">Suspension automatique (note basse)</div><small className="muted">Un livreur indépendant dont la moyenne récente passe sous le seuil est suspendu ; LETO et son entreprise sont prévenus pour examiner son cas</small></div>
+          <div className="grow"><div className="title">Suspension automatique (note basse)</div><small className="muted">Un livreur indépendant dont la moyenne récente passe sous le seuil est suspendu ; VITE et son entreprise sont prévenus pour examiner son cas</small></div>
           <Switch checked={cfg.autoSuspendEnabled} label={cfg.autoSuspendEnabled ? 'Désactiver' : 'Activer'} onChange={async (v) => {
             try { apply(await api<IndependentsConfig>('/independents/config', { method: 'PUT', body: { autoSuspendEnabled: v } })); toast(v ? 'Suspension automatique activée' : 'Suspension automatique désactivée'); } catch (e) { setError(errText(e)); }
           }} />

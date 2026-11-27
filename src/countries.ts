@@ -40,17 +40,17 @@ export function loadCountries() {
 }
 
 const subscribe = (l: () => void) => { listeners.add(l); return () => { listeners.delete(l); }; };
-/** Liste des pays actifs + pays où LETO livre ; le composant se redessine quand le SA change un pays */
+/** Liste des pays actifs + pays où VITE livre ; le composant se redessine quand le SA change un pays */
 export const useCountries = () => useSyncExternalStore(subscribe, () => state);
 export const operatingCountry = () => state.operating;
 export const activeCountries = () => state.countries;
 
 // ---------- Montants ----------
 
-/** Devise par code ISO (XOF…), sinon celle du pays où LETO livre */
+/** Devise par code ISO (XOF…), sinon celle du pays où VITE livre */
 export const currencyOf = (code?: string | null) => state.countries.find((c) => c.currencyCode === code) ?? state.operating;
 
-/** Montant dans une devise (par défaut celle du pays où LETO livre) : « 1 500 F » */
+/** Montant dans une devise (par défaut celle du pays où VITE livre) : « 1 500 F » */
 export function formatMoney(amount: number | null | undefined, currencyCode?: string | null) {
   const c = currencyOf(currencyCode);
   const n = Number(amount ?? 0) || 0;

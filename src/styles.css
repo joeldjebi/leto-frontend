@@ -1,5 +1,5 @@
 /* ==========================================================================
-   LETO — Back-office · design inspiré des apps Apple (macOS / iCloud)
+   VITE — Back-office · design inspiré des apps Apple (macOS / iCloud)
    ========================================================================== */
 
 :root {
@@ -308,7 +308,7 @@ select { appearance: none; padding-right: 30px; background-image: url("data:imag
 .login .card { width: 100%; max-width: 380px; padding: 36px 32px 28px; text-align: center; }
 .login .app-icon { width: 72px; height: 72px; border-radius: 18px; margin: 0 auto 16px; }
 .login h1 { font-size: 28px; font-weight: 700; font-family: 'Unbounded', var(--font); letter-spacing: 0.02em; }
-/* Mot « LETO » : police de la charte */
+/* Mot « VITE » : police de la charte */
 .brand-word { font-family: 'Unbounded', var(--font); font-weight: 700; letter-spacing: 0.02em; }
 .login form { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; text-align: left; }
 .login input { padding: 12px 14px; font-size: 15px; border-radius: 12px; }
