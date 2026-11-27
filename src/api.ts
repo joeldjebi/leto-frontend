@@ -401,7 +401,7 @@ export interface LandingContent {
   contact: { phone: string; email: string; whatsapp: string; address: string };
   apk: { url: string | null; version: string; sizeMb: number | null; updatedAt: string | null };
 }
-export const LANDING_URL = 'https://leto.performx.online';
+export const LANDING_URL = 'https://vite.ci';
 
 /** Nouvelle version de l'APK : XMLHttpRequest pour suivre la progression de l'envoi */
 export function uploadApk(file: File, version: string, onProgress: (pct: number) => void): Promise<LandingContent> {

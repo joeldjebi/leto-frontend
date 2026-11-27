@@ -29,7 +29,7 @@ export default function VideoVisits() {
 
   return (
     <>
-      <PageHeader title="Visites vidéo" subtitle={<>Ouvertures de la page <a href="https://leto.performx.online/video/" target="_blank" rel="noreferrer">leto.performx.online/video</a> : quand, d’où et combien de temps.</>} />
+      <PageHeader title="Visites vidéo" subtitle={<>Ouvertures de la page <a href="https://vite.ci/video/" target="_blank" rel="noreferrer">vite.ci/video</a> : quand, d’où et combien de temps.</>} />
       {error && <div className="banner warn">{error}</div>}
       {data && (
         <div className="grid grid-stats" style={{ marginBottom: 16 }}>

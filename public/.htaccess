@@ -2,7 +2,7 @@
 Options -Indexes
 DirectoryIndex index.html
 
-# Toujours en HTTPS (l'API n'accepte que https://leto.performx.online)
+# Toujours en HTTPS (l'API n'accepte que https://vite.ci)
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteCond %{HTTPS} off
@@ -15,7 +15,7 @@ DirectoryIndex index.html
   # (qui bloquait les appels vers l'API). Autorise l'API + temps réel, les cartes OpenStreetMap, les photos et les sons (Wasabi).
   Header always unset Content-Security-Policy
   Header unset Content-Security-Policy
-  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.leto.performx.online https://*.wasabisys.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://api.maptiler.com https://api.mapbox.com https://tile.googleapis.com; media-src 'self' blob: https://api.leto.performx.online https://*.wasabisys.com; connect-src 'self' https://api.leto.performx.online wss://api.leto.performx.online; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+  Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://api.vite.ci https://*.wasabisys.com https://tile.openstreetmap.org https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com https://api.maptiler.com https://api.mapbox.com https://tile.googleapis.com; media-src 'self' blob: https://api.vite.ci https://*.wasabisys.com; connect-src 'self' https://api.vite.ci wss://api.vite.ci; font-src 'self' data:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 
   # Fichiers versionnés par Vite : cache long
   <FilesMatch "\.(js|css|woff2?|svg|png)$">

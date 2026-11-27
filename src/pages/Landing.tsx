@@ -45,7 +45,7 @@ function TextField({ label, value, max, onChange, multiline, placeholder, hint, 
   );
 }
 
-/** SA : contenu de la landing page (leto.performx.online) et application Android à télécharger */
+/** SA : contenu de la landing page (vite.ci) et application Android à télécharger */
 export default function Landing() {
   const toast = useToast();
   const [saved, setSaved] = useState<LandingContent | null>(null);

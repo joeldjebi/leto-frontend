@@ -2,7 +2,7 @@ import { FormEvent, useState } from 'react';
 import { api, setToken, User, errText, UserError } from '../api';
 import { Icon, PhoneInput, LetoMark } from '../ui';
 
-/** Ouvert depuis leto.performx.online/pro (espace des entreprises) */
+/** Ouvert depuis vite.ci/pro (espace des entreprises) */
 const PRO_SPACE = location.pathname.startsWith('/pro');
 /** Ouvert depuis sa.leto… : espace réservé à l'administration VITE */
 const ADMIN_SPACE = location.hostname.startsWith('sa.');
@@ -45,7 +45,7 @@ export default function Login({ onLogin }: { onLogin: (u: User) => void }) {
         </form>
         {ADMIN_SPACE && (
           <p className="muted" style={{ margin: '16px 0 0', fontSize: 13, textAlign: 'center' }}>
-            Entreprise de livraison ? <a href="https://leto.performx.online/pro/">Connectez-vous ici</a>
+            Entreprise de livraison ? <a href="https://vite.ci/pro/">Connectez-vous ici</a>
           </p>
         )}
       </div>
