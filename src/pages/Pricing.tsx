@@ -1,16 +1,31 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, dateTime, PricingGrid, Speed, Vehicle, errText } from '../api';
+import { api, capFromKm, computePrice, dateTime, PricingGrid, Speed, Vehicle, VehicleConfig, errText } from '../api';
 import { formatMoney, currencySymbol } from '../countries';
 import BillingSettings from '../components/BillingSettings';
 import MapSettings from '../components/MapSettings';
 import SurchargeSettings from '../components/SurchargeSettings';
-import { Card, Modal, PageHeader, Switch, useToast } from '../ui';
+import { Card, Icon, Modal, PageHeader, Switch, useToast } from '../ui';
+import { isBuiltinVehicle, loadVehicles, sortVehicleCodes, VEHICLE_ICON_LABEL, VEHICLE_ICONS, VehicleIcon } from '../vehicles';
 
-const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
 const SPEEDS: Speed[] = ['EXPRESS', 'STANDARD', 'SCHEDULED'];
 
 const price = (g: PricingGrid, km: number, v: Vehicle, s: Speed, stops: number, cod: number, abidjan: boolean, up = 0) => computePrice(g, km, v, s, stops, cod, abidjan, up);
-const VNAME: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
+
+/** Code d'un nouvel engin depuis son nom : « Vélo » → VELO, « Moto 3 roues » → MOTO_3_ROUE (10 caractères), unique */
+export function vehicleCode(name: string, taken: string[]): string {
+  let base = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (!/^[A-Z]/.test(base)) base = `V${base}`;
+  base = base.slice(0, 10).replace(/_+$/, '');
+  if (base.length < 2) base = (base + 'XX').slice(0, 2);
+  if (!taken.includes(base)) return base;
+  for (let i = 2; i < 1000; i++) {
+    const code = `${base.slice(0, 10 - String(i).length)}${i}`;
+    if (!taken.includes(code)) return code;
+  }
+  return base;
+}
+
+type VehicleForm = Pick<VehicleConfig, 'name' | 'label' | 'description' | 'icon' | 'base' | 'perKm' | 'min' | 'enabled'>;
 
 /** Tarifs et règles de la plateforme (SA) */
 export default function Pricing() {
@@ -21,12 +36,17 @@ export default function Pricing() {
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [sim, setSim] = useState({ km: 6, stops: 1, cod: 0, abidjan: true, up: 0 });
+  /** Fenêtre d'ajout (code null) ou de modification d'un engin */
+  const [editing, setEditing] = useState<{ code: Vehicle | null } | null>(null);
+  const [removing, setRemoving] = useState<Vehicle | null>(null);
 
   useEffect(() => {
     api<PricingGrid>('/admin/settings').then((g) => { setSaved(g); setGrid(g); });
   }, []);
   if (!grid || !saved) return <PageHeader title="Tarifs et règles" subtitle="Chargement…" />;
 
+  const VEHICLES = sortVehicleCodes(Object.keys(grid.vehicles));
+  const vname = (v: Vehicle) => grid.vehicles[v]?.name || grid.vehicles[v]?.label || v;
   const dirty = JSON.stringify({ ...grid, updatedAt: 0, updatedBy: 0 }) !== JSON.stringify({ ...saved, updatedAt: 0, updatedBy: 0 });
   const setVehicle = (v: Vehicle, patch: Partial<PricingGrid['vehicles'][Vehicle]>) =>
     setGrid({ ...grid, vehicles: { ...grid.vehicles, [v]: { ...grid.vehicles[v], ...patch } } });
@@ -44,6 +64,7 @@ export default function Pricing() {
       });
       setSaved(g);
       setGrid(g);
+      void loadVehicles(true);
       toast('Tarifs enregistrés — appliqués aux nouvelles commandes');
     } catch (e) {
       setError(errText(e));
@@ -52,11 +73,47 @@ export default function Pricing() {
     }
   };
 
+  /** Ajout immédiat d'un engin (les autres modifications en cours sont conservées) */
+  const addVehicle = async (f: VehicleForm) => {
+    const code = vehicleCode(f.name, Object.keys(grid.vehicles));
+    const g = await api<PricingGrid>('/admin/settings', {
+      method: 'PUT',
+      body: { vehicles: { [code]: { ...f, maxAbidjan: { EXPRESS: 0, STANDARD: 0, SCHEDULED: 0 } } } },
+    });
+    setSaved(g);
+    setGrid((cur) => (cur && g.vehicles[code] ? { ...cur, vehicles: { ...cur.vehicles, [code]: g.vehicles[code] } } : g));
+    void loadVehicles(true);
+    setEditing(null);
+    toast(`${f.name} ajouté aux offres`);
+  };
+
+  /** Retrait immédiat d'un engin ajouté (jamais MOTO, CAR, CARGO) */
+  const removeVehicle = async (code: Vehicle) => {
+    if (isBuiltinVehicle(code)) return;
+    const name = vname(code);
+    try {
+      const g = await api<PricingGrid>('/admin/settings', { method: 'PUT', body: { vehicles: { [code]: null } } });
+      setSaved(g);
+      setGrid((cur) => {
+        if (!cur) return g;
+        const { [code]: _gone, ...rest } = cur.vehicles;
+        return { ...cur, vehicles: rest };
+      });
+      void loadVehicles(true);
+      toast(`${name} retiré des offres`);
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setRemoving(null);
+    }
+  };
+
   const reset = async () => {
     const g = await api<PricingGrid>('/admin/settings/reset', { method: 'POST' });
     setSaved(g);
     setGrid(g);
     setConfirmReset(false);
+    void loadVehicles(true);
     toast('Valeurs par défaut rétablies');
   };
 
@@ -76,17 +133,29 @@ export default function Pricing() {
       {error && <div className="alert error" style={{ marginBottom: 16 }}>{error}</div>}
 
       <div className="stack">
-        <Card title="Offres" pad>
+        <Card title="Offres" pad actions={<button className="btn secondary" onClick={() => setEditing({ code: null })}><Icon name="plus" size={15} />Ajouter un engin</button>}>
           <p className="muted" style={{ marginTop: 0 }}>Prix = max(minimum, base + prix par km × distance) × coefficient du délai, arrondi aux 50 {currencySymbol()} supérieurs, sans dépasser le prix maximum dans le Grand Abidjan. Un engin désactivé n’est proposé par aucune entreprise ; chaque entreprise indique aussi les engins dont elle dispose.</p>
           <div className="table-scroll">
             <table className="list">
-              <thead><tr><th>Offre</th><th>Nom affiché</th><th>Description</th><th className="num">Base ({currencySymbol()})</th><th className="num">Par km ({currencySymbol()})</th><th className="num">Minimum ({currencySymbol()})</th><th>Active</th></tr></thead>
+              <thead><tr><th>Engin</th><th>Libellé</th><th>Description</th><th className="num">Base ({currencySymbol()})</th><th className="num">Par km ({currencySymbol()})</th><th className="num">Minimum ({currencySymbol()})</th><th>Active</th></tr></thead>
               <tbody>
                 {VEHICLES.map((v) => {
                   const c = grid.vehicles[v];
                   return (
                     <tr key={v} style={{ opacity: c.enabled ? 1 : 0.55 }}>
-                      <td><strong>{VNAME[v]}</strong></td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span className="cp-vehicle-icon" style={{ width: 40, height: 34, borderRadius: 10 }}><Icon name={c.icon || 'moto'} size={20} /></span>
+                          <div style={{ minWidth: 0 }}>
+                            <strong style={{ whiteSpace: 'nowrap' }}>{vname(v)}</strong>
+                            <span className="sub">{v}{c.custom || !isBuiltinVehicle(v) ? ' · ajouté' : ''}</span>
+                          </div>
+                          <button className="btn plain icon-btn" title="Modifier" aria-label={`Modifier ${vname(v)}`} onClick={() => setEditing({ code: v })}><Icon name="edit" size={16} /></button>
+                          {!isBuiltinVehicle(v) && (
+                            <button className="btn plain icon-btn" style={{ color: 'var(--red)' }} title="Retirer" aria-label={`Retirer ${vname(v)}`} onClick={() => setRemoving(v)}><Icon name="trash" size={16} /></button>
+                          )}
+                        </div>
+                      </td>
                       <td><input value={c.label} onChange={(e) => setVehicle(v, { label: e.target.value })} style={{ width: 160 }} /></td>
                       <td><input value={c.description} onChange={(e) => setVehicle(v, { description: e.target.value })} style={{ width: 200 }} /></td>
                       <td className="num"><input type="number" min={0} step={50} value={c.base} onChange={(e) => setVehicle(v, { base: num(e.target.value) })} style={{ width: 96, textAlign: 'right' }} /></td>
@@ -111,13 +180,13 @@ export default function Pricing() {
               <tbody>
                 {VEHICLES.map((v) => (
                   <tr key={v} style={{ opacity: grid.vehicles[v].enabled ? 1 : 0.55 }}>
-                    <td><strong>{VNAME[v]}</strong></td>
+                    <td><strong>{vname(v)}</strong></td>
                     {SPEEDS.map((s) => {
                       const cap = grid.vehicles[v].maxAbidjan?.[s] ?? 0;
                       const from = capFromKm(grid, v, s);
                       return (
                         <td key={s} className="num">
-                          <input type="number" min={0} step={50} value={cap} onChange={(e) => setVehicle(v, { maxAbidjan: { ...grid.vehicles[v].maxAbidjan, [s]: num(e.target.value) } })} style={{ width: 100, textAlign: 'right' }} aria-label={`Prix maximum ${VNAME[v]} ${grid.speeds[s].label}`} />
+                          <input type="number" min={0} step={50} value={cap} onChange={(e) => setVehicle(v, { maxAbidjan: { ...grid.vehicles[v].maxAbidjan, [s]: num(e.target.value) } })} style={{ width: 100, textAlign: 'right' }} aria-label={`Prix maximum ${vname(v)} ${grid.speeds[s].label}`} />
                           <span className="sub">{cap ? (from !== null ? `atteint dès ${from} km` : 'plafonné') : 'pas de plafond'}</span>
                         </td>
                       );
@@ -327,10 +396,117 @@ export default function Pricing() {
         <BillingSettings />
       </div>
 
+      {editing && (
+        <VehicleModal
+          code={editing.code}
+          initial={editing.code ? grid.vehicles[editing.code] : undefined}
+          taken={Object.keys(grid.vehicles)}
+          onClose={() => setEditing(null)}
+          onSubmit={async (f) => {
+            if (!editing.code) return addVehicle(f);
+            const { base: _b, perKm: _p, min: _m, enabled: _e, ...identity } = f;
+            setVehicle(editing.code, identity);
+            setEditing(null);
+          }}
+        />
+      )}
+
+      {removing && (
+        <Modal title={`Retirer « ${vname(removing)} » ?`} subtitle="Cet engin ne sera plus proposé aux clients ni aux entreprises. Les livraisons passées gardent leur historique. Pour le suspendre seulement, désactivez-le."
+          onClose={() => setRemoving(null)}
+          footer={<><button className="btn secondary" onClick={() => setRemoving(null)}>Annuler</button><button className="btn danger" onClick={() => removeVehicle(removing)}>Retirer</button></>} />
+      )}
+
       {confirmReset && (
         <Modal title="Rétablir les valeurs par défaut ?" subtitle="Toutes les modifications de tarifs et de règles seront perdues." onClose={() => setConfirmReset(false)}
           footer={<><button className="btn secondary" onClick={() => setConfirmReset(false)}>Annuler</button><button className="btn danger" onClick={reset}>Rétablir</button></>} />
       )}
     </>
+  );
+}
+
+/** Ajout (code null) ou modification du nom, du libellé, de la description et du pictogramme d'un engin */
+function VehicleModal({ code, initial, taken, onClose, onSubmit }: {
+  code: Vehicle | null; initial?: VehicleConfig; taken: string[];
+  onClose: () => void; onSubmit: (f: VehicleForm) => Promise<void>;
+}) {
+  const [f, setF] = useState<VehicleForm>({
+    name: initial?.name ?? initial?.label ?? '', label: initial?.label ?? '', description: initial?.description ?? '',
+    icon: initial?.icon ?? 'moto', base: initial?.base ?? 500, perKm: initial?.perKm ?? 100, min: initial?.min ?? 1000, enabled: initial?.enabled ?? true,
+  });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const adding = !code;
+  const name = f.name.trim();
+  const newCode = adding && name ? vehicleCode(name, taken) : code;
+  const num = (v: string) => (v === '' ? 0 : Number(v));
+  const valid = name.length > 0 && name.length <= 20 && f.label.trim().length > 0;
+
+  const submit = async () => {
+    if (!valid) return;
+    setBusy(true);
+    setError('');
+    try {
+      await onSubmit({ ...f, name, label: f.label.trim(), description: f.description.trim() });
+    } catch (e) {
+      setError(errText(e));
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={adding ? 'Ajouter un engin' : `Modifier « ${initial?.name || code} »`}
+      subtitle={adding ? 'Le nouvel engin est proposé aux entreprises qui en disposent, avec ses propres tarifs.' : 'Les modifications seront appliquées en cliquant sur Enregistrer.'}
+      onClose={onClose}
+      footer={<>
+        <button className="btn secondary" onClick={onClose}>Annuler</button>
+        <button className="btn" disabled={!valid || busy} onClick={submit}>{adding ? (busy ? 'Ajout…' : 'Ajouter') : 'Valider'}</button>
+      </>}
+    >
+      {error && <div className="alert error">{error}</div>}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, borderRadius: 12, background: 'var(--fill)' }}>
+        <span className="cp-vehicle-icon"><Icon name={f.icon} size={28} /></span>
+        <div style={{ minWidth: 0 }}>
+          <strong>{name || 'Nom de l’engin'}</strong>
+          <small className="muted" style={{ display: 'block' }}>{f.label.trim() || 'Libellé'}{newCode ? ` · code ${newCode}` : ''}</small>
+        </div>
+      </div>
+      <div className="grid" style={{ gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+        <label className="field"><span>Nom court</span>
+          <input value={f.name} maxLength={20} placeholder="Ex. Vélo" autoFocus onChange={(e) => setF({ ...f, name: e.target.value, label: !f.label || f.label === f.name ? e.target.value : f.label })} />
+        </label>
+        <label className="field"><span>Libellé</span>
+          <input value={f.label} maxLength={80} placeholder="Ex. Vélo cargo" onChange={(e) => setF({ ...f, label: e.target.value })} />
+        </label>
+      </div>
+      <label className="field"><span>Description</span>
+        <input value={f.description} maxLength={120} placeholder="Ex. Petits colis, centre-ville" onChange={(e) => setF({ ...f, description: e.target.value })} />
+      </label>
+      <div className="field">
+        <span>Pictogramme</span>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(92px, 1fr))', gap: 8 }}>
+          {VEHICLE_ICONS.map((ic: VehicleIcon) => (
+            <button key={ic} type="button" className={`nd-choice compact${f.icon === ic ? ' on' : ''}`} onClick={() => setF({ ...f, icon: ic })} aria-pressed={f.icon === ic}>
+              <span className="nd-choice-icon"><Icon name={ic} size={24} /></span>
+              <small>{VEHICLE_ICON_LABEL[ic]}</small>
+            </button>
+          ))}
+        </div>
+      </div>
+      {adding && (
+        <>
+          <div className="grid" style={{ gap: 12, gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+            <label className="field"><span>Prix de base ({currencySymbol()})</span><input type="number" min={0} step={50} value={f.base} onChange={(e) => setF({ ...f, base: num(e.target.value) })} /></label>
+            <label className="field"><span>Prix par km ({currencySymbol()})</span><input type="number" min={0} step={10} value={f.perKm} onChange={(e) => setF({ ...f, perKm: num(e.target.value) })} /></label>
+            <label className="field"><span>Minimum ({currencySymbol()})</span><input type="number" min={0} step={50} value={f.min} onChange={(e) => setF({ ...f, min: num(e.target.value) })} /></label>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ flex: 1, minWidth: 0 }}><div style={{ fontWeight: 500 }}>Proposer tout de suite</div><small className="muted">Sinon, l’engin est créé désactivé</small></div>
+            <Switch checked={f.enabled} onChange={(on) => setF({ ...f, enabled: on })} label={f.enabled ? 'Désactiver' : 'Activer'} />
+          </div>
+        </>
+      )}
+    </Modal>
   );
 }

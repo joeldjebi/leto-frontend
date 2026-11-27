@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
-  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, EXPIRY_BADGE, ExpiryState, IndependentCounts, Renewal, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, VEHICLE_LABEL,errText } from '../api';
+  api, BillingOverview, CommissionType, CREDIT_LABEL, date, dateTime, EXPIRY_BADGE, ExpiryState, IndependentCounts, Renewal, IndependentDoc, IndependentDossier, IndependentRow, IndependentsConfig, IndependentStatus, INDEPENDENT_STATUS, photoUrl, ruleLabel, errText } from '../api';
 import { formatMoney, formatPhone, currencySymbol } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, Search, Segmented, Sheet, Switch, useToast } from '../ui';
+import { useVehicles } from '../vehicles';
 
 type Filter = IndependentStatus | 'ALL';
 interface ListResponse { items: IndependentRow[]; counts: IndependentCounts; config: IndependentsConfig }
@@ -39,7 +40,6 @@ const stateOf = (d: string | null): ExpiryState => {
   const warn = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
   return d < today ? 'EXPIRED' : d <= warn ? 'SOON' : 'OK';
 };
-const vehicleIcon = (v: string | null) => (v === 'CAR' ? 'car' : v === 'CARGO' ? 'truck' : 'moto');
 const age = (iso: string) => {
   const b = new Date(iso);
   const n = new Date();
@@ -63,6 +63,7 @@ const StatusBadgeLI = ({ status }: { status: IndependentStatus }) => <Badge colo
 
 /** SA : livreurs indépendants — règles, dossiers d'inscription, validation, solde */
 export default function Independents() {
+  const veh = useVehicles();
   const [filter, setFilter] = useState<Filter>('PENDING');
   const [data, setData] = useState<ListResponse | null>(null);
   const [q, setQ] = useState('');
@@ -120,7 +121,7 @@ export default function Independents() {
                       <tr key={r.id} className="clickable" onClick={() => setOpen(r)}>
                         <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Avatar name={r.name} /><div>{r.name}<span className="sub">{formatPhone(r.phone)}</span></div></div></td>
                         <td>
-                          {r.vehicleType ? <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name={vehicleIcon(r.vehicleType)} size={15} />{VEHICLE_LABEL[r.vehicleType]}</span> : <span className="muted">—</span>}
+                          {r.vehicleType ? <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}><Icon name={veh.icon(r.vehicleType)} size={15} />{veh.name(r.vehicleType)}</span> : <span className="muted">—</span>}
                           {r.vehiclePlate && <span className="sub">{r.vehiclePlate}</span>}
                         </td>
                         <td>{r.commune ?? <span className="muted">—</span>}</td>
@@ -220,6 +221,7 @@ function RulesCard() {
 
 /** Fiche d'un dossier : photos, identité, engin, historique, solde, actions */
 function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClose: () => void; onChanged: () => void }) {
+  const veh = useVehicles();
   const toast = useToast();
   const [d, setD] = useState<IndependentDossier | null>(null);
   const [error, setError] = useState('');
@@ -390,7 +392,7 @@ function DossierSheet({ row, onClose, onChanged }: { row: IndependentRow; onClos
             <div className="section-title">Engin</div>
             <div className="group">
               <dl className="kv">
-                <dt>Type</dt><dd style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{d.vehicleType ? <><Icon name={vehicleIcon(d.vehicleType)} size={15} />{VEHICLE_LABEL[d.vehicleType]}</> : '—'}</dd>
+                <dt>Type</dt><dd style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{d.vehicleType ? <><Icon name={veh.icon(d.vehicleType)} size={15} />{veh.name(d.vehicleType)}</> : '—'}</dd>
                 <dt>Marque, modèle</dt><dd>{d.vehicleBrand ?? '—'}</dd>
                 <dt>Immatriculation</dt><dd>{d.vehiclePlate ?? '—'}</dd>
                 <dt>N° de permis</dt><dd>{d.licenseNumber ?? '—'}</dd>

@@ -4,7 +4,8 @@ export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
 
 export type Role = 'CLIENT' | 'DRIVER' | 'COMPANY' | 'SUPER_ADMIN';
 export type Status = 'PENDING' | 'ACCEPTED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
-export type Vehicle = 'MOTO' | 'CAR' | 'CARGO';
+/** Code d'engin : MOTO, CAR, CARGO ou un engin ajouté par le Super Admin (VELO, TRICYCLE…) — catalogue : src/vehicles.ts */
+export type Vehicle = string;
 export type Speed = 'EXPRESS' | 'STANDARD' | 'SCHEDULED';
 export type StopStatus = 'PENDING' | 'DELIVERED' | 'FAILED' | 'CANCELLED';
 
@@ -161,7 +162,7 @@ export interface Stats {
   topClients: { id: string; name: string; deliveries: number; volume: number }[];
 }
 
-export interface VehicleConfig { label: string; description: string; base: number; perKm: number; min: number; enabled: boolean; maxAbidjan: Record<Speed, number> }
+export interface VehicleConfig { label: string; /** Nom court (≤ 20 caractères) */ name: string; icon: 'moto' | 'bike' | 'tricycle' | 'car' | 'van' | 'truck'; /** Engin ajouté par le SA (supprimable) */ custom?: boolean; description: string; base: number; perKm: number; min: number; enabled: boolean; maxAbidjan: Record<Speed, number> }
 export interface SpeedConfig { label: string; description: string; factor: number }
 export interface PricingGrid {
   vehicles: Record<Vehicle, VehicleConfig>;
@@ -215,7 +216,6 @@ export const STATUS_LABEL: Record<Status, string> = {
 export const STATUS_COLOR: Record<Status, string> = {
   PENDING: 'yellow', ACCEPTED: 'blue', PICKED_UP: 'purple', DELIVERED: 'green', CANCELLED: 'gray',
 };
-export const VEHICLE_LABEL: Record<Vehicle, string> = { MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' };
 export const SPEED_LABEL: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: 'Dans 2 h' };
 export type FailureReason = 'ABSENT' | 'REFUSED' | 'WRONG_ADDRESS' | 'NO_MONEY' | 'DAMAGED' | 'UNSAFE';
 export const FAILURE_LABEL: Record<FailureReason, string> = {

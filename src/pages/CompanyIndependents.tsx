@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   api, CommissionType, CompanyAffiliations, CompanyDossier, date, dateTime, DocsState, EARNING_LABEL, Earnings, errText, EXPIRY_BADGE, ExpiryState,
-  MyIndependent, PoolDriver, photoUrl, RENEWABLE_LABEL, RenewableDoc, ruleLabel, VEHICLE_LABEL, WITHDRAWAL_STATUS,
+  MyIndependent, PoolDriver, photoUrl, RENEWABLE_LABEL, RenewableDoc, ruleLabel, WITHDRAWAL_STATUS,
 } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Sheet, Stat, Switch, useToast } from '../ui';
 import { EarningsTab } from '../components/Remittances';
 import { RatingSummary } from '../components/Ratings';
+import { useVehicles } from '../vehicles';
 
 /**
  * Entreprise : livreurs indépendants (LI) validés par VITE à rattacher, LI rattachés,
@@ -159,6 +160,7 @@ function CodRow({ data, onSaved }: { data: CompanyAffiliations; onSaved: (d: Com
 }
 
 function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: () => void }) {
+  const veh = useVehicles();
   const [ending, setEnding] = useState<MyIndependent | null>(null);
   const [open, setOpen] = useState<MyIndependent | null>(null);
   return (
@@ -180,7 +182,7 @@ function MineCard({ data, onChanged }: { data: CompanyAffiliations; onChanged: (
                         <div>{m.name} {m.online && <Badge color="green">En ligne</Badge>}<span className="sub">{formatPhone(m.phone)} · depuis le {date(m.affiliatedAt)}</span></div>
                       </div>
                     </td>
-                    <td>{m.vehicleType ? VEHICLE_LABEL[m.vehicleType] : '—'}{m.vehiclePlate && <span className="sub">{m.vehiclePlate}</span>}</td>
+                    <td>{m.vehicleType ? veh.name(m.vehicleType) : '—'}{m.vehiclePlate && <span className="sub">{m.vehiclePlate}</span>}</td>
                     <td><DocsSummary m={m} /></td>
                     <td>
                       {m.affCommissionType && m.appliedRate != null ? ruleLabel(m.affCommissionType, m.appliedRate) : '—'}
@@ -235,6 +237,7 @@ function Validity({ label, v }: { label: string; v: DocsState['license'] }) {
 
 /** Dossier complet d'un LI rattaché : partagé quand il a accepté l'invitation, chaque ouverture est notée */
 function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndependent; cod: boolean; onClose: () => void; onChanged: () => void }) {
+  const veh = useVehicles();
   const [d, setD] = useState<CompanyDossier | null>(null);
   const [error, setError] = useState('');
   const [zoom, setZoom] = useState<[string, string] | null>(null);
@@ -318,7 +321,7 @@ function DossierSheet({ driver, cod, onClose, onChanged }: { driver: MyIndepende
             <div className="section-title">Engin</div>
             <div className="group">
               <dl className="kv">
-                <dt>Type</dt><dd>{d.vehicleType ? VEHICLE_LABEL[d.vehicleType] : '—'}</dd>
+                <dt>Type</dt><dd>{d.vehicleType ? veh.name(d.vehicleType) : '—'}</dd>
                 <dt>Marque, modèle</dt><dd>{d.vehicleBrand ?? '—'}</dd>
                 <dt>Immatriculation</dt><dd>{d.vehiclePlate ?? '—'}</dd>
                 <dt>N° de permis</dt><dd>{d.licenseNumber ?? '—'}</dd>
@@ -420,6 +423,7 @@ function EndDialog({ driver, onClose, onDone }: { driver: MyIndependent; onClose
 }
 
 function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh: Set<string>; onChanged: (d: CompanyAffiliations) => void }) {
+  const veh = useVehicles();
   const toast = useToast();
   const [q, setQ] = useState('');
   const [error, setError] = useState('');
@@ -470,7 +474,7 @@ function PoolCard({ data, fresh, onChanged }: { data: CompanyAffiliations; fresh
               {list.map((p) => (
                 <tr key={p.id}>
                   <td><div style={{ display: 'flex', gap: 10, alignItems: 'center' }}><Face name={p.name} url={p.selfieUrl} /><div>{p.name} {fresh.has(p.id) && <Badge color="orange">Nouveau</Badge>} {p.online && <Badge color="green">En ligne</Badge>}{p.legacyUntil && <span className="sub">Travaille seul jusqu’au {date(p.legacyUntil)}</span>}</div></div></td>
-                  <td>{p.vehicleType ? VEHICLE_LABEL[p.vehicleType] : '—'}{(p.vehicleBrand || p.plate) && <span className="sub">{[p.vehicleBrand, p.plate].filter(Boolean).join(' · ')}</span>}</td>
+                  <td>{p.vehicleType ? veh.name(p.vehicleType) : '—'}{(p.vehicleBrand || p.plate) && <span className="sub">{[p.vehicleBrand, p.plate].filter(Boolean).join(' · ')}</span>}</td>
                   <td><VerifiedPills v={p.verified} /></td>
                   <td>{p.commune ?? '—'}</td>
                   <td className="num">{p.completed}</td>

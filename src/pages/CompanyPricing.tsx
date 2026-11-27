@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { api, capFromKm, computePrice, PricingGrid, Speed, Vehicle, VEHICLE_LABEL, errText } from '../api';
+import { api, capFromKm, computePrice, PricingGrid, Speed, Vehicle, errText } from '../api';
+import { sortVehicleCodes, useVehicles } from '../vehicles';
 import { formatMoney, currencySymbol } from '../countries';
 import { Badge, Icon, Modal, Switch, useToast } from '../ui';
 
 interface CompanyPricingData { custom: Partial<PricingGrid> | null; effective: PricingGrid; platform: PricingGrid; vehicles: Vehicle[] }
-const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
 const SPEEDS: Speed[] = ['EXPRESS', 'STANDARD', 'SCHEDULED'];
-const VEHICLE_ICON: Record<Vehicle, string> = { MOTO: 'moto', CAR: 'car', CARGO: 'truck' };
-const VEHICLE_HINT: Record<Vehicle, string> = { MOTO: 'Petits colis, documents', CAR: 'Colis moyens ou fragiles', CARGO: 'Gros volumes' };
+/** Repli si VITE n'a pas mis de description */
+const VEHICLE_HINT: Record<string, string> = { MOTO: 'Petits colis, documents', CAR: 'Colis moyens ou fragiles', CARGO: 'Gros volumes' };
 
 const SPEED_SHORT: Record<Speed, string> = { EXPRESS: 'Express', STANDARD: 'Standard', SCHEDULED: '2 h' };
 
@@ -31,6 +31,7 @@ function Amount({ label, value, platform, step, onChange, suffix }: { label: str
 /** Gérant : grille tarifaire de l'entreprise (prix libres ; sinon grille VITE) */
 export default function CompanyPricing() {
   const toast = useToast();
+  const veh = useVehicles();
   const [data, setData] = useState<CompanyPricingData | null>(null);
   const [grid, setGrid] = useState<PricingGrid | null>(null);
   const [error, setError] = useState('');
@@ -45,6 +46,10 @@ export default function CompanyPricing() {
   if (!data || !grid) return <div className="cp"><h1 className="cp-title">Mes tarifs</h1><p className="muted">Chargement…</p></div>;
 
   const P = data.platform;
+  /** Engins de la grille VITE (d'origine puis ajoutés), avec nom et pictogramme choisis par VITE */
+  const VEHICLES = sortVehicleCodes(Object.keys(P.vehicles)).filter((v) => grid.vehicles[v]);
+  const vname = (v: Vehicle) => P.vehicles[v]?.name || veh.name(v);
+  const vicon = (v: Vehicle) => P.vehicles[v]?.icon || veh.icon(v);
   const dirty = JSON.stringify(grid) !== JSON.stringify(data.effective);
   const setVehicle = (v: Vehicle, patch: Partial<PricingGrid['vehicles'][Vehicle]>) =>
     setGrid({ ...grid, vehicles: { ...grid.vehicles, [v]: { ...grid.vehicles[v], ...patch } } });
@@ -55,8 +60,8 @@ export default function CompanyPricing() {
     try {
       const d = await api<CompanyPricingData>('/companies/me/vehicles', { method: 'PUT', body: { vehicles: next } });
       setData(d);
-      setGrid({ ...grid, vehicles: Object.fromEntries(VEHICLES.map((x) => [x, { ...grid.vehicles[x], enabled: d.effective.vehicles[x].enabled }])) as PricingGrid['vehicles'] });
-      toast(on ? `${VEHICLE_LABEL[v]} : proposé à vos clients` : `${VEHICLE_LABEL[v]} : retiré de vos offres`);
+      setGrid({ ...grid, vehicles: Object.fromEntries(VEHICLES.map((x) => [x, { ...grid.vehicles[x], enabled: d.effective.vehicles[x]?.enabled ?? false }])) as PricingGrid['vehicles'] });
+      toast(on ? `${vname(v)} : proposé à vos clients` : `${vname(v)} : retiré de vos offres`);
     } catch (e) {
       toast(errText(e));
     }
@@ -108,17 +113,17 @@ export default function CompanyPricing() {
           <div className="cp-vehicles">
             {VEHICLES.map((v) => {
               const c = grid.vehicles[v];
-              const letoOff = !P.vehicles[v].enabled;
+              const letoOff = !P.vehicles[v]?.enabled;
               const has = data.vehicles.includes(v);
               return (
                 <section key={v} className={`cp-vehicle${c.enabled ? '' : ' off'}`}>
                   <div className="cp-vehicle-head">
-                    <span className="cp-vehicle-icon"><Icon name={VEHICLE_ICON[v]} size={28} /></span>
-                    <div className="grow"><strong>{VEHICLE_LABEL[v]}</strong><small className="muted">{VEHICLE_HINT[v]}</small></div>
+                    <span className="cp-vehicle-icon"><Icon name={vicon(v)} size={28} /></span>
+                    <div className="grow"><strong>{vname(v)}</strong><small className="muted">{P.vehicles[v]?.description || VEHICLE_HINT[v] || ''}</small></div>
                     {letoOff ? <Badge>Désactivé par VITE</Badge> : (
                       <label className="cp-has">
                         <span>{has ? 'J’en dispose' : 'Je n’en ai pas'}</span>
-                        <Switch checked={has} onChange={(on) => toggleVehicle(v, on)} label={has ? `Je n’ai pas de ${VEHICLE_LABEL[v].toLowerCase()}` : `Je dispose de ${VEHICLE_LABEL[v].toLowerCase()}`} />
+                        <Switch checked={has} onChange={(on) => toggleVehicle(v, on)} label={has ? `Je n’ai pas de ${vname(v).toLowerCase()}` : `Je dispose de ${vname(v).toLowerCase()}`} />
                       </label>
                     )}
                   </div>
@@ -136,7 +141,7 @@ export default function CompanyPricing() {
                         return (
                           <label key={s} className="cp-cap">
                             <small>{SPEED_SHORT[s]}</small>
-                            <input type="number" min={0} step={50} value={cap} onChange={(e) => setCap(v, s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Prix maximum ${VEHICLE_LABEL[v]} ${SPEED_SHORT[s]}`} />
+                            <input type="number" min={0} step={50} value={cap} onChange={(e) => setCap(v, s, e.target.value === '' ? 0 : Number(e.target.value))} aria-label={`Prix maximum ${vname(v)} ${SPEED_SHORT[s]}`} />
                             <small className={cap === leto ? 'muted' : cap > leto && leto ? 'up' : 'down'} title={`VITE : ${leto ? formatMoney(leto) : 'aucun plafond'}`}>{cap === leto ? '= VITE' : leto ? `VITE ${leto}` : 'VITE : —'}</small>
                           </label>
                         );
@@ -201,7 +206,7 @@ export default function CompanyPricing() {
               <div className="cp-sim-row head"><span /><span>Express</span><span>Standard</span><span>2 h</span></div>
               {VEHICLES.filter((v) => grid.vehicles[v].enabled).map((v) => (
                 <div key={v} className="cp-sim-row">
-                  <span className="cp-sim-v"><Icon name={VEHICLE_ICON[v]} size={18} />{VEHICLE_LABEL[v]}</span>
+                  <span className="cp-sim-v"><Icon name={vicon(v)} size={18} />{vname(v)}</span>
                   {SPEEDS.map((s) => {
                     const mine = price(grid, km, v, s, stops), leto = price(P, km, v, s, stops);
                     return <span key={s}><strong>{formatMoney(mine)}</strong><small className={mine === leto ? 'muted' : mine > leto ? 'up' : 'down'}>VITE {formatMoney(leto)}</small></span>;

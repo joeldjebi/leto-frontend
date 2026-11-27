@@ -6,6 +6,7 @@ import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import DriverDetail from './DriverDetail';
 import { RemittanceTable, Remittance, ReviewRemittance, ShareDialog, useCompanyCash } from '../components/Remittances';
+import { useVehicles } from '../vehicles';
 
 type Filter = 'all' | 'online' | 'blocked';
 
@@ -118,6 +119,7 @@ function DriverList() {
 
 function AddDriver({ onClose }: { onClose: () => void }) {
   const { reload } = useData();
+  const veh = useVehicles();
   const toast = useToast();
   const [form, setForm] = useState<{ name: string; phone: string; password: string; vehicleType: Vehicle }>({ name: '', phone: '', password: '', vehicleType: 'MOTO' });
   const [errors, setErrors] = useState<{ name?: string; phone?: string | null; password?: string }>({});
@@ -151,9 +153,9 @@ function AddDriver({ onClose }: { onClose: () => void }) {
       </Field>
       <Field label="Engin" hint="Affiché sur la carte des clients">
         <div className="vehicle-pick">
-          {(['MOTO', 'CAR', 'CARGO'] as Vehicle[]).map((v) => (
+          {veh.enabled.map(({ code: v }) => (
             <button key={v} type="button" className={form.vehicleType === v ? 'on' : ''} onClick={() => setForm({ ...form, vehicleType: v })}>
-              <Icon name={v === 'MOTO' ? 'moto' : v === 'CAR' ? 'car' : 'truck'} size={22} />{v === 'MOTO' ? 'Moto' : v === 'CAR' ? 'Voiture' : 'Cargo'}
+              <Icon name={veh.icon(v)} size={22} />{veh.name(v)}
             </button>
           ))}
         </div>

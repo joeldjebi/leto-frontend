@@ -9,6 +9,7 @@ import { EarningsTab } from '../components/Remittances';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Icon, Segmented, Stat, Switch, useToast } from '../ui';
 import { CollectionsTab, DeliveriesTab } from './CompanyDetail';
+import { useVehicles } from '../vehicles';
 
 type Tab = 'deliveries' | 'earnings' | 'logbook' | 'stops' | 'collections' | 'disputes' | 'reviews';
 type Metric = 'created' | 'volume';
@@ -20,6 +21,7 @@ const STOP_LABEL = { PENDING: ['À livrer', 'gray'], DELIVERED: ['Livré', 'gree
 export default function DriverDetail({ id }: { id: string }) {
   const { drivers, deliveries, isSA, reload } = useData();
   const toast = useToast();
+  const veh = useVehicles();
   const [tab, setTab] = useState<Tab>('deliveries');
   const [metric, setMetric] = useState<Metric>('created');
   const [open, setOpen] = useState<Delivery | null>(null);
@@ -115,11 +117,12 @@ export default function DriverDetail({ id }: { id: string }) {
             <div className="meta-row">
               <span><Icon name="phone" size={14} />{formatPhone(driver.phone)}</span>
               <span>
-                <Icon name={driver.vehicleType === 'CAR' ? 'car' : driver.vehicleType === 'CARGO' ? 'truck' : 'moto'} size={14} />
-                {isSA ? ({ MOTO: 'Moto', CAR: 'Voiture', CARGO: 'Cargo' } as Record<Vehicle, string>)[driver.vehicleType ?? 'MOTO'] : (
+                <Icon name={veh.icon(driver.vehicleType ?? 'MOTO')} size={14} />
+                {isSA ? veh.name(driver.vehicleType ?? 'MOTO') : (
                   <select className="inline-select" value={driver.vehicleType ?? 'MOTO'} aria-label="Engin du livreur"
                     onChange={async (e) => { await api(`/companies/me/drivers/${driver.id}/vehicle`, { method: 'PATCH', body: { vehicleType: e.target.value } }); toast('Engin du livreur mis à jour'); reload(); }}>
-                    <option value="MOTO">Moto</option><option value="CAR">Voiture</option><option value="CARGO">Cargo</option>
+                    {veh.list.filter((x) => x.enabled || x.code === (driver.vehicleType ?? 'MOTO')).map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
+                    {!veh.get(driver.vehicleType ?? 'MOTO') && <option value={driver.vehicleType ?? 'MOTO'}>{driver.vehicleType ?? 'MOTO'}</option>}
                   </select>
                 )}
               </span>

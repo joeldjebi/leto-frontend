@@ -4,11 +4,12 @@ import { CircleMarker, MapContainer, Polyline, Tooltip, useMap } from 'react-lea
 import MapTiles from './MapTiles';
 import { trackingUrl } from './NewDelivery';
 import {
-  api, codTotal, dateTime, Delivery, FAILURE_LABEL, FOLLOW_UP_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time, VEHICLE_LABEL,
+  api, codTotal, dateTime, Delivery, FAILURE_LABEL, FOLLOW_UP_LABEL, isOnline, photoUrl, SPEED_LABEL, Stop, time,
   RATING_TAG_LABEL, stars,errText } from '../api';
 import { formatMoney, formatPhone } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Field, Icon, Modal, Sheet, StatusBadge, useToast } from '../ui';
+import { useVehicles } from '../vehicles';
 
 const stopColor = (s: Stop) => (s.status === 'DELIVERED' ? '#34c759' : s.status === 'FAILED' ? '#ff3b30' : s.status === 'CANCELLED' ? '#8e8e93' : '#c2410c');
 
@@ -32,6 +33,7 @@ function FitPoints({ points }: { points: [number, number][] }) {
 
 /** Fiche détaillée d'une course : carte, chronologie, arrêts, preuves, actions */
 export default function DeliverySheet({ delivery, onClose }: { delivery: Delivery; onClose: () => void }) {
+  const veh = useVehicles();
   const { isSA, reload, deliveries } = useData();
   const toast = useToast();
   const d = deliveries.find((x) => x.id === delivery.id) ?? delivery; // toujours la version à jour
@@ -139,7 +141,7 @@ export default function DeliverySheet({ delivery, onClose }: { delivery: Deliver
 
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
         <span style={{ fontSize: 28, fontWeight: 700 }} className="tabular">{formatMoney(d.price + (d.extraFees ?? 0), d.currency)}</span>
-        <span className="muted">Espèces · {VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
+        <span className="muted">Espèces · {veh.name(d.vehicleType)} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
       </div>
       {(d.extraFees ?? 0) > 0 && (
         <small className="muted" style={{ marginTop: -8 }}>

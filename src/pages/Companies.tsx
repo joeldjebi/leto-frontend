@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { goTo, useHashParam } from '../App';
-import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, isOnline, VEHICLE_LABEL, errText } from '../api';
+import { api, Company, COMPANY_STATUS, CompanyStatus, dateTime, isOnline, errText } from '../api';
 import { formatMoney, phoneError, formatPhone, telHref } from '../countries';
 import { useData } from '../data';
 import { Avatar, Badge, Card, Empty, Field, Icon, Modal, PageHeader, PhoneInput, Search, Segmented, Switch, useToast } from '../ui';
 import CompanyDetail, { EditCompany } from './CompanyDetail';
+import { useVehicles } from '../vehicles';
 
 /** Entreprises de livraison partenaires (SA) */
 export default function Companies() {
@@ -14,7 +15,6 @@ export default function Companies() {
 
 type Tab = 'ALL' | 'PENDING' | 'REJECTED';
 const statusOf = (c: Company): CompanyStatus => c.status ?? 'APPROVED';
-const vehicleIcon = (v: string) => (v === 'CAR' ? 'car' : v === 'CARGO' ? 'truck' : 'moto');
 
 export const CompanyStatusBadge = ({ c }: { c: Company }) => {
   if (statusOf(c) !== 'APPROVED') return <Badge color={COMPANY_STATUS[statusOf(c)][1]}>{COMPANY_STATUS[statusOf(c)][0]}</Badge>;
@@ -158,6 +158,7 @@ function CompanyList() {
 
 /** Une demande d'inscription : informations envoyées + Accepter / Refuser */
 function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
+  const veh = useVehicles();
   const toast = useToast();
   const [confirm, setConfirm] = useState<'approve' | 'reject' | null>(null);
   const [note, setNote] = useState('');
@@ -198,7 +199,7 @@ function RequestRow({ c, onDone }: { c: Company; onDone: () => void }) {
           {a.commune && <span><Icon name="pin" size={14} />{a.commune}</span>}
           {a.drivers != null && <span><Icon name="people" size={14} />{a.drivers} livreur{a.drivers > 1 ? 's' : ''}</span>}
           {a.vehicles && a.vehicles.length > 0 && (
-            <span>{a.vehicles.map((v) => <span key={v} className="co-vehicle"><Icon name={vehicleIcon(v)} size={14} />{VEHICLE_LABEL[v] ?? v}</span>)}</span>
+            <span>{a.vehicles.map((v) => <span key={v} className="co-vehicle"><Icon name={veh.icon(v)} size={14} />{veh.name(v)}</span>)}</span>
           )}
         </div>
         {(a.managerName || a.managerPhone) && (

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { go, useHashParam } from '../App';
-import { codTotal, dateTime, Delivery, downloadCsv, SPEED_LABEL, STATUS_LABEL, VEHICLE_LABEL } from '../api';
+import { codTotal, dateTime, Delivery, downloadCsv, SPEED_LABEL, STATUS_LABEL } from '../api';
 import { formatMoney, formatPhone, currencyOf } from '../countries';
 import DeliverySheet from '../components/DeliverySheet';
 import NewDelivery from '../components/NewDelivery';
 import { useData } from '../data';
 import { Card, Empty, Icon, PageHeader, Search, Segmented, StatusBadge } from '../ui';
+import { useVehicles } from '../vehicles';
 
 type StatusFilter = 'all' | 'waiting' | 'active' | 'done' | 'cancelled';
 type Period = 'today' | '7d' | '30d' | 'all';
@@ -13,6 +14,7 @@ type Period = 'today' | '7d' | '30d' | 'all';
 const DAY = 86_400_000;
 
 export default function Deliveries() {
+  const veh = useVehicles();
   const { deliveries, companies, isSA, reload } = useData();
   // #/courses/<id> (ex. clic sur une notification) : ouvre la fiche de la course
   const linked = useHashParam('deliveries');
@@ -56,7 +58,7 @@ export default function Deliveries() {
       ...rows.map((d) => [
         new Date(d.createdAt).toLocaleString('fr-FR'), d.id, STATUS_LABEL[d.status], d.client.name, d.client.phone,
         `${d.pickupAddress} (${d.pickupCommune})`, d.stops.length, d.stops.map((s) => s.recipientName).join(', '),
-        d.driver?.name, d.company?.name, VEHICLE_LABEL[d.vehicleType], SPEED_LABEL[d.speed], d.distanceKm, d.price, codTotal(d), d.currency ?? currencyOf().currencyCode,
+        d.driver?.name, d.company?.name, veh.name(d.vehicleType), SPEED_LABEL[d.speed], d.distanceKm, d.price, codTotal(d), d.currency ?? currencyOf().currencyCode,
       ]),
     ]);
 
@@ -106,7 +108,7 @@ export default function Deliveries() {
                     <td>{d.client.name}<span className="sub">{formatPhone(d.client.phone)}</span></td>
                     <td>
                       {d.pickupCommune} → {d.stops.length > 1 ? `${d.stops.length} arrêts` : d.stops[0]?.commune}
-                      <span className="sub">{VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
+                      <span className="sub">{veh.name(d.vehicleType)} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span>
                     </td>
                     <td>
                       {d.stops.slice(0, 2).map((s) => (

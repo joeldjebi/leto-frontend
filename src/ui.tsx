@@ -59,6 +59,10 @@ export const ICON_PATHS: Record<string, string> = {
   external: 'M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5',
   up: 'M6 15l6-6 6 6',
   down: 'M6 9l6 6 6-6',
+  /** Tricycle de livraison (moto à 3 roues) : caisse à l'arrière, roue avant, guidon */
+  tricycle: 'M2.5 6h9.5v8.5H2.5z M5 20a1.9 1.9 0 100-3.8 1.9 1.9 0 000 3.8z M9.8 20a1.9 1.9 0 100-3.8 1.9 1.9 0 000 3.8z M19 20a2 2 0 100-4 2 2 0 000 4z M12 14.5h4.5 M19 18l-2-9.5 M15.5 8.5h3.5',
+  /** Camionnette : cabine inclinée, deux roues */
+  van: 'M2.5 16.5V7.5a1.5 1.5 0 011.5-1.5h10l3.5 4.5 3 1v5H2.5z M14 6v4.5h3.5 M2.5 11h11.5 M6.5 19a2 2 0 100-4 2 2 0 000 4z M17 19a2 2 0 100-4 2 2 0 000 4z',
   truck: 'M2.5 6h11.5v10H2.5z M14 9.5h4l3.5 3.5v3H14z M6.5 18.5a2 2 0 100-4 2 2 0 000 4z M17.5 18.5a2 2 0 100-4 2 2 0 000 4z',
 };
 

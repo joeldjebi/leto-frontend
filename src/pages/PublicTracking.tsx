@@ -4,15 +4,15 @@ import { connectRealtime } from '../realtime';
 import L from 'leaflet';
 import { CircleMarker, MapContainer, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import SmoothDriverMarker from '../components/SmoothDriverMarker';
-import { API_URL, time, VEHICLE_LABEL, Vehicle, errText, UserError } from '../api';
+import { API_URL, time, Vehicle, errText, UserError } from '../api';
+import { useVehicles } from '../vehicles';
 import MapTiles from '../components/MapTiles';
 import { Icon, ICON_PATHS } from '../ui';
 import { formatPhone, telHref } from '../countries';
 
-/** Marqueur du livreur : l'icône de son engin (moto, voiture, cargo) dans une pastille */
-function vehicleIcon(vehicle: Vehicle | undefined, live: boolean) {
-  const name = vehicle === 'CAR' ? 'car' : vehicle === 'CARGO' ? 'truck' : 'bike';
-  const d = ICON_PATHS[name] ?? ICON_PATHS.bike;
+/** Marqueur du livreur : le pictogramme de son engin (moto, voiture, vélo…) dans une pastille */
+function vehicleIcon(icon: string, live: boolean) {
+  const d = ICON_PATHS[icon] ?? ICON_PATHS.moto;
   const bg = live ? '#E86A17' : '#8e8e93';
   return L.divIcon({
     className: 'track-vehicle',
@@ -70,6 +70,7 @@ function StopFollowOnDrag({ onDrag }: { onDrag: () => void }) {
 
 /** Page publique de suivi (lien partagé au client ou aux destinataires), en temps réel */
 export default function PublicTracking({ token }: { token: string }) {
+  const veh = useVehicles();
   const [t, setT] = useState<Track | null>(null);
   const [error, setError] = useState('');
   const [live, setLive] = useState(false);
@@ -148,7 +149,7 @@ export default function PublicTracking({ token }: { token: string }) {
           ))}
           {pos && (
             <SmoothDriverMarker lat={pos.lat} lng={pos.lng} heading={pos.heading} follow={follow}
-              icon={vehicleIcon(t.driver?.vehicle ?? t.vehicleType, pos.live !== false)}>
+              icon={vehicleIcon(veh.icon(t.driver?.vehicle ?? t.vehicleType), pos.live !== false)}>
               <Tooltip permanent direction="top" offset={[0, -30]}>{t.driver?.name}{pos.live === false ? ` · vu à ${time(pos.at)}` : ''}</Tooltip>
             </SmoothDriverMarker>
           )}
@@ -179,7 +180,7 @@ export default function PublicTracking({ token }: { token: string }) {
             <span className="avatar">{t.driver.name[0]}</span>
             <div style={{ flex: 1 }}>
               <strong>{t.driver.name}</strong>
-              <small className="muted" style={{ display: 'block' }}>{VEHICLE_LABEL[t.vehicleType]}{t.company ? ` · ${t.company.name}` : ''}{pos ? ` · position à ${time(pos.at)}` : ''}</small>
+              <small className="muted" style={{ display: 'block' }}>{veh.name(t.vehicleType)}{t.company ? ` · ${t.company.name}` : ''}{pos ? ` · position à ${time(pos.at)}` : ''}</small>
             </div>
             {t.driver.phone && <a className="btn secondary" href={telHref(t.driver.phone)}><Icon name="phone" size={15} />{formatPhone(t.driver.phone)}</a>}
           </div>

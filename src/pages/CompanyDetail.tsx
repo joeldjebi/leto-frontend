@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { go, goTo } from '../App';
-import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, VEHICLE_LABEL, errText } from '../api';
+import { api, codTotal, Company, dateTime, Delivery, FAILURE_LABEL, isOnline, SPEED_LABEL, Stop, time, User, errText } from '../api';
 import { formatMoney, phoneError, formatPhone } from '../countries';
 import { AdjustDialog, BillingAlert, BillingStats, CommissionDialog, PaymentsTable, SubscriptionDialog, TransactionsCard, useBilling, TrialDialog } from '../components/Billing';
 import DeliverySheet, { FailureProof, ResolveDialog } from '../components/DeliverySheet';
 import { useData } from '../data';
 import { Avatar, Badge, BarChart, Card, Empty, Field, Icon, Modal, PhoneInput, Search, Segmented, Stat, StatusBadge, Switch, useToast } from '../ui';
+import { useVehicles } from '../vehicles';
 
 type Tab = 'deliveries' | 'drivers' | 'billing' | 'collections' | 'disputes';
 type Metric = 'created' | 'volume';
@@ -204,6 +205,7 @@ export default function CompanyDetail({ id }: { id: string }) {
 export function DeliveriesTab({ deliveries, q, setQ, status, setStatus, onOpen }: {
   deliveries: Delivery[]; q: string; setQ: (v: string) => void; status: StatusFilter; setStatus: (v: StatusFilter) => void; onOpen: (d: Delivery) => void;
 }) {
+  const veh = useVehicles();
   const needle = q.trim().toLowerCase();
   const rows = deliveries.filter((d) => {
     if (status === 'active' && d.status !== 'ACCEPTED' && d.status !== 'PICKED_UP') return false;
@@ -229,7 +231,7 @@ export function DeliveriesTab({ deliveries, q, setQ, status, setStatus, onOpen }
                   <tr key={d.id} className="clickable" onClick={() => onOpen(d)}>
                     <td style={{ whiteSpace: 'nowrap' }}>{dateTime(d.createdAt)}</td>
                     <td>{d.client.name}<span className="sub">{formatPhone(d.client.phone)}</span></td>
-                    <td>{d.pickupCommune} → {d.stops.length > 1 ? `${d.stops.length} arrêts` : d.stops[0]?.commune}<span className="sub">{VEHICLE_LABEL[d.vehicleType]} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span></td>
+                    <td>{d.pickupCommune} → {d.stops.length > 1 ? `${d.stops.length} arrêts` : d.stops[0]?.commune}<span className="sub">{veh.name(d.vehicleType)} · {SPEED_LABEL[d.speed]}{d.distanceKm != null ? ` · ${d.distanceKm} km` : ''}</span></td>
                     <td>{d.driver?.name ?? <span className="muted">—</span>}</td>
                     <td className="num">{formatMoney(d.price, d.currency)}</td>
                     <td className="num">{codTotal(d) ? formatMoney(codTotal(d), d.currency) : <span className="muted">—</span>}</td>

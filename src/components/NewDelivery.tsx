@@ -2,24 +2,23 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, Marker, Polyline, useMap, useMapEvents } from 'react-leaflet';
-import { api, Delivery, initial, isOnline, Speed, SPEED_LABEL, User, Vehicle, VEHICLE_LABEL, errText } from '../api';
+import { api, Delivery, initial, isOnline, Speed, SPEED_LABEL, User, Vehicle, errText } from '../api';
 import { formatMoney, phoneError, formatPhone, currencySymbol } from '../countries';
 import { useData } from '../data';
 import { Badge, Icon, PhoneInput, useToast } from '../ui';
 import MapTiles from './MapTiles';
+import { useVehicles } from '../vehicles';
 
 interface Place { label: string; sublabel?: string; lat: number; lng: number }
 interface StopForm { key: number; place: Place | null; name: string; phone: string }
-interface Quote { distanceKm: number; durationMin: number; points: [number, number][]; order: number[]; offers: { vehicle: Vehicle; label: string; prices: Record<Speed, number> }[]; surcharges?: { key: string; label: string; pct: number }[]; stopDiscountPct?: number; inAbidjan?: boolean }
+interface Quote { distanceKm: number; durationMin: number; points: [number, number][]; order: number[]; offers: { vehicle: Vehicle; label: string; name?: string; icon?: string; description?: string; prices: Record<Speed, number> }[]; surcharges?: { key: string; label: string; pct: number }[]; stopDiscountPct?: number; inAbidjan?: boolean }
 
 /** Lien de suivi à partager : toujours sur le site public (sa.leto… est réservé à l'administration) */
 const TRACKING_BASE = /^(localhost|127\.0\.0\.1)$/.test(location.hostname) ? `${location.origin}${location.pathname}` : 'https://vite.ci/';
 export const trackingUrl = (d: Pick<Delivery, 'trackingToken'>) => (d.trackingToken ? `${TRACKING_BASE}#/suivi/${d.trackingToken}` : null);
 
 const ABIDJAN: [number, number] = [5.3364, -4.0267];
-const VEHICLES: Vehicle[] = ['MOTO', 'CAR', 'CARGO'];
 const SPEEDS: Speed[] = ['EXPRESS', 'STANDARD', 'SCHEDULED'];
-const VEHICLE_ICON: Record<Vehicle, string> = { MOTO: 'moto', CAR: 'car', CARGO: 'truck' };
 const SPEED_HINT: Record<Speed, string> = { EXPRESS: 'Départ immédiat', STANDARD: 'Le plus courant', SCHEDULED: 'Le moins cher' };
 
 /** Marqueur rond numéroté (départ « A » noir, arrêts colorés) */
@@ -85,6 +84,7 @@ function AddressInput({ value, onChange, placeholder, onMap, picking }: {
 export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; onOpen?: (d: Delivery) => void }) {
   const { me, drivers, deliveries, reload } = useData();
   const toast = useToast();
+  const veh = useVehicles();
   const [pickup, setPickup] = useState<Place | null>(null);
   const [stops, setStops] = useState<StopForm[]>([{ key: 1, place: null, name: '', phone: '' }]);
   const [clientName, setClientName] = useState('');
@@ -284,13 +284,13 @@ export default function NewDelivery({ onClose, onOpen }: { onClose: () => void; 
         {/* ----- Engin ----- */}
         <div className="nd-section-title">Engin</div>
         <div className="nd-choices">
-          {VEHICLES.map((v) => {
+          {[...veh.enabled.map((x) => x.code), ...(quote?.offers.map((x) => x.vehicle).filter((c) => !veh.enabled.some((x) => x.code === c)) ?? [])].map((v) => {
             const o = quote?.offers.find((x) => x.vehicle === v);
             const off = !!quote && !o;
             return (
               <button key={v} className={`nd-choice${vehicle === v ? ' on' : ''}`} disabled={off} onClick={() => setVehicle(v)}>
-                <span className="nd-choice-icon"><Icon name={VEHICLE_ICON[v]} size={26} /></span>
-                <strong>{VEHICLE_LABEL[v]}</strong>
+                <span className="nd-choice-icon"><Icon name={o?.icon || veh.icon(v)} size={26} /></span>
+                <strong>{o?.name || veh.name(v)}</strong>
                 <small>{off ? 'Non proposé' : o ? formatMoney(o.prices[speed]) : '—'}</small>
               </button>
             );
